@@ -1,0 +1,66 @@
+{
+  "nav": {
+    "news": "Noticias",
+    "community": "Comunidad",
+    "productions": "Producciones",
+    "subscribe": "Suscríbete"
+  },
+  "hero": {
+    "title": "El mundo automotriz como nunca lo habías visto",
+    "subtitle": "Noticias, comunidad y producciones que llevan tu pasión por los autos al siguiente nivel.",
+    "ctaNews": "Explorar Noticias",
+    "ctaCommunity": "Únete a la Comunidad"
+  },
+  "sections": {
+    "news": "Noticias Destacadas",
+    "community": "Comunidad & Eventos",
+    "productions": "MotorWelt Productions",
+    "subscription": "Hazte Miembro"
+  },
+  "news": {
+    "item1": {
+      "title": "VW GTI: 40 años de historia",
+      "excerpt": "Un repaso por todas las generaciones del ícono alemán."
+    },
+    "item2": {
+      "title": "La Carrera Panamericana celebra 75 años",
+      "excerpt": "La competencia más legendaria de México está de aniversario."
+    },
+    "item3": {
+      "title": "Tendencias en tuning JDM y Euro",
+      "excerpt": "Lo más buscado en la cultura de personalización automotriz."
+    }
+  },
+  "seeMore": "Leer más",
+  "seeAllNews": "Ver todas las noticias",
+  "community": {
+    "text": "Conecta con otros entusiastas, organiza meets y vive la cultura automotriz en cada rincón.",
+    "cta": "Explorar Comunidad"
+  },
+  "productions": {
+    "text": "Producciones cinematográficas que capturan la esencia del mundo motor.",
+    "cta": "Conoce más"
+  },
+  "subscription": {
+    "benefit1": {
+      "title": "Noticias exclusivas",
+      "desc": "Acceso anticipado a artículos y reportajes."
+    },
+    "benefit2": {
+      "title": "Eventos privados",
+      "desc": "Invitaciones a meets, arrancones y experiencias."
+    },
+    "benefit3": {
+      "title": "Descuentos especiales",
+      "desc": "Beneficios en piezas, accesorios y eventos."
+    },
+    "cta": "Hazte miembro Premium"
+  },
+  "footer": {
+    "description": "MotorWelt es tu espacio automotriz para noticias, comunidad y experiencias únicas.",
+    "links": "Enlaces",
+    "about": "Acerca de",
+    "socials": "Síguenos",
+    "rights": "Todos los derechos reservados."
+  }
+}

@@ -1,0 +1,216 @@
+/* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================
+   Base / Variables
+   =========================== */
+:root {
+  color-scheme: dark;
+
+  /* Paleta */
+  --mw-bg: #0B0F14;
+  --mw-cool: #0CE0B2;   /* teal/cyan */
+  --mw-teal: #43A1AD;   /* teal profundo */
+  --mw-warm: #FF7A1A;   /* naranja */
+  --mw-amber:#E2A24C;   /* ámbar */
+  --mw-lime: #9FC523;   /* verde “nitro” */
+
+  /* Controles de las líneas globales */
+  --mw-lines-opacity-a: .22; /* capa gruesa (↑ intensidad) */
+  --mw-lines-opacity-b: .16; /* capa fina    (↑ intensidad) */
+  --mw-lines-blur-a: 5px;    /* blur fuerte para “smear” */
+  --mw-lines-blur-b: 3px;    /* blur medio  */
+}
+
+/* Fondo base (radiales un poco más vivos) */
+body {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(12,224,178,.10), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(255,122,26,.08), transparent 50%),
+    var(--mw-bg);
+  isolation: isolate; /* permite pseudo-elementos detrás (z-index negativo) */
+}
+
+/* ===========================
+   Overlay global de líneas neón difuminadas (estilo póster)
+   =========================== */
+
+/* Capa 1 — líneas gruesas, irregulares y con “smear” intenso */
+body::before{
+  content:"";
+  position: fixed;
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
+
+  /* 1) color (más saturado)  2) patrón de bandas NO uniforme */
+  background-image:
+    linear-gradient(-18deg,
+      rgba(255,122,26,.42) 0%,
+      rgba(226,162,76,.38) 22%,
+      rgba(159,197,35,.34) 47%,
+      rgba(12,224,178,.34) 72%,
+      rgba(67,161,173,.30) 100%
+    ),
+    repeating-linear-gradient(-18deg,
+      rgba(255,255,255,0)   0   22px,
+      rgba(255,255,255,.55) 22px 28px,   /* núcleo brillante */
+      rgba(255,255,255,.20) 28px 34px,   /* borde suave (simula blur direcc.) */
+      rgba(255,255,255,0)   34px 52px,
+      rgba(255,255,255,.42) 52px 56px,
+      rgba(255,255,255,0)   56px 94px,
+      rgba(255,255,255,.32) 94px 98px,
+      rgba(255,255,255,0)   98px 126px
+    );
+  background-blend-mode: screen, screen;
+
+  /* desvanecer arriba/abajo para que no sea plano */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 14%, black 86%, transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, black 14%, black 86%, transparent 100%);
+
+  /* “motion blur” global + punch de color */
+  filter: blur(var(--mw-lines-blur-a)) saturate(140%) contrast(108%);
+  opacity: var(--mw-lines-opacity-a);
+  mix-blend-mode: screen;
+  animation: bgDriftA 48s linear infinite;
+}
+
+/* Capa 2 — líneas finas, más densas + ruido leve para romper uniformidad */
+body::after{
+  content:"";
+  position: fixed;
+  inset: -15%;
+  z-index: -1;
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(-18deg,
+      rgba(67,161,173,.34) 0%,
+      rgba(12,224,178,.36) 35%,
+      rgba(159,197,35,.30) 70%,
+      rgba(255,122,26,.26) 100%
+    ),
+    repeating-linear-gradient(-18deg,
+      rgba(255,255,255,0)   0   10px,
+      rgba(255,255,255,.48) 10px 12px,   /* núcleo */
+      rgba(255,255,255,.18) 12px 15px,   /* borde suavizado */
+      rgba(255,255,255,0)   15px 24px,
+      rgba(255,255,255,.32) 24px 25px,
+      rgba(255,255,255,0)   25px 36px
+    ),
+    /* ruido procedural sutil: rompe la perfección matemática */
+    url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'>\
+<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter>\
+<rect width='100%' height='100%' filter='url(#n)' opacity='.05'/></svg>");
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-size: auto, auto, 240px 240px;
+  background-blend-mode: screen, screen, overlay;
+
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, black 18%, black 82%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0, black 18%, black 82%, transparent 100%);
+
+  filter: blur(var(--mw-lines-blur-b)) saturate(135%) contrast(106%);
+  opacity: var(--mw-lines-opacity-b);
+  mix-blend-mode: screen;
+  animation: bgDriftB 62s linear infinite;
+}
+
+/* Parallax sutil */
+@keyframes bgDriftA { from { transform: translate3d(0,0,0); } to { transform: translate3d(60px,0,0); } }
+@keyframes bgDriftB { from { transform: translate3d(0,0,0); } to { transform: translate3d(-40px,0,0); } }
+
+/* ===========================
+   NAV: subrayado animado
+   =========================== */
+.navlink { position: relative; }
+.navlink::after{
+  content:""; position:absolute; left:0; bottom:-6px; height:2px; width:0;
+  background: linear-gradient(to right, var(--mw-cool), var(--mw-warm));
+  transition: width .2s ease;
+}
+.navlink:hover::after{ width:100%; }
+
+/* ===========================
+   Glows / efectos reutilizables
+   =========================== */
+/* Compat con lo que ya tenías */
+.neon-text-cyan  { text-shadow: 0 0 8px rgba(0,229,255,.8), 0 0 16px rgba(0,229,255,.5); }
+.neon-text-pink  { text-shadow: 0 0 8px rgba(255,61,154,.8), 0 0 16px rgba(255,61,154,.5); }
+.glow-cyan { box-shadow: 0 0 10px rgba(0,229,255,.6), 0 0 30px rgba(0,229,255,.35), inset 0 0 0 1px rgba(0,229,255,.2); }
+.glow-pink { box-shadow: 0 0 10px rgba(255,61,154,.6), 0 0 30px rgba(255,61,154,.35), inset 0 0 0 1px rgba(255,61,154,.2); }
+
+/* Contorno/halo actual */
+.glow-cool { text-shadow: 0 0 10px rgba(12,224,178,.55), 0 0 28px rgba(12,224,178,.28); }
+.glow-warm { text-shadow: 0 0 10px rgba(255,122,26,.55), 0 0 28px rgba(255,122,26,.28); }
+.logo-glow { filter: drop-shadow(0 0 14px rgba(12,224,178,.35)); }
+
+/* ===========================
+   HERO: streaks diagonales + viñeta (si los usas en el hero)
+   =========================== */
+.streak {
+  position: absolute;
+  height: 3px;
+  width: 140%;
+  transform: rotate(-18deg);
+  mix-blend-mode: screen;
+  opacity: .58;
+  filter: blur(0.6px);
+  animation: streakMove 8.5s linear infinite;
+}
+.streak-cool {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0) 0%,
+    rgba(12,224,178,0) 10%,
+    rgba(12,224,178,.85) 45%,
+    rgba(67,161,173,.85) 55%,
+    rgba(0,0,0,0) 90%);
+  box-shadow: 0 0 22px rgba(12,224,178,.35);
+}
+.streak-warm {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0) 0%,
+    rgba(255,122,26,0) 12%,
+    rgba(255,122,26,.9) 48%,
+    rgba(226,162,76,.85) 58%,
+    rgba(0,0,0,0) 92%);
+  box-shadow: 0 0 22px rgba(255,122,26,.32);
+}
+.streak-lime {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0) 0%,
+    rgba(159,197,35,0) 10%,
+    rgba(159,197,35,.85) 50%,
+    rgba(226,162,76,.70) 60%,
+    rgba(0,0,0,0) 92%);
+  box-shadow: 0 0 20px rgba(159,197,35,.28);
+}
+@keyframes streakMove {
+  from { transform: translateX(-18%) rotate(-18deg); }
+  to   { transform: translateX(18%)  rotate(-18deg); }
+}
+
+/* Viñeta cinematográfica del hero */
+.hero-vignette {
+  background:
+    radial-gradient(1200px 520px at 50% 120%, rgba(0,0,0,.55), transparent 65%),
+    radial-gradient(800px 420px at -10% -10%, rgba(12,224,178,.12), transparent 60%),
+    radial-gradient(900px 480px at 110% 110%, rgba(255,122,26,.10), transparent 60%);
+  pointer-events: none;
+}
+
+/* ===========================
+   Accesibilidad y responsive
+   =========================== */
+@media (prefers-reduced-motion: reduce) {
+  .streak { animation: none; }
+  body::before, body::after { animation: none; }
+}
+
+@media (max-width: 480px){
+  .glow-cool, .glow-warm {
+    text-shadow: 0 0 6px rgba(255,255,255,.45), 0 0 14px rgba(255,255,255,.25);
+  }
+}
