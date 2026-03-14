@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@sanity/client": "^7.13.2",
+    "@sanity/client": "^7.17.0",
     "@sanity/image-url": "^2.0.2",
     "autoprefixer": "^10.0.0",
     "dotenv": "^17.2.3",
