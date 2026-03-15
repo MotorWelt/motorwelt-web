@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { motion } from "framer-motion";
 import { useTranslation } from "next-i18next";
 import Seo from "../components/Seo";
 import Image from "next/image";
@@ -290,13 +289,10 @@ export default function HomePage({ year }: { year: number }) {
         {mobileOpen && (
           <div className="fixed inset-0 z-[60] md:hidden">
             <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
-            <motion.aside
-              id="mobile-menu"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              transition={{ type: "tween", duration: 0.25 }}
-              className="absolute right-0 top-0 h-full w-[86%] max-w-[340px] bg-mw-surface/95 backdrop-blur-xl border-l border-mw-line/70 shadow-2xl"
-            >
+            <aside
+  id="mobile-menu"
+  className="absolute right-0 top-0 h-full w-[86%] max-w-[340px] bg-mw-surface/95 backdrop-blur-xl border-l border-mw-line/70 shadow-2xl"
+>
               <div className="flex items-center justify-between px-4 py-4 border-b border-mw-line/60">
                 <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={140} height={32} className="h-8 w-auto" />
                 <button onClick={() => setMobileOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5" aria-label="Cerrar menú">
@@ -346,7 +342,7 @@ export default function HomePage({ year }: { year: number }) {
                   </div>
                 </div>
               </nav>
-            </motion.aside>
+            </aside>
           </div>
         )}
 
@@ -366,12 +362,10 @@ export default function HomePage({ year }: { year: number }) {
             <div className="pointer-events-none absolute -right-16 -bottom-16 h-96 w-96 rotate-[-20deg] rounded-full bg-[#FF7A1A]/20 blur-3xl" />
 
             <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="mx-auto max-w-3xl text-center"
-              >
+              <aside
+  id="mobile-menu"
+  className="absolute right-0 top-0 h-full w-[86%] max-w-[340px] bg-mw-surface/95 backdrop-blur-xl border-l border-mw-line/70 shadow-2xl"
+>
                 <h1 className="font-display text-4xl md:text-6xl font-extrabold tracking-wide text-white">
                   <span className="glow-cool">MotorWelt:</span>{" "}
                   <span className="glow-warm">{t("hero.title")}</span>
@@ -387,7 +381,7 @@ export default function HomePage({ year }: { year: number }) {
                     <Button variant="pink">{t("hero.ctaCommunity")}</Button>
                   </Link>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </section>
 
