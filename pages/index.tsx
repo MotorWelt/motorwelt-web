@@ -155,25 +155,12 @@ export default function HomePage({ year }: { year: number }) {
     <>
       <Seo title={`MotorWelt — ${t("hero.title")}`} description={t("hero.subtitle")} />
 
-      {/* JSON-LD: Organization */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            name: "MotorWelt",
-            url: "https://motorwelt.mx",
-            logo: "https://motorwelt.mx/brand/motorwelt-logo.png",
-            sameAs: [
-              "https://instagram.com/motorwelt",
-              "https://facebook.com/motorwelt",
-              "https://tiktok.com/@motorwelt",
-              "https://youtube.com/@motorwelt",
-            ],
-          }),
-        }}
-      />
+       return (
+    <>
+      <Seo title={`MotorWelt — ${t("hero.title")}`} description={t("hero.subtitle")} />
+
+      <div className="min-h-screen text-gray-100 relative overflow-x-hidden">
+
 
       <div className="min-h-screen text-gray-100 relative overflow-x-hidden">
         {/* Fondo global animado */}
