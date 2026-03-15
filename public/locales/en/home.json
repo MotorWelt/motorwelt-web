@@ -1,66 +1,49 @@
 {
+  "hero": {
+    "title": "The new generation of motoring culture",
+    "subtitle": "News, stories, community and productions for an audience that lives speed, design and adrenaline.",
+    "ctaNews": "View news",
+    "ctaCommunity": "Explore community"
+  },
   "nav": {
     "news": "News",
     "community": "Community",
     "productions": "Productions",
     "subscribe": "Subscribe"
   },
-  "hero": {
-    "title": "The automotive world like you've never seen it before",
-    "subtitle": "News, community, and productions that take your passion for cars to the next level.",
-    "ctaNews": "Explore News",
-    "ctaCommunity": "Join the Community"
-  },
   "sections": {
-    "news": "Featured News",
-    "community": "Community & Events",
-    "productions": "MotorWelt Productions",
-    "subscription": "Become a Member"
+    "community": "Community",
+    "productions": "Productions",
+    "subscription": "Subscription"
   },
-  "news": {
-    "item1": {
-      "title": "VW GTI: 40 Years of History",
-      "excerpt": "A look back at all generations of the German icon."
-    },
-    "item2": {
-      "title": "La Carrera Panamericana turns 75",
-      "excerpt": "Mexico’s most legendary race celebrates its anniversary."
-    },
-    "item3": {
-      "title": "JDM and Euro Tuning Trends",
-      "excerpt": "The hottest trends in automotive customization culture."
-    }
-  },
-  "seeMore": "Read more",
-  "seeAllNews": "See all news",
   "community": {
-    "text": "Connect with other enthusiasts, join meets, and live the automotive culture everywhere.",
-    "cta": "Explore Community"
+    "text": "Join a community that shares a passion for cars, motorcycles, events and the culture that surrounds the motoring world.",
+    "cta": "Join the community"
   },
   "productions": {
-    "text": "Cinematic productions that capture the essence of the automotive world.",
-    "cta": "Learn more"
+    "text": "Visual content with a cinematic vision: documentaries, coverage, editorial pieces and premium productions.",
+    "cta": "View productions"
   },
   "subscription": {
     "benefit1": {
-      "title": "Exclusive news",
-      "desc": "Early access to articles and features."
+      "title": "Exclusive content",
+      "desc": "Get early access to articles, videos and special experiences."
     },
     "benefit2": {
-      "title": "Private events",
-      "desc": "Invitations to meets, races, and experiences."
+      "title": "Member benefits",
+      "desc": "Take part in giveaways, invitations and promotions reserved for subscribers."
     },
     "benefit3": {
-      "title": "Special discounts",
-      "desc": "Benefits on parts, accessories, and events."
+      "title": "Premium experiences",
+      "desc": "Receive priority access to events, meets and selected launches."
     },
-    "cta": "Become a Premium Member"
+    "cta": "See plans"
   },
   "footer": {
-    "description": "MotorWelt is your automotive space for news, community, and unique experiences.",
+    "description": "MotorWelt is a new-generation platform focused on automotive culture, motorcycling, lifestyle and premium productions.",
     "links": "Links",
-    "about": "About",
-    "socials": "Follow us",
+    "about": "About us",
+    "socials": "Social media",
     "rights": "All rights reserved."
   }
 }

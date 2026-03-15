@@ -69,12 +69,12 @@ const AdSlot: React.FC<{ kind: AdKind; className?: string; label?: string }> = (
   label,
 }) => {
   const base =
-    "relative flex items-center justify-center rounded-2xl border border-mw-line/70 bg-mw-surface/70 text-gray-400";
+    "relative flex items-center justify-center rounded-2xl border border-mw-line/70 bg-mw-surface/70 text-center text-gray-400";
 
   const sizes: Record<AdKind, string> = {
-    leaderboard: "h-24 w-full",
-    billboard: "h-44 w-full",
-    mpu: "w-full h-[300px] md:h-[336px]",
+    leaderboard: "h-20 sm:h-24 w-full",
+    billboard: "h-32 sm:h-44 w-full",
+    mpu: "w-full h-[250px] md:h-[336px]",
   };
 
   const txt: Record<AdKind, string> = {
@@ -88,7 +88,9 @@ const AdSlot: React.FC<{ kind: AdKind; className?: string; label?: string }> = (
       className={`${base} ${sizes[kind]} ${className}`}
       aria-label={label || txt[kind]}
     >
-      <span className="text-xs md:text-sm">{label || txt[kind]}</span>
+      <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+        {label || txt[kind]}
+      </span>
       <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[0_0_24px_rgba(12,224,178,.15)]" />
     </div>
   );
@@ -122,17 +124,21 @@ const DEMO_MOTOS = [
 
 export default function HomePage({ year }: { year: number }) {
   const { t } = useTranslation("home");
-  const { locale, pathname, query } = useRouter();
+  const router = useRouter();
+  const { locale, pathname, query } = router;
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = mobileOpen ? "hidden" : prev || "";
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
-      document.body.style.overflow = prev || "";
+      document.body.style.overflow = "";
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [router.asPath]);
 
   const streaks: Streak[] = [
     { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
@@ -162,9 +168,12 @@ export default function HomePage({ year }: { year: number }) {
 
   return (
     <>
-      <Seo title={`MotorWelt — ${t("hero.title")}`} description={t("hero.subtitle")} />
+      <Seo
+        title={`MotorWelt — ${t("hero.title")}`}
+        description={t("hero.subtitle")}
+      />
 
-      <div className="min-h-screen text-gray-100 relative overflow-x-hidden">
+      <div className="relative min-h-screen overflow-x-hidden text-gray-100">
         {/* Fondo global animado */}
         <div className="mw-global-bg" aria-hidden>
           <div className="mw-global-base" />
@@ -191,27 +200,31 @@ export default function HomePage({ year }: { year: number }) {
         </div>
 
         {/* Navbar */}
-        <header className="fixed top-0 left-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 grid grid-cols-[1fr_auto_1fr] items-center h-16">
+        <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
+          <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
             <div className="flex items-center">
-              <Link href="/" className="inline-flex items-center gap-2" aria-label="Ir al inicio MotorWelt">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2"
+                aria-label="Ir al inicio MotorWelt"
+              >
                 <Image
                   src="/brand/motorwelt-logo.png"
                   alt="MotorWelt logo"
                   width={280}
                   height={64}
                   priority
-                  className="h-12 md:h-14 w-auto logo-glow"
+                  className="logo-glow h-10 w-auto sm:h-11 md:h-12 lg:h-14"
                 />
               </Link>
             </div>
 
-            <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-              <div className="relative group">
+            <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+              <div className="group relative">
                 <button
                   type="button"
                   aria-haspopup="menu"
-                  className="inline-flex items-center h-10 leading-none text-gray-200 hover:text-white focus:outline-none"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
                 >
                   {t("nav.news")}
                   <svg
@@ -232,28 +245,46 @@ export default function HomePage({ year }: { year: number }) {
                   </svg>
                 </button>
 
-                <div className="pointer-events-none absolute left-0 top-full mt-2 opacity-0 translate-y-1 transition duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:pointer-events-auto z-50">
-                  <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 backdrop-blur-md p-2 shadow-xl">
-                    <Link href="/noticias/autos" className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5">
+                <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                  <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
+                    <Link
+                      href="/noticias/autos"
+                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
+                    >
                       Autos
                     </Link>
-                    <Link href="/noticias/motos" className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5">
+                    <Link
+                      href="/noticias/motos"
+                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
+                    >
                       Motos
                     </Link>
                   </div>
                 </div>
               </div>
 
-              <Link href="/deportes" className="inline-flex items-center h-10 leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/deportes"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 Deportes
               </Link>
-              <Link href="/lifestyle" className="inline-flex items-center h-10 leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/lifestyle"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 Lifestyle
               </Link>
-              <Link href="/comunidad" className="inline-flex items-center h-10 leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/comunidad"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 {t("nav.community")}
               </Link>
-              <Link href="/producciones" className="inline-flex items-center h-10 leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/producciones"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 {t("nav.productions")}
               </Link>
               <Link href="/suscripcion" className="inline-flex">
@@ -263,14 +294,18 @@ export default function HomePage({ year }: { year: number }) {
               </Link>
             </nav>
 
-            <div className="flex items-center justify-end gap-3">
-              <ProfileButton />
+            <div className="flex items-center justify-end gap-2 sm:gap-3">
+              <div className="hidden sm:block">
+                <ProfileButton />
+              </div>
 
-              <div className="hidden md:flex items-center gap-3 text-sm">
+              <div className="hidden items-center gap-3 text-sm md:flex">
                 <Link
                   href={{ pathname, query }}
                   locale="es"
-                  className={`${locale === "es" ? "text-white" : "text-gray-300"} hover:text-white inline-flex items-center h-10 leading-none`}
+                  className={`inline-flex h-10 items-center leading-none hover:text-white ${
+                    locale === "es" ? "text-white" : "text-gray-300"
+                  }`}
                 >
                   ES
                 </Link>
@@ -278,7 +313,9 @@ export default function HomePage({ year }: { year: number }) {
                 <Link
                   href={{ pathname, query }}
                   locale="en"
-                  className={`${locale === "en" ? "text-white" : "text-gray-300"} hover:text-white inline-flex items-center h-10 leading-none`}
+                  className={`inline-flex h-10 items-center leading-none hover:text-white ${
+                    locale === "en" ? "text-white" : "text-gray-300"
+                  }`}
                 >
                   EN
                 </Link>
@@ -286,7 +323,7 @@ export default function HomePage({ year }: { year: number }) {
 
               <button
                 onClick={() => setMobileOpen(true)}
-                className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none md:hidden"
                 aria-label="Abrir menú"
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
@@ -315,9 +352,9 @@ export default function HomePage({ year }: { year: number }) {
 
             <aside
               id="mobile-menu"
-              className="absolute right-0 top-0 h-full w-[86%] max-w-[340px] bg-mw-surface/95 backdrop-blur-xl border-l border-mw-line/70 shadow-2xl"
+              className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
             >
-              <div className="flex items-center justify-between px-4 py-4 border-b border-mw-line/60">
+              <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
                 <Image
                   src="/brand/motorwelt-logo.png"
                   alt="MotorWelt logo"
@@ -342,8 +379,12 @@ export default function HomePage({ year }: { year: number }) {
               </div>
 
               <nav className="px-4 py-3">
-                <p className="px-3 pt-2 pb-1 text-xs uppercase tracking-wide text-gray-400">
-                  Noticias
+                <div className="mb-4 sm:hidden">
+                  <ProfileButton />
+                </div>
+
+                <p className="px-3 pb-1 pt-2 text-xs uppercase tracking-wide text-gray-400">
+                  {t("nav.news")}
                 </p>
 
                 <div className="mt-1 space-y-1 pl-2">
@@ -430,9 +471,9 @@ export default function HomePage({ year }: { year: number }) {
         )}
 
         {/* ======= MAIN ======= */}
-        <main aria-hidden={mobileOpen} className="pt-20 relative z-10">
+        <main aria-hidden={mobileOpen} className="relative z-10 pt-16 lg:pt-[72px]">
           {/* Hero */}
-          <section className="relative flex h-[80vh] flex-col items-center justify-center overflow-hidden">
+          <section className="relative flex min-h-[72svh] flex-col items-center justify-center overflow-hidden sm:min-h-[78svh] lg:min-h-[84vh]">
             <Image
               src="/images/hero-gti.jpg"
               alt="Hero MotorWelt"
@@ -441,24 +482,31 @@ export default function HomePage({ year }: { year: number }) {
               sizes="100vw"
               style={{ objectFit: "cover", filter: "brightness(.45) saturate(1.1)" }}
             />
-            <div className="pointer-events-none absolute -left-10 -top-10 h-80 w-80 rotate-[-20deg] rounded-full bg-[#0CE0B2]/18 blur-3xl" />
-            <div className="pointer-events-none absolute -right-16 -bottom-16 h-96 w-96 rotate-[-20deg] rounded-full bg-[#FF7A1A]/20 blur-3xl" />
+
+            <div className="pointer-events-none absolute -left-10 -top-10 h-64 w-64 rotate-[-20deg] rounded-full bg-[#0CE0B2]/18 blur-3xl sm:h-80 sm:w-80" />
+            <div className="pointer-events-none absolute -bottom-16 -right-16 h-72 w-72 rotate-[-20deg] rounded-full bg-[#FF7A1A]/20 blur-3xl sm:h-96 sm:w-96" />
 
             <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
-              <div className="mx-auto max-w-3xl text-center">
-                <h1 className="font-display text-4xl md:text-6xl font-extrabold tracking-wide text-white">
-                  <span className="glow-cool">MotorWelt:</span>{" "}
-                  <span className="glow-warm">{t("hero.title")}</span>
+              <div className="mx-auto max-w-4xl text-center">
+                <h1 className="font-display text-[2.35rem] font-extrabold leading-[0.95] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+                  <span className="glow-cool block sm:inline">MotorWelt:</span>{" "}
+                  <span className="glow-warm block sm:inline">{t("hero.title")}</span>
                 </h1>
-                <p className="mt-4 text-lg text-gray-200 md:text-xl">
+
+                <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg md:text-xl">
                   {t("hero.subtitle")}
                 </p>
-                <div className="mt-6 flex justify-center gap-4">
-                  <Link href="/noticias/autos">
-                    <Button variant="cyan">{t("hero.ctaNews")}</Button>
+
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+                  <Link href="/noticias/autos" className="w-full sm:w-auto">
+                    <Button variant="cyan" className="w-full sm:w-auto">
+                      {t("hero.ctaNews")}
+                    </Button>
                   </Link>
-                  <Link href="/comunidad">
-                    <Button variant="pink">{t("hero.ctaCommunity")}</Button>
+                  <Link href="/comunidad" className="w-full sm:w-auto">
+                    <Button variant="pink" className="w-full sm:w-auto">
+                      {t("hero.ctaCommunity")}
+                    </Button>
                   </Link>
                 </div>
               </div>
@@ -466,25 +514,25 @@ export default function HomePage({ year }: { year: number }) {
           </section>
 
           {/* Leaderboard bajo hero */}
-          <section className="py-6">
+          <section className="py-5 sm:py-6">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <AdSlot kind="leaderboard" />
             </div>
           </section>
 
           {/* MIXTAS: Autos + Motos */}
-          <section className="py-16">
+          <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
-                <h2 className="font-display text-3xl font-bold tracking-wide text-white">
+                <h2 className="font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                   Autos & Motos — Destacadas
                 </h2>
-                <div className="mt-2 h-1 w-28 rounded-full bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A]" />
+                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A] sm:w-28" />
               </div>
 
               <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
                 <Card className="overflow-hidden hover:shadow-[0_0_26px_rgba(12,224,178,.2)]">
-                  <div className="relative h-[320px] sm:h-[380px] w-full">
+                  <div className="relative h-[240px] w-full sm:h-[320px] md:h-[380px]">
                     <Image
                       src="/images/noticia-1.jpg"
                       alt="Mixta destacada"
@@ -494,15 +542,15 @@ export default function HomePage({ year }: { year: number }) {
                       priority
                     />
                   </div>
-                  <CardContent className="p-6">
-                    <div className="mb-2 inline-flex items-center gap-2 text-xs uppercase tracking-wide text-gray-400">
+                  <CardContent className="p-5 sm:p-6">
+                    <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400 sm:text-xs">
                       <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
                       Mixta · Autos/Motos
                     </div>
-                    <h3 className="text-2xl font-semibold text-white">
+                    <h3 className="text-xl font-semibold text-white sm:text-2xl">
                       Supra vs. superbikes: adrenalina y tecnología cara a cara
                     </h3>
-                    <p className="mt-3 text-gray-300">
+                    <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
                       Un comparativo diferente: tiempos, sensaciones y el encanto de dos mundos
                       que comparten el mismo lenguaje: velocidad.
                     </p>
@@ -516,8 +564,8 @@ export default function HomePage({ year }: { year: number }) {
 
                 <aside className="lg:sticky lg:top-24">
                   <div className="rounded-2xl border border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-                    <div className="p-4 border-b border-mw-line/60">
-                      <h4 className="text-white font-semibold">Más para leer</h4>
+                    <div className="border-b border-mw-line/60 p-4">
+                      <h4 className="font-semibold text-white">Más para leer</h4>
                     </div>
                     <ul className="divide-y divide-mw-line/60">
                       {[0, 1, 2, 3, 4].map((i) => {
@@ -527,7 +575,7 @@ export default function HomePage({ year }: { year: number }) {
                           : DEMO_AUTOS[i % DEMO_AUTOS.length];
 
                         return (
-                          <li key={`mix-list-${i}`} className="p-4 hover:bg-white/5 transition">
+                          <li key={`mix-list-${i}`} className="p-4 transition hover:bg-white/5">
                             <Link href={href} className="flex gap-3">
                               <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-mw-line/70">
                                 <Image
@@ -539,7 +587,7 @@ export default function HomePage({ year }: { year: number }) {
                                 />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-sm text-white truncate">
+                                <p className="truncate text-sm text-white">
                                   {isMoto
                                     ? "Naked bike con alma sport: setup para calle y trackday"
                                     : "Proyecto JDM: swap y ajuste fino para el 1/4 de milla"}
@@ -557,15 +605,15 @@ export default function HomePage({ year }: { year: number }) {
                 </aside>
               </div>
 
-              <div className="mt-8 text-center">
-                <Link href="/noticias/autos">
-                  <Button variant="cyan" className="px-6 py-3">
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
+                <Link href="/noticias/autos" className="w-full sm:w-auto">
+                  <Button variant="cyan" className="w-full px-6 py-3 sm:w-auto">
                     Ver más de Autos
                   </Button>
                 </Link>
-                <span className="mx-2 text-gray-500">/</span>
-                <Link href="/noticias/motos">
-                  <Button variant="cyan" className="px-6 py-3">
+                <span className="hidden text-gray-500 sm:inline">/</span>
+                <Link href="/noticias/motos" className="w-full sm:w-auto">
+                  <Button variant="cyan" className="w-full px-6 py-3 sm:w-auto">
                     Ver más de Motos
                   </Button>
                 </Link>
@@ -574,16 +622,16 @@ export default function HomePage({ year }: { year: number }) {
           </section>
 
           {/* DEPORTES */}
-          <section className="py-12">
+          <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
-                <h2 className="font-display text-3xl font-bold tracking-wide text-white glow-warm">
+                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                   Deportes — Destacados
                 </h2>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
               </div>
 
-              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 {[1, 2, 3].map((i) => (
                   <Card
                     key={`sports-${i}`}
@@ -612,7 +660,7 @@ export default function HomePage({ year }: { year: number }) {
                   </Card>
                 ))}
 
-                <div className="hidden xl:block">
+                <div className="sm:col-span-2 xl:col-span-1">
                   <AdSlot kind="mpu" />
                 </div>
               </div>
@@ -628,10 +676,10 @@ export default function HomePage({ year }: { year: number }) {
           </section>
 
           {/* LIFESTYLE */}
-          <section className="py-12">
+          <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
-                <h2 className="font-display text-3xl font-bold tracking-wide text-white glow-cool">
+                <h2 className="glow-cool font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                   Lifestyle — Cultura & Garaje
                 </h2>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
@@ -639,7 +687,7 @@ export default function HomePage({ year }: { year: number }) {
 
               <div className="grid gap-6 md:grid-cols-2">
                 <Card className="overflow-hidden">
-                  <div className="relative h-56 w-full">
+                  <div className="relative h-52 w-full sm:h-56">
                     <Image
                       src="/images/noticia-3.jpg"
                       alt="Lifestyle destacado"
@@ -648,11 +696,11 @@ export default function HomePage({ year }: { year: number }) {
                       style={{ objectFit: "cover" }}
                     />
                   </div>
-                  <CardContent className="p-6">
-                    <h3 className="text-2xl font-semibold text-white">
+                  <CardContent className="p-5 sm:p-6">
+                    <h3 className="text-xl font-semibold text-white sm:text-2xl">
                       La escena nocturna: meets, estilos y el código no escrito
                     </h3>
-                    <p className="mt-3 text-gray-300">
+                    <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
                       ¿Qué hace auténtico a un meet? Afinamos el ojo a detalles: ruedas, fitment,
                       wraps y ese toque personal que marca diferencia.
                     </p>
@@ -677,7 +725,7 @@ export default function HomePage({ year }: { year: number }) {
                         />
                       </div>
                       <CardContent className="p-4">
-                        <h4 className="text-white font-semibold">Lifestyle #{i}</h4>
+                        <h4 className="font-semibold text-white">Lifestyle #{i}</h4>
                         <p className="mt-2 text-sm text-gray-300">
                           Detalles que elevan el carácter: interiores, audio y accesorios.
                         </p>
@@ -710,16 +758,18 @@ export default function HomePage({ year }: { year: number }) {
           </section>
 
           {/* Comunidad */}
-          <section className="py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 text-center">
-              <h2 className="font-display text-3xl font-bold tracking-wide text-white glow-warm">
+          <section className="py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
+              <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                 {t("sections.community")}
               </h2>
               <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
-              <p className="mx-auto mt-4 max-w-2xl text-gray-300">{t("community.text")}</p>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
+                {t("community.text")}
+              </p>
 
               <div className="mx-auto mt-6 max-w-3xl overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70">
-                <div className="relative w-full h-64 md:h-80">
+                <div className="relative h-56 w-full sm:h-64 md:h-80">
                   <Image
                     src="/images/comunidad.jpg"
                     alt="Comunidad MotorWelt"
@@ -739,13 +789,15 @@ export default function HomePage({ year }: { year: number }) {
           </section>
 
           {/* Productions */}
-          <section className="py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 text-center">
-              <h2 className="font-display text-3xl font-bold tracking-wide text-white glow-cool">
+          <section className="py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
+              <h2 className="glow-cool font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                 {t("sections.productions")}
               </h2>
               <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
-              <p className="mx-auto mt-4 max-w-2xl text-gray-300">{t("productions.text")}</p>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
+                {t("productions.text")}
+              </p>
 
               <div className="mt-8">
                 <video
@@ -764,18 +816,18 @@ export default function HomePage({ year }: { year: number }) {
           </section>
 
           {/* Partners */}
-          <section className="py-12">
+          <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between">
-                <h3 className="text-white/90 font-semibold">Partners & Patrocinios</h3>
-                <div className="h-px flex-1 mx-4 bg-mw-line/50" />
+                <h3 className="font-semibold text-white/90">Partners & Patrocinios</h3>
+                <div className="mx-4 h-px flex-1 bg-mw-line/50" />
               </div>
 
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div
                     key={i}
-                    className="h-16 rounded-xl border border-mw-line/70 bg-mw-surface/60 flex items-center justify-center text-xs text-gray-400"
+                    className="flex h-16 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400"
                   >
                     LOGO #{i}
                   </div>
@@ -785,9 +837,9 @@ export default function HomePage({ year }: { year: number }) {
           </section>
 
           {/* Suscripción */}
-          <section className="py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 text-center">
-              <h2 className="font-display text-3xl font-bold tracking-wide text-white">
+          <section className="py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
+              <h2 className="font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                 {t("sections.subscription")}
               </h2>
               <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-white/60" />
@@ -821,16 +873,16 @@ export default function HomePage({ year }: { year: number }) {
         {/* Footer */}
         <footer
           aria-hidden={mobileOpen}
-          className="mt-12 border-t border-mw-line/70 bg-mw-surface/70 backdrop-blur-md py-10 text-gray-300 relative z-10"
+          className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 grid gap-8 md:grid-cols-3">
+          <div className="mx-auto grid w-full max-w-[1200px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
             <div>
               <Image
                 src="/brand/motorwelt-logo.png"
                 alt="MotorWelt logo"
                 width={160}
                 height={36}
-                className="h-9 w-auto logo-glow"
+                className="logo-glow h-9 w-auto"
               />
               <p className="mt-2 text-sm">{t("footer.description")}</p>
             </div>
@@ -900,7 +952,7 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-gray-500">
+          <p className="mt-6 px-4 text-center text-xs text-gray-500">
             © {year} MotorWelt. {t("footer.rights")}
           </p>
         </footer>

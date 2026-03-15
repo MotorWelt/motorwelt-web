@@ -1,66 +1,49 @@
 {
+  "hero": {
+    "title": "La nueva generación de la cultura motor",
+    "subtitle": "Noticias, historias, comunidad y producciones para una audiencia que vive la velocidad, el diseño y la adrenalina.",
+    "ctaNews": "Ver noticias",
+    "ctaCommunity": "Explorar comunidad"
+  },
   "nav": {
     "news": "Noticias",
     "community": "Comunidad",
     "productions": "Producciones",
-    "subscribe": "Suscríbete"
-  },
-  "hero": {
-    "title": "El mundo automotriz como nunca lo habías visto",
-    "subtitle": "Noticias, comunidad y producciones que llevan tu pasión por los autos al siguiente nivel.",
-    "ctaNews": "Explorar Noticias",
-    "ctaCommunity": "Únete a la Comunidad"
+    "subscribe": "Suscribirse"
   },
   "sections": {
-    "news": "Noticias Destacadas",
-    "community": "Comunidad & Eventos",
-    "productions": "MotorWelt Productions",
-    "subscription": "Hazte Miembro"
+    "community": "Comunidad",
+    "productions": "Producciones",
+    "subscription": "Suscripción"
   },
-  "news": {
-    "item1": {
-      "title": "VW GTI: 40 años de historia",
-      "excerpt": "Un repaso por todas las generaciones del ícono alemán."
-    },
-    "item2": {
-      "title": "La Carrera Panamericana celebra 75 años",
-      "excerpt": "La competencia más legendaria de México está de aniversario."
-    },
-    "item3": {
-      "title": "Tendencias en tuning JDM y Euro",
-      "excerpt": "Lo más buscado en la cultura de personalización automotriz."
-    }
-  },
-  "seeMore": "Leer más",
-  "seeAllNews": "Ver todas las noticias",
   "community": {
-    "text": "Conecta con otros entusiastas, organiza meets y vive la cultura automotriz en cada rincón.",
-    "cta": "Explorar Comunidad"
+    "text": "Únete a una comunidad que comparte la pasión por los autos, las motos, los eventos y la cultura que gira alrededor del mundo motor.",
+    "cta": "Entrar a la comunidad"
   },
   "productions": {
-    "text": "Producciones cinematográficas que capturan la esencia del mundo motor.",
-    "cta": "Conoce más"
+    "text": "Contenido visual con una visión cinematográfica: documentales, coberturas, piezas editoriales y producciones premium.",
+    "cta": "Ver producciones"
   },
   "subscription": {
     "benefit1": {
-      "title": "Noticias exclusivas",
-      "desc": "Acceso anticipado a artículos y reportajes."
+      "title": "Contenido exclusivo",
+      "desc": "Accede antes que nadie a artículos, videos y experiencias especiales."
     },
     "benefit2": {
-      "title": "Eventos privados",
-      "desc": "Invitaciones a meets, arrancones y experiencias."
+      "title": "Beneficios para miembros",
+      "desc": "Participa en dinámicas, invitaciones y promociones reservadas para suscriptores."
     },
     "benefit3": {
-      "title": "Descuentos especiales",
-      "desc": "Beneficios en piezas, accesorios y eventos."
+      "title": "Experiencias premium",
+      "desc": "Recibe acceso prioritario a eventos, meets y lanzamientos seleccionados."
     },
-    "cta": "Hazte miembro Premium"
+    "cta": "Conocer planes"
   },
   "footer": {
-    "description": "MotorWelt es tu espacio automotriz para noticias, comunidad y experiencias únicas.",
+    "description": "MotorWelt es una plataforma de nueva generación enfocada en la cultura automotriz, el motociclismo, el lifestyle y las producciones premium.",
     "links": "Enlaces",
-    "about": "Acerca de",
-    "socials": "Síguenos",
+    "about": "Sobre nosotros",
+    "socials": "Redes sociales",
     "rights": "Todos los derechos reservados."
   }
 }
