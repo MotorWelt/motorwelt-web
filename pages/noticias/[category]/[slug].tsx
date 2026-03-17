@@ -4,19 +4,31 @@ import Link from "next/link";
 import Image from "next/image";
 import Seo from "../../../components/Seo";
 import { sanityReadClient } from "../../../lib/sanityClient";
-import GalleryGrid from "../../../components/GalleryGrid"; // ✅ AJUSTA esta ruta si tu componente está en otro lugar
+import GalleryGrid from "../../../components/GalleryGrid";
 
 type Category = "autos" | "motos";
+
+type PortableTextSpan = {
+  _type?: "span";
+  text?: string;
+};
+
+type PortableTextBlock = {
+  _type?: "block";
+  style?: string;
+  children?: PortableTextSpan[];
+};
 
 type Article = {
   _id: string;
   title: string;
   subtitle?: string;
   section?: string;
+  category?: string | null;
   slug?: { current?: string } | string | null;
 
   publishedAt?: string | null;
-  createdAt?: string | null; // ✅ lo vamos a mapear desde _createdAt
+  createdAt?: string | null;
   updatedAt?: string | null;
 
   authorName?: string | null;
@@ -25,18 +37,22 @@ type Article = {
   tags?: string[] | null;
 
   mainImageUrl?: string | null;
-  galleryUrls?: string[] | null; // ✅ NUEVO
-  body?: string | null;
+  legacyImageUrl?: string | null;
+  galleryUrls?: string[] | null;
+
+  body?: string | PortableTextBlock[] | null;
+  excerpt?: string | null;
 };
 
 type Suggested = {
   _id: string;
   title: string;
   publishedAt?: string | null;
-  createdAt?: string | null; // ✅ lo vamos a mapear desde _createdAt
+  createdAt?: string | null;
   updatedAt?: string | null;
   slug?: { current?: string } | string | null;
   mainImageUrl?: string | null;
+  legacyImageUrl?: string | null;
 };
 
 function formatDate(iso?: string | null) {
@@ -53,8 +69,27 @@ function prettyCategory(cat: Category) {
   return cat === "autos" ? "Autos" : "Motos";
 }
 
-function readingTimeLabel(text?: string | null) {
-  const raw = (text || "").trim();
+function portableTextToPlainText(body?: string | PortableTextBlock[] | null) {
+  if (!body) return "";
+
+  if (typeof body === "string") {
+    return body.trim();
+  }
+
+  if (!Array.isArray(body)) return "";
+
+  return body
+    .map((block) => {
+      if (block?._type !== "block" || !Array.isArray(block.children)) return "";
+      return block.children.map((child) => child?.text || "").join("");
+    })
+    .filter(Boolean)
+    .join("\n\n")
+    .trim();
+}
+
+function readingTimeLabel(body?: string | PortableTextBlock[] | null) {
+  const raw = portableTextToPlainText(body);
   if (!raw) return "";
   const words = raw.split(/\s+/).filter(Boolean).length;
   const minutes = Math.max(1, Math.round(words / 200));
@@ -65,27 +100,25 @@ function getEmbedUrl(url?: string | null) {
   const raw = (url || "").trim();
   if (!raw) return "";
 
-  // YouTube (watch?v=, youtu.be, shorts)
   const yt =
     raw.match(/youtube\.com\/watch\?v=([^&]+)/)?.[1] ||
     raw.match(/youtu\.be\/([^?&/]+)/)?.[1] ||
     raw.match(/youtube\.com\/shorts\/([^?&/]+)/)?.[1];
 
-  if (yt)
+  if (yt) {
     return `https://www.youtube-nocookie.com/embed/${yt}?rel=0&modestbranding=1`;
+  }
 
-  // Vimeo
   const vimeo = raw.match(/vimeo\.com\/(\d+)/)?.[1];
   if (vimeo) return `https://player.vimeo.com/video/${vimeo}`;
 
-  // Si ya viene embed
   if (raw.includes("/embed/")) return raw;
 
   return "";
 }
 
 /**
- * Parser simple para tu editor:
+ * Parser simple para cuerpo en texto:
  * - ## / ### / #### / ##### => h2..h5
  * - ![alt](url) => imagen
  * - @[video](url) => video embed
@@ -97,8 +130,9 @@ type BodyBlock =
   | { type: "img"; alt: string; src: string }
   | { type: "video"; src: string };
 
-function parseBodyToBlocks(body?: string | null): BodyBlock[] {
-  const raw = (body || "").replace(/\r\n/g, "\n");
+function parseBodyToBlocks(body?: string | PortableTextBlock[] | null): BodyBlock[] {
+  const textBody = portableTextToPlainText(body);
+  const raw = textBody.replace(/\r\n/g, "\n");
   const lines = raw.split("\n");
 
   const blocks: BodyBlock[] = [];
@@ -127,7 +161,6 @@ function parseBodyToBlocks(body?: string | null): BodyBlock[] {
       continue;
     }
 
-    // ✅ Video: @[video](url)
     const vidMatch = line.match(/^@\[(video)\]\((.*?)\)$/i);
     if (vidMatch) {
       flushParagraph();
@@ -156,7 +189,7 @@ function parseBodyToBlocks(body?: string | null): BodyBlock[] {
   return blocks;
 }
 
-function getSlugCurrent(slug?: Article["slug"]) {
+function getSlugCurrent(slug?: Article["slug"] | Suggested["slug"]) {
   if (!slug) return "";
   if (typeof slug === "string") return slug;
   return slug?.current || "";
@@ -174,7 +207,10 @@ export default function NewsDetailPage({
   const catLabel = prettyCategory(category);
 
   const title = article?.title || "Noticia";
-  const subtitle = article?.subtitle || "";
+  const subtitle =
+    article?.subtitle ||
+    article?.excerpt ||
+    "";
   const author = (article?.authorName || "").trim() || "MotorWelt";
 
   const dateISO =
@@ -183,12 +219,10 @@ export default function NewsDetailPage({
 
   const heroImg =
     article?.mainImageUrl ||
+    article?.legacyImageUrl ||
     (category === "autos" ? "/images/noticia-2.jpg" : "/images/noticia-3.jpg");
 
-  const readLabel = useMemo(
-    () => readingTimeLabel(article?.body),
-    [article?.body]
-  );
+  const readLabel = useMemo(() => readingTimeLabel(article?.body), [article?.body]);
   const blocks = useMemo(() => parseBodyToBlocks(article?.body), [article?.body]);
 
   return (
@@ -199,7 +233,6 @@ export default function NewsDetailPage({
         image={heroImg}
       />
 
-      {/* HERO (todo el meta adentro) */}
       <section className="relative overflow-hidden">
         <div className="relative h-[58vh] min-h-[420px] w-full">
           <Image
@@ -209,13 +242,14 @@ export default function NewsDetailPage({
             priority
             sizes="100vw"
             style={{ objectFit: "cover", filter: "brightness(.55) saturate(1.08)" }}
+            unoptimized
           />
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,0,0,0.55),transparent_55%)]" />
 
           <div className="absolute inset-0 flex items-end">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 pb-10">
+            <div className="mx-auto w-full max-w-[1200px] px-4 pb-10 sm:px-6 lg:px-8">
               <nav className="text-sm text-gray-200/90" aria-label="breadcrumb">
                 <ol className="flex flex-wrap items-center gap-2">
                   <li className="flex items-center gap-2">
@@ -234,7 +268,7 @@ export default function NewsDetailPage({
                 </ol>
               </nav>
 
-              <h1 className="mt-3 font-display text-5xl md:text-6xl font-extrabold tracking-wide text-white">
+              <h1 className="mt-3 font-display text-5xl font-extrabold tracking-wide text-white md:text-6xl">
                 {title}
               </h1>
 
@@ -273,10 +307,9 @@ export default function NewsDetailPage({
         </div>
       </section>
 
-      {/* CONTENT */}
-      <main className="mx-auto w-full max-w-[1200px] px-4 pb-16 sm:px-6 lg:px-8 pt-10">
+      <main className="mx-auto w-full max-w-[1200px] px-4 pb-16 pt-10 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
-          <article className="rounded-3xl border border-mw-line/70 bg-mw-surface/70 p-6 md:p-8 backdrop-blur-md">
+          <article className="rounded-3xl border border-mw-line/70 bg-mw-surface/70 p-6 backdrop-blur-md md:p-8">
             {blocks.length > 0 ? (
               <div className="prose prose-invert max-w-none prose-p:text-gray-200 prose-headings:text-white">
                 {blocks.map((b, idx) => {
@@ -284,36 +317,43 @@ export default function NewsDetailPage({
                     return (
                       <h2
                         key={`h2-${idx}`}
-                        className="mt-10 text-2xl md:text-3xl font-extrabold tracking-wide"
+                        className="mt-10 text-2xl font-extrabold tracking-wide md:text-3xl"
                       >
                         {b.text}
                       </h2>
                     );
                   }
+
                   if (b.type === "h3") {
                     return (
-                      <h3 key={`h3-${idx}`} className="mt-8 text-xl md:text-2xl font-bold">
+                      <h3 key={`h3-${idx}`} className="mt-8 text-xl font-bold md:text-2xl">
                         {b.text}
                       </h3>
                     );
                   }
+
                   if (b.type === "h4") {
                     return (
                       <h4
                         key={`h4-${idx}`}
-                        className="mt-6 text-lg md:text-xl font-semibold text-white/95"
+                        className="mt-6 text-lg font-semibold text-white/95 md:text-xl"
                       >
                         {b.text}
                       </h4>
                     );
                   }
+
                   if (b.type === "h5") {
                     return (
-                      <h5 key={`h5-${idx}`} className="mt-5 text-base md:text-lg font-semibold text-white/90">
+                      <h5
+                        key={`h5-${idx}`}
+                        className="mt-5 text-base font-semibold text-white/90 md:text-lg"
+                      >
                         {b.text}
                       </h5>
                     );
                   }
+
                   if (b.type === "img") {
                     return (
                       <figure key={`img-${idx}`} className="my-6">
@@ -325,15 +365,18 @@ export default function NewsDetailPage({
                           className="w-full rounded-2xl border border-white/10 bg-black/20"
                         />
                         {b.alt ? (
-                          <figcaption className="mt-2 text-xs text-gray-400">{b.alt}</figcaption>
+                          <figcaption className="mt-2 text-xs text-gray-400">
+                            {b.alt}
+                          </figcaption>
                         ) : null}
                       </figure>
                     );
                   }
+
                   if (b.type === "video") {
                     return (
                       <div key={`video-${idx}`} className="my-6 not-prose">
-                        <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30 aspect-video">
+                        <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
                           <iframe
                             src={b.src}
                             title={`Video ${idx + 1}`}
@@ -345,6 +388,7 @@ export default function NewsDetailPage({
                       </div>
                     );
                   }
+
                   return (
                     <p key={`p-${idx}`} className="text-gray-200">
                       {b.text}
@@ -352,14 +396,13 @@ export default function NewsDetailPage({
                   );
                 })}
 
-                {/* TAGS al final del texto (como pediste) */}
-                {Array.isArray(article?.tags) && article!.tags!.length > 0 ? (
+                {Array.isArray(article?.tags) && article.tags.length > 0 ? (
                   <div className="mt-10 not-prose">
                     <div className="mb-3 text-xs uppercase tracking-widest text-gray-300/80">
                       Tags
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {article!.tags!.map((t) => (
+                      {article.tags.map((t) => (
                         <span
                           key={t}
                           className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-xs text-white/80"
@@ -371,13 +414,12 @@ export default function NewsDetailPage({
                   </div>
                 ) : null}
 
-                {/* ✅ GALERÍA (hasta abajo, debajo de tags) */}
-                {Array.isArray(article?.galleryUrls) && article!.galleryUrls!.length > 0 ? (
+                {Array.isArray(article?.galleryUrls) && article.galleryUrls.length > 0 ? (
                   <div className="mt-10 not-prose">
                     <div className="mb-3 text-xs uppercase tracking-widest text-gray-300/80">
                       Galería
                     </div>
-                    <GalleryGrid urls={article!.galleryUrls!} maxPerRow={6} />
+                    <GalleryGrid urls={article.galleryUrls} maxPerRow={6} />
                   </div>
                 ) : null}
               </div>
@@ -396,19 +438,22 @@ export default function NewsDetailPage({
 
                 <div className="mt-4 space-y-3">
                   {suggested.map((s) => {
-                    const sSlug = getSlugCurrent(s.slug as any);
+                    const sSlug = getSlugCurrent(s.slug);
                     const href = `/noticias/${category}/${sSlug || ""}`;
                     const sDateISO = s.publishedAt || s.createdAt || s.updatedAt;
                     const sDate = formatDate(sDateISO);
                     const img =
                       s.mainImageUrl ||
-                      (category === "autos" ? "/images/noticia-2.jpg" : "/images/noticia-3.jpg");
+                      s.legacyImageUrl ||
+                      (category === "autos"
+                        ? "/images/noticia-2.jpg"
+                        : "/images/noticia-3.jpg");
 
                     return (
                       <Link
                         key={s._id}
                         href={href}
-                        className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 hover:bg-white/5 transition"
+                        className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 transition hover:bg-white/5"
                       >
                         <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-white/10">
                           <Image
@@ -458,7 +503,7 @@ export default function NewsDetailPage({
               </div>
             </div>
 
-            <div className="rounded-3xl border border-mw-line/70 bg-mw-surface/70 p-6 backdrop-blur-md text-gray-300">
+            <div className="rounded-3xl border border-mw-line/70 bg-mw-surface/70 p-6 text-gray-300 backdrop-blur-md">
               <div className="text-xs opacity-80">Publicidad</div>
               <div className="mt-3 flex h-28 items-center justify-center rounded-2xl border border-white/10 bg-black/25">
                 Slot 300×250
@@ -476,53 +521,84 @@ export async function getServerSideProps({
 }: {
   params: { category: string; slug: string };
 }) {
-  const categoryParam = (params?.category || "autos").toLowerCase();
-  const category: Category = categoryParam === "motos" ? "motos" : "autos";
+ const categoryParam = (params?.category || "autos").toLowerCase();
+const category: Category = categoryParam === "motos" ? "motos" : "autos";
+const slug = (params?.slug || "").toLowerCase();
 
-  const section = category === "autos" ? "noticias_autos" : "noticias_motos";
-  const slug = (params?.slug || "").toLowerCase();
+const section = category === "autos" ? "noticias_autos" : "noticias_motos";
+const query = `
+  *[
+    _type in ["article", "post"] &&
+    slug.current == $slug &&
+    (
+      section == $section ||
+      category == $category
+    )
+  ][0]{
+    _id,
+    _type,
+    title,
+    subtitle,
+    excerpt,
+    section,
+    category,
+    slug,
+    publishedAt,
+    "createdAt": _createdAt,
+    updatedAt,
+    authorName,
+    authorEmail,
+    tags,
+    mainImageUrl,
+    legacyImageUrl,
+    galleryUrls,
+    body
+  }
+`;
 
-  const query = `
-    *[_type == "article" && section == $section && slug.current == $slug][0]{
-      _id,
-      title,
-      subtitle,
-      section,
-      slug,
-      publishedAt,
-      "createdAt": _createdAt,
-      updatedAt,
-      authorName,
-      authorEmail,
-      tags,
-      mainImageUrl,
-      galleryUrls,  // ✅ NUEVO
-      body
-    }
-  `;
-
-  const article = await sanityReadClient.fetch(query, { section, slug });
+  const article = await sanityReadClient.fetch(query, {
+    section,
+    category,
+    slug,
+  });
 
   if (!article?._id) {
     return { notFound: true };
   }
 
-  const suggestedQuery = `
-    *[_type == "article" && section == $section && _id != $currentId]
-      | order(coalesce(publishedAt, updatedAt, _createdAt) desc)[0...6]{
-        _id,
-        title,
-        slug,
-        publishedAt,
-        "createdAt": _createdAt,
-        updatedAt,
-        mainImageUrl
-      }
-  `;
+ const suggestedQuery = `
+  *[
+    _type in ["article", "post"] &&
+    _id != $currentId &&
+    (
+      section == $section ||
+      category == $category
+    )
+  ]
+    | order(coalesce(publishedAt, updatedAt, _createdAt) desc)[0...6]{
+      _id,
+      _type,
+      title,
+      slug,
+      publishedAt,
+      "createdAt": _createdAt,
+      updatedAt,
+      mainImageUrl,
+      legacyImageUrl
+    }
+`;
+
   const suggested = await sanityReadClient.fetch(suggestedQuery, {
     section,
+    category,
     currentId: article._id,
   });
 
-  return { props: { category, article, suggested: suggested || [] } };
+  return {
+    props: {
+      category,
+      article,
+      suggested: suggested || [],
+    },
+  };
 }

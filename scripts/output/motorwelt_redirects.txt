@@ -1,0 +1,15 @@
+/deportes-1/f/royal-enfield-shotgun-650 /noticias/motos/royal-enfield-shotgun-650 301
+/deportes-1/f/cupra-essentials /lifestyle/cupra-essentials 301
+/deportes-1/f/cupra-leon-vz-tcr-en-imsa-michelin-pilot-challenge-2025 /deportes/cupra-leon-vz-tcr-en-imsa-michelin-pilot-challenge-2025 301
+/deportes-1/f/%E2%80%9Chuellas%E2%80%9D-inspirada-en-hechos-reales-por-volkswagen /lifestyle/huellas-inspirada-en-hechos-reales-por-volkswagen 301
+/deportes-1/f/master-class-con-exxon-mobil-m%C3%A9xico-y-pablo-tarroba /deportes/master-class-con-exxon-mobil-mexico-y-pablo-tarroba 301
+/deportes-1/f/husqvarna-vitpilen-801 /noticias/motos/husqvarna-vitpilen-801 301
+/deportes-1/f/tesla-cybertruck-ya-est%C3%A1-en-m%C3%A9xico /noticias/autos/tesla-cybertruck-ya-esta-en-mexico 301
+/deportes-1/f/pato-o%C2%B4ward-se-sube-al-f1-de-mclaren-este-a%C3%B1o-en-el-gp-de-m%C3%A9xico /deportes/pato-oward-se-sube-al-f1-de-mclaren-este-ano-en-el-gp-de-mexico 301
+/deportes-1/f/acura-mdx-2025-ya-est%C3%A1-en-m%C3%A9xico /noticias/autos/acura-mdx-2025-ya-esta-en-mexico 301
+/deportes-1/f/cupra-terramar-el-nuevo-suv-deportivo-que-esperabas /noticias/autos/cupra-terramar-el-nuevo-suv-deportivo-que-esperabas 301
+/deportes-1/f/leclerc-conquista-monza-ferrari-triunfa-en-casa /deportes/leclerc-conquista-monza-ferrari-triunfa-en-casa 301
+/deportes-1/f/volvo-xc40-recharge-el-el%C3%A9ctrico-ideal /noticias/autos/volvo-xc40-recharge-el-electrico-ideal 301
+/deportes-1/f/byd-song-pro-el-nuevo-suv-h%C3%ADbrido-enchufable /noticias/autos/byd-song-pro-el-nuevo-suv-hibrido-enchufable 301
+/deportes-1/f/el-nuevo-jetta-2025-ya-est%C3%A1-en-m%C3%A9xico /noticias/autos/el-nuevo-jetta-2025-ya-esta-en-mexico 301
+/deportes-1/f/bmw-ce-02-la-forma-m%C3%A1s-sencilla-de-moverte-en-la-ciudad /noticias/motos/bmw-ce-02-la-forma-mas-sencilla-de-moverte-en-la-ciudad 301
