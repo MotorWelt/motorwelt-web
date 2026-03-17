@@ -1651,14 +1651,23 @@ export async function getServerSideProps({ locale }: { locale: string }) {
 
   const query = `
     *[
-      _type == "article" &&
-      (status == "publicado" || status == "borrador" || status == "revision")
+      _type in ["article", "post"] &&
+      defined(slug.current)
     ]
-    | order(publishedAt desc, _createdAt desc){
+    | order(coalesce(publishedAt, _createdAt) desc){
       "id": _id,
       "title": coalesce(title, ""),
-      "section": coalesce(section, ""),
-      "status": coalesce(status, "borrador"),
+      "section": coalesce(
+        section,
+        select(
+          lower(category) == "autos" => "noticias_autos",
+          lower(category) == "motos" => "noticias_motos",
+          "autos" in categories[] => "noticias_autos",
+          "motos" in categories[] => "noticias_motos",
+          ""
+        )
+      ),
+      "status": coalesce(status, "publicado"),
       "publishedAt": publishedAt,
       "_createdAt": _createdAt,
       "slug": slug.current
@@ -1690,14 +1699,16 @@ export async function getServerSideProps({ locale }: { locale: string }) {
   };
 
   const initialNotes: AdminNote[] = (raw ?? []).map((it: any) => {
-    const isPublished = it?.status === "publicado";
+    const normalizedStatus =
+      it?.status === "publicado" ? "publicada" : "borrador";
+
     const dateIso = it?.publishedAt ?? it?._createdAt ?? null;
 
     return {
       id: String(it?.id ?? ""),
       title: String(it?.title ?? ""),
       section: sectionLabel(String(it?.section ?? "")),
-      status: isPublished ? "publicada" : "borrador",
+      status: normalizedStatus,
       createdAt: formatWhen(dateIso) || "—",
       slug: it?.slug ? String(it.slug) : undefined,
     };

@@ -505,17 +505,20 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
 export async function getServerSideProps({ locale }: { locale: string }) {
   const { sanityReadClient } = await import("../../lib/sanityClient");
 
-  const query = `
+     const query = `
     *[
-      _type == "article" &&
-      status == "publicado" &&
-      section == "noticias_autos" &&
-      defined(slug.current)
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      (
+        section == "noticias_autos" ||
+        lower(category) == "autos" ||
+        "autos" in categories[]
+      )
     ]
-    | order(publishedAt desc, _createdAt desc){
+    | order(coalesce(publishedAt, _createdAt) desc)[0...30]{
       "id": _id,
       "title": coalesce(title, ""),
-      "excerpt": coalesce(excerpt, subtitle, ""),
+      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "tag": coalesce(contentType, "noticia"),
       "tags": coalesce(tags, []),
       "img": coalesce(mainImageUrl, ""),
@@ -526,6 +529,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
   `;
 
   const raw = await sanityReadClient.fetch(query);
+  console.log("AUTOS RAW SANITY:", JSON.stringify(raw, null, 2));
 
   const items: NewsItem[] = (raw ?? []).map((it: any) => {
     const d = it?.publishedAt

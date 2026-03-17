@@ -11,7 +11,10 @@ type ListBody = {
   limit?: number;
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   const isPost = req.method === "POST";
   const isGet = req.method === "GET";
 
@@ -21,15 +24,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // ✅ payload unificado (POST body o GET querystring)
     const payload: ListBody = isPost
-      ? (req.body || {})
+      ? req.body || {}
       : {
-          authorEmail: typeof req.query.authorEmail === "string" ? req.query.authorEmail : undefined,
-          status: typeof req.query.status === "string" ? (req.query.status as any) : undefined,
+          authorEmail:
+            typeof req.query.authorEmail === "string"
+              ? req.query.authorEmail
+              : undefined,
+          status:
+            typeof req.query.status === "string"
+              ? (req.query.status as ContentStatus)
+              : undefined,
           q: typeof req.query.q === "string" ? req.query.q : undefined,
           limit:
-            typeof req.query.limit === "string" || typeof req.query.limit === "number"
+            typeof req.query.limit === "string" ||
+            typeof req.query.limit === "number"
               ? Number(req.query.limit)
               : undefined,
         };
@@ -39,8 +48,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const q = (payload.q || "").trim() || undefined;
     const limit = Math.min(Math.max(Number(payload.limit || 30), 1), 50);
 
-    // ✅ Filtros “seguros”
-    const filters: string[] = [`defined(title)`, `defined(section)`, `defined(status)`];
+    const filters: string[] = [
+      `_type in ["article", "post"]`,
+      `defined(title)`,
+      `defined(slug.current)`,
+    ];
 
     const params: Record<string, any> = { limit };
 
@@ -50,26 +62,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (status) {
-      filters.push(`status == $status`);
+      filters.push(`coalesce(status, "publicado") == $status`);
       params.status = status;
     }
 
     if (q) {
-      filters.push(`(title match $q || subtitle match $q || excerpt match $q)`);
+      filters.push(
+        `(title match $q || subtitle match $q || excerpt match $q)`
+      );
       params.q = `*${q}*`;
     }
 
-    const filterStr = filters.length ? filters.join(" && ") : "true";
+    const filterStr = filters.join(" && ");
 
     const query = /* groq */ `
       *[${filterStr}]
-      | order(coalesce(publishedAt, updatedAt) desc)
+      | order(coalesce(publishedAt, updatedAt, _createdAt) desc)
       [0...$limit]{
         "id": _id,
         title,
-        section,
-        contentType,
-        status,
+        "section": coalesce(
+          section,
+          select(
+            lower(category) == "autos" => "noticias_autos",
+            lower(category) == "motos" => "noticias_motos",
+            "autos" in categories[] => "noticias_autos",
+            "motos" in categories[] => "noticias_motos",
+            ""
+          )
+        ),
+        "contentType": coalesce(contentType, "noticia"),
+        "status": coalesce(status, "publicado"),
         updatedAt,
         publishedAt,
         authorName,

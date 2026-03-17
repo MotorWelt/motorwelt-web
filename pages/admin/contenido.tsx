@@ -408,12 +408,12 @@ const AdminContentEditorPage: React.FC = () => {
   const fetchMyNotes = async () => {
     setListError(null);
     setListLoading(true);
+
     try {
       const res = await fetch("/api/ai/admin/content/list", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          authorEmail: currentUser?.email || undefined,
           status: listStatus === "all" ? undefined : listStatus,
           q: listQuery || undefined,
           limit: 30,
@@ -421,13 +421,16 @@ const AdminContentEditorPage: React.FC = () => {
       });
 
       const data = await res.json();
+
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "No se pudo cargar el listado.");
       }
 
       const items = (data.items || []) as ContentListItem[];
       setMyNotes(items);
+      console.log("EDITOR ITEMS:", items);
     } catch (err: any) {
+      setMyNotes(items);
       setListError(err?.message || "Error cargando tus notas.");
     } finally {
       setListLoading(false);

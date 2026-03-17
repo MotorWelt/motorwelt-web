@@ -504,15 +504,18 @@ export async function getServerSideProps({ locale }: { locale: string }) {
 
   const query = `
     *[
-      _type == "article" &&
-      status == "publicado" &&
-      section == "noticias_motos" &&
-      defined(slug.current)
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      (
+        section == "noticias_motos" ||
+        lower(category) == "motos" ||
+        "motos" in categories[]
+      )
     ]
-    | order(publishedAt desc, _createdAt desc){
+    | order(coalesce(publishedAt, _createdAt) desc)[0...30]{
       "id": _id,
       "title": coalesce(title, ""),
-      "excerpt": coalesce(excerpt, subtitle, ""),
+      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "tag": coalesce(contentType, "noticia"),
       "tags": coalesce(tags, []),
       "img": coalesce(mainImageUrl, ""),
@@ -555,7 +558,11 @@ export async function getServerSideProps({ locale }: { locale: string }) {
   return {
     props: {
       items,
-      ...(await serverSideTranslations(locale ?? "es", ["home"], nextI18NextConfig)),
+      ...(await serverSideTranslations(
+        locale ?? "es",
+        ["home"],
+        nextI18NextConfig
+      )),
     },
   };
 }
