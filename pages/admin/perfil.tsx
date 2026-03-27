@@ -16,6 +16,33 @@ const LOCALSTORAGE_KEY = "mw_admin_user";
  * /api/ai/admin/content/recent-activity
  */
 const RECENT_ACTIVITY_ENDPOINT = "/api/ai/admin/content/recent-activity";
+function getCookie(name: string) {
+  if (typeof document === "undefined") return null;
+
+  const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  const match = document.cookie.match(
+    new RegExp("(^| )" + escaped + "=([^;]+)")
+  );
+
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === "undefined") return;
+
+  const secure =
+    typeof window !== "undefined" && window.location.protocol === "https:"
+      ? " Secure;"
+      : "";
+
+  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax;${secure}`;
+}
+
+function clearMwCookies() {
+  deleteCookie("mw_role");
+  deleteCookie("mw_name");
+  deleteCookie("mw_email");
+}
 
 /* ---------- Botón estilo MotorWelt (igual que en otras páginas) ---------- */
 type Variant = "cyan" | "pink" | "ghost";
@@ -711,21 +738,60 @@ export default function AdminPerfil({
     youtube: "stroke-red-300",
   };
 
-  useEffect(() => {
+   useEffect(() => {
+    if (!router.isReady) return;
     if (typeof window === "undefined") return;
+
     try {
+      const cRole = getCookie("mw_role");
+      const cEmail = getCookie("mw_email");
+      const cName = getCookie("mw_name");
+
+      if (cRole && cEmail && cName) {
+        const cookieUser = {
+          name: cName,
+          email: cEmail,
+          role: cRole,
+        };
+
+        setCurrentUser(cookieUser);
+        setAuthReady(true);
+
+        try {
+          localStorage.setItem(
+            LOCALSTORAGE_KEY,
+            JSON.stringify({
+              ...cookieUser,
+              loggedAt: new Date().toISOString(),
+            })
+          );
+        } catch {}
+
+        return;
+      }
+
       const stored = localStorage.getItem(LOCALSTORAGE_KEY);
       if (!stored) {
         router.replace("/admin/login");
         return;
       }
+
       const parsed = JSON.parse(stored);
+      if (!parsed?.name || !parsed?.email || !parsed?.role) {
+        localStorage.removeItem(LOCALSTORAGE_KEY);
+        router.replace("/admin/login");
+        return;
+      }
+
       setCurrentUser(parsed);
       setAuthReady(true);
     } catch {
+      try {
+        localStorage.removeItem(LOCALSTORAGE_KEY);
+      } catch {}
       router.replace("/admin/login");
     }
-  }, [router]);
+  }, [router.isReady, router]);
 
   // --------- Actividad reciente (API) ----------
   const fetchRecentActivity = async (opts?: { silent?: boolean }) => {
@@ -787,7 +853,11 @@ export default function AdminPerfil({
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem(LOCALSTORAGE_KEY);
+      try {
+        localStorage.removeItem(LOCALSTORAGE_KEY);
+      } catch {}
+
+      clearMwCookies();
       router.push("/admin/login");
     }
   };

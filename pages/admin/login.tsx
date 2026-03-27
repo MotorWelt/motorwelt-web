@@ -125,8 +125,8 @@ function clearMwCookies() {
 const AdminLoginPage: React.FC = () => {
   const router = useRouter();
 
-  const [email, setEmail] = useState("admin@motorwelt.com");
-  const [password, setPassword] = useState("motorwelt_admin");
+  const [email, setEmail] = useState("gabriel@motorwelt.mx");
+  const [password, setPassword] = useState("Mw160295$");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -175,24 +175,34 @@ const AdminLoginPage: React.FC = () => {
     }
   }, [router.isReady, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const user = DEMO_USERS.find(
-      (u) =>
-        u.email.toLowerCase() === email.trim().toLowerCase() &&
-        u.password === password
-    );
-
-    if (!user) {
-      setLoading(false);
-      setError("Correo o contraseña incorrectos.");
-      return;
-    }
-
     try {
+const res = await fetch("/api/ai/admin/auth/login", {        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+ body: JSON.stringify({
+  email: email.trim().toLowerCase(),
+  password,
+}),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.ok || !data?.user) {
+        throw new Error(data?.error || "No se pudo iniciar sesión.");
+      }
+
+      const user = data.user as {
+        name: string;
+        email: string;
+        role: "admin" | "editor" | "autor";
+      };
+
       const payload: StoredSession = {
         name: user.name,
         email: user.email,
@@ -200,23 +210,23 @@ const AdminLoginPage: React.FC = () => {
         loggedAt: new Date().toISOString(),
       };
 
-      // Fallback demo (puedes quitarlo después)
       localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(payload));
 
-      // ✅ Cookies para middleware guard (/admin/*)
       writeMwCookies({
         role: user.role,
         name: user.name,
         email: user.email,
       });
-    } catch {
-      // ignore
-    }
 
-    if (user.role === "admin") {
-      router.push("/admin/perfil");
-    } else {
-      router.push("/admin/perfil-equipo");
+      if (user.role === "admin") {
+        router.push("/admin/perfil");
+      } else {
+        router.push("/admin/perfil-equipo");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Correo o contraseña incorrectos.");
+    } finally {
+      setLoading(false);
     }
   };
 
