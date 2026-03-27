@@ -1,0 +1,13 @@
+{
+  "name": "motorwelt-studio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "sanity dev"
+  },
+  "dependencies": {
+    "@sanity/vision": "^3.57.4",
+    "sanity": "^3.57.4",
+    "styled-components": "^6.3.12"
+  }
+}
