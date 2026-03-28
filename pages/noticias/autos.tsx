@@ -1,4 +1,3 @@
-// pages/noticias/autos.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -39,7 +38,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
 
-  // Cerrar con click-fuera
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (!menuRef.current) return;
@@ -54,7 +52,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  // Cerrar con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -63,7 +60,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  // Enfocar primer ítem al abrir
   useEffect(() => {
     if (open) {
       const first = menuRef.current?.querySelector<HTMLAnchorElement>("a");
@@ -74,7 +70,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
   return (
     <header className="fixed top-0 left-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
       <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
         <div className="flex items-center">
           <Link
             href="/"
@@ -92,7 +87,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
           </Link>
         </div>
 
-        {/* Nav centrado */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link
             href="/"
@@ -101,7 +95,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
             Inicio
           </Link>
 
-          {/* Noticias accesible */}
           <div className="relative">
             <button
               ref={btnRef}
@@ -200,7 +193,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
           </Link>
         </nav>
 
-        {/* Buscador en el menú */}
         <div className="hidden md:block md:ml-4 lg:ml-6">
           <div className="relative w-[300px]">
             <label htmlFor="search-autos" className="sr-only">
@@ -226,7 +218,6 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ({
   );
 };
 
-/* ===================== Utilidades locales ===================== */
 type AdKind = "leaderboard" | "billboard";
 function AdSlot({ kind, className = "" }: { kind: AdKind; className?: string }) {
   const cfg =
@@ -274,7 +265,6 @@ function SectionHeading({
   );
 }
 
-/* ===================== Tipos (Sanity) ===================== */
 type NewsItem = {
   id: string;
   title: string;
@@ -287,7 +277,6 @@ type NewsItem = {
   publishedAt?: string | null;
 };
 
-/* ===================== Página ===================== */
 export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
   const [query, setQuery] = useState("");
 
@@ -305,7 +294,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
     });
   }, [safeItems, query]);
 
-  // Atajo "/" para enfocar el buscador del header
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "/" && !(e.target as HTMLElement)?.closest("input, textarea")) {
@@ -326,10 +314,8 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
         description="Lanzamientos, pruebas y tecnología con ADN MotorWelt."
       />
 
-      {/* Header global */}
       <SiteHeader query={query} onQuery={setQuery} />
 
-      {/* HERO (mt-16 por header fijo) */}
       <section className="relative mt-16 h-[34vh] min-h-[240px] flex items-center justify-center overflow-hidden">
         <Image
           src="/images/noticia-2.jpg"
@@ -339,7 +325,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
           style={{ objectFit: "cover", filter: "brightness(.48) saturate(1.15)" }}
           priority
         />
-        {/* Halos */}
         <div className="absolute inset-0">
           <div className="absolute -left-12 -top-16 h-80 w-80 rounded-full bg-[#0CE0B2]/18 blur-3xl" />
           <div className="absolute -right-20 -bottom-20 h-[26rem] w-[26rem] rounded-full bg-[#FF7A1A]/12 blur-3xl" />
@@ -355,7 +340,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
         </div>
       </section>
 
-      {/* Leaderboard publicidad */}
       <section className="mt-4">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
           <AdSlot kind="leaderboard" />
@@ -363,7 +347,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
       </section>
 
       <main className="pb-16 mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-        {/* FEED */}
         <section className="pt-12" aria-labelledby="feed-title">
           <SectionHeading
             title={`Últimas publicaciones ${filtered.length ? `(${filtered.length})` : ""}`}
@@ -411,7 +394,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
                     <span className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/55 px-2 py-0.5 text-xs text-white/90 backdrop-blur">
                       {n.tag}
                     </span>
-                    {/* ✅ quitado: Quick peek */}
                   </div>
 
                   <div className="p-5">
@@ -430,7 +412,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
                           Leer completa →
                         </Button>
                       </Link>
-                      {/* ✅ quitado: Ver rápido */}
                     </div>
                   </div>
                 </article>
@@ -439,12 +420,10 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
           )}
         </section>
 
-        {/* Billboard intermedio */}
         <section className="py-12">
           <AdSlot kind="billboard" />
         </section>
 
-        {/* Newsletter */}
         <section id="newsletter-autos" className="mt-2">
           <div className="rounded-3xl border border-mw-line/70 bg-mw-surface/70 p-6 md:p-8">
             <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
@@ -457,9 +436,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
                 </h4>
                 <p className="mt-2 text-gray-300 max-w-2xl">
                   Lanzamientos, pruebas y tecnología. Pura gasolina.
-                </p>
-                <p className="mt-2 text-sm text-gray-400">
-                  
                 </p>
               </div>
 
@@ -489,7 +465,6 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
         </section>
       </main>
 
-      {/* Estética ligera compartida (glows) */}
       <style jsx global>{`
         .glow-cool {
           text-shadow: 0 0 14px rgba(12, 224, 178, 0.25);
@@ -505,10 +480,11 @@ export default function NoticiasAutos({ items = [] }: { items?: NewsItem[] }) {
 export async function getServerSideProps({ locale }: { locale: string }) {
   const { sanityReadClient } = await import("../../lib/sanityClient");
 
-     const query = `
+  const query = /* groq */ `
     *[
       _type in ["article", "post"] &&
       defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
       (
         section == "noticias_autos" ||
         lower(category) == "autos" ||
@@ -521,7 +497,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "tag": coalesce(contentType, "noticia"),
       "tags": coalesce(tags, []),
-      "img": coalesce(mainImageUrl, ""),
+      "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
       "_createdAt": _createdAt
@@ -529,7 +505,6 @@ export async function getServerSideProps({ locale }: { locale: string }) {
   `;
 
   const raw = await sanityReadClient.fetch(query);
-  console.log("AUTOS RAW SANITY:", JSON.stringify(raw, null, 2));
 
   const items: NewsItem[] = (raw ?? []).map((it: any) => {
     const d = it?.publishedAt

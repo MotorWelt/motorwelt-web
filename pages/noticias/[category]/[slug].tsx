@@ -21,10 +21,12 @@ type PortableTextBlock = {
 
 type Article = {
   _id: string;
+  _type?: string;
   title: string;
   subtitle?: string;
   section?: string;
   category?: string | null;
+  categories?: string[] | null;
   slug?: { current?: string } | string | null;
 
   publishedAt?: string | null;
@@ -58,6 +60,7 @@ type Suggested = {
 function formatDate(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("es-MX", {
     day: "2-digit",
     month: "long",
@@ -117,13 +120,6 @@ function getEmbedUrl(url?: string | null) {
   return "";
 }
 
-/**
- * Parser simple para cuerpo en texto:
- * - ## / ### / #### / ##### => h2..h5
- * - ![alt](url) => imagen
- * - @[video](url) => video embed
- * - párrafos por bloques separados por línea vacía
- */
 type BodyBlock =
   | { type: "h2" | "h3" | "h4" | "h5"; text: string }
   | { type: "p"; text: string }
@@ -207,10 +203,7 @@ export default function NewsDetailPage({
   const catLabel = prettyCategory(category);
 
   const title = article?.title || "Noticia";
-  const subtitle =
-    article?.subtitle ||
-    article?.excerpt ||
-    "";
+  const subtitle = article?.subtitle || article?.excerpt || "";
   const author = (article?.authorName || "").trim() || "MotorWelt";
 
   const dateISO =
@@ -357,7 +350,6 @@ export default function NewsDetailPage({
                   if (b.type === "img") {
                     return (
                       <figure key={`img-${idx}`} className="my-6">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={b.src}
                           alt={b.alt}
@@ -521,40 +513,45 @@ export async function getServerSideProps({
 }: {
   params: { category: string; slug: string };
 }) {
- const categoryParam = (params?.category || "autos").toLowerCase();
-const category: Category = categoryParam === "motos" ? "motos" : "autos";
-const slug = (params?.slug || "").toLowerCase();
+  const categoryParam = (params?.category || "autos").toLowerCase();
+  const category: Category = categoryParam === "motos" ? "motos" : "autos";
+  const slug = (params?.slug || "").toLowerCase();
 
-const section = category === "autos" ? "noticias_autos" : "noticias_motos";
-const query = `
-  *[
-    _type in ["article", "post"] &&
-    slug.current == $slug &&
-    (
-      section == $section ||
-      category == $category
-    )
-  ][0]{
-    _id,
-    _type,
-    title,
-    subtitle,
-    excerpt,
-    section,
-    category,
-    slug,
-    publishedAt,
-    "createdAt": _createdAt,
-    updatedAt,
-    authorName,
-    authorEmail,
-    tags,
-    mainImageUrl,
-    legacyImageUrl,
-    galleryUrls,
-    body
-  }
-`;
+  const section = category === "autos" ? "noticias_autos" : "noticias_motos";
+
+  const query = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      slug.current == $slug &&
+      coalesce(status, "publicado") == "publicado" &&
+      (
+        section == $section ||
+        lower(category) == $category ||
+        $category in categories[]
+      )
+    ][0]{
+      _id,
+      _type,
+      title,
+      subtitle,
+      excerpt,
+      section,
+      category,
+      categories,
+      slug,
+      publishedAt,
+      "createdAt": _createdAt,
+      updatedAt,
+      authorName,
+      authorEmail,
+      tags,
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url),
+      legacyImageUrl,
+      galleryUrls,
+      body
+    }
+  `;
 
   const article = await sanityReadClient.fetch(query, {
     section,
@@ -566,15 +563,18 @@ const query = `
     return { notFound: true };
   }
 
- const suggestedQuery = `
-  *[
-    _type in ["article", "post"] &&
-    _id != $currentId &&
-    (
-      section == $section ||
-      category == $category
-    )
-  ]
+  const suggestedQuery = `
+    *[
+      _type in ["article", "post"] &&
+      _id != $currentId &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
+      (
+        section == $section ||
+        lower(category) == $category ||
+        $category in categories[]
+      )
+    ]
     | order(coalesce(publishedAt, updatedAt, _createdAt) desc)[0...6]{
       _id,
       _type,
@@ -583,10 +583,10 @@ const query = `
       publishedAt,
       "createdAt": _createdAt,
       updatedAt,
-      mainImageUrl,
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url),
       legacyImageUrl
     }
-`;
+  `;
 
   const suggested = await sanityReadClient.fetch(suggestedQuery, {
     section,

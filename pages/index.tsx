@@ -108,26 +108,46 @@ type Streak = {
   h?: string;
 };
 
-/* ---------- Slugs demo para abrir detalle real ---------- */
-const DEMO_AUTOS = [
-  "/noticias/autos/prueba-sedan-turbo-equilibrio-en-pista",
-  "/noticias/autos/aero-activa-20-que-aporta-realmente",
-  "/noticias/autos/ceramicos-vs-acero-frenadas-sin-fading",
-  "/noticias/autos/compuestos-2025-cambios-y-setup-recomendado",
-];
+type HomeNewsItem = {
+  id: string;
+  title: string;
+  excerpt: string;
+  img: string;
+  href: string;
+  sectionLabel: string;
+  typeLabel: string;
+  when: string;
+};
 
-const DEMO_MOTOS = [
-  "/noticias/motos/naked-900-agilidad-y-par",
-  "/noticias/motos/trail-media-electronica-off-road",
-  "/noticias/motos/sport-touring-ergonomia-y-consumo-real",
-];
-
-export default function HomePage({ year }: { year: number }) {
+export default function HomePage({
+  year,
+  featuredMixed = [],
+}: {
+  year: number;
+  featuredMixed: HomeNewsItem[];
+}) {
   const { t } = useTranslation("home");
   const router = useRouter();
   const { locale, pathname, query } = router;
 
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const heroMixed =
+    featuredMixed[0] ??
+    ({
+      id: "fallback-home-mix",
+      title: "Autos & Motos — Destacadas",
+      excerpt:
+        "Las notas más recientes del mundo sobre cuatro y dos ruedas, reunidas en un mismo espacio.",
+      img: "/images/noticia-1.jpg",
+      href: "/noticias/autos",
+      sectionLabel: "Autos/Motos",
+      typeLabel: "Destacada",
+      when: "",
+    } as HomeNewsItem);
+
+  const sidebarMixed =
+    featuredMixed.slice(1, 6).length > 0 ? featuredMixed.slice(1, 6) : [heroMixed];
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -174,7 +194,6 @@ export default function HomePage({ year }: { year: number }) {
       />
 
       <div className="relative min-h-screen overflow-x-hidden text-gray-100">
-        {/* Fondo global animado */}
         <div className="mw-global-bg" aria-hidden>
           <div className="mw-global-base" />
           {streaks.map((s, i) => (
@@ -199,7 +218,6 @@ export default function HomePage({ year }: { year: number }) {
           ))}
         </div>
 
-        {/* Navbar */}
         <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
           <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
             <div className="flex items-center">
@@ -341,7 +359,6 @@ export default function HomePage({ year }: { year: number }) {
           </div>
         </header>
 
-        {/* Panel móvil */}
         {mobileOpen && (
           <div className="fixed inset-0 z-[60] md:hidden">
             <div
@@ -470,9 +487,7 @@ export default function HomePage({ year }: { year: number }) {
           </div>
         )}
 
-        {/* ======= MAIN ======= */}
         <main aria-hidden={mobileOpen} className="relative z-10 pt-16 lg:pt-[72px]">
-          {/* Hero */}
           <section className="relative flex min-h-[72svh] flex-col items-center justify-center overflow-hidden sm:min-h-[78svh] lg:min-h-[84vh]">
             <Image
               src="/images/hero-gti.jpg"
@@ -513,14 +528,12 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </section>
 
-          {/* Leaderboard bajo hero */}
           <section className="py-5 sm:py-6">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <AdSlot kind="leaderboard" />
             </div>
           </section>
 
-          {/* MIXTAS: Autos + Motos */}
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
@@ -534,8 +547,8 @@ export default function HomePage({ year }: { year: number }) {
                 <Card className="overflow-hidden hover:shadow-[0_0_26px_rgba(12,224,178,.2)]">
                   <div className="relative h-[240px] w-full sm:h-[320px] md:h-[380px]">
                     <Image
-                      src="/images/noticia-1.jpg"
-                      alt="Mixta destacada"
+                      src={heroMixed.img}
+                      alt={heroMixed.title}
                       fill
                       sizes="(max-width: 1024px) 100vw, 66vw"
                       style={{ objectFit: "cover" }}
@@ -545,17 +558,16 @@ export default function HomePage({ year }: { year: number }) {
                   <CardContent className="p-5 sm:p-6">
                     <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400 sm:text-xs">
                       <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                      Mixta · Autos/Motos
+                      {heroMixed.sectionLabel} · {heroMixed.typeLabel}
                     </div>
                     <h3 className="text-xl font-semibold text-white sm:text-2xl">
-                      Supra vs. superbikes: adrenalina y tecnología cara a cara
+                      {heroMixed.title}
                     </h3>
                     <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
-                      Un comparativo diferente: tiempos, sensaciones y el encanto de dos mundos
-                      que comparten el mismo lenguaje: velocidad.
+                      {heroMixed.excerpt}
                     </p>
                     <div className="mt-4">
-                      <Link href={DEMO_AUTOS[0]}>
+                      <Link href={heroMixed.href}>
                         <Button variant="link">Leer la nota</Button>
                       </Link>
                     </div>
@@ -568,38 +580,30 @@ export default function HomePage({ year }: { year: number }) {
                       <h4 className="font-semibold text-white">Más para leer</h4>
                     </div>
                     <ul className="divide-y divide-mw-line/60">
-                      {[0, 1, 2, 3, 4].map((i) => {
-                        const isMoto = i % 2 === 1;
-                        const href = isMoto
-                          ? DEMO_MOTOS[i % DEMO_MOTOS.length]
-                          : DEMO_AUTOS[i % DEMO_AUTOS.length];
-
-                        return (
-                          <li key={`mix-list-${i}`} className="p-4 transition hover:bg-white/5">
-                            <Link href={href} className="flex gap-3">
-                              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-mw-line/70">
-                                <Image
-                                  src={`/images/noticia-${((i % 3) + 1).toString()}.jpg`}
-                                  alt={`Mini ${i + 1}`}
-                                  fill
-                                  sizes="100px"
-                                  style={{ objectFit: "cover" }}
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="truncate text-sm text-white">
-                                  {isMoto
-                                    ? "Naked bike con alma sport: setup para calle y trackday"
-                                    : "Proyecto JDM: swap y ajuste fino para el 1/4 de milla"}
-                                </p>
-                                <span className="mt-1 block text-xs text-gray-400">
-                                  {isMoto ? "Motos" : "Autos"} • 4–6 min
-                                </span>
-                              </div>
-                            </Link>
-                          </li>
-                        );
-                      })}
+                      {sidebarMixed.map((item) => (
+                        <li key={item.id} className="p-4 transition hover:bg-white/5">
+                          <Link href={item.href} className="flex gap-3">
+                            <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-mw-line/70">
+                              <Image
+                                src={item.img}
+                                alt={item.title}
+                                fill
+                                sizes="100px"
+                                style={{ objectFit: "cover" }}
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm text-white">
+                                {item.title}
+                              </p>
+                              <span className="mt-1 block text-xs text-gray-400">
+                                {item.sectionLabel}
+                                {item.when ? ` • ${item.when}` : ""}
+                              </span>
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </aside>
@@ -621,7 +625,6 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </section>
 
-          {/* DEPORTES */}
           <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
@@ -675,7 +678,6 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </section>
 
-          {/* LIFESTYLE */}
           <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
@@ -750,14 +752,12 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </section>
 
-          {/* Billboard */}
           <section className="py-8">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <AdSlot kind="billboard" />
             </div>
           </section>
 
-          {/* Comunidad */}
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
               <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
@@ -788,7 +788,6 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </section>
 
-          {/* Productions */}
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
               <h2 className="glow-cool font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
@@ -815,7 +814,6 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </section>
 
-          {/* Partners */}
           <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between">
@@ -836,7 +834,6 @@ export default function HomePage({ year }: { year: number }) {
             </div>
           </section>
 
-          {/* Suscripción */}
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
               <h2 className="font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
@@ -870,7 +867,6 @@ export default function HomePage({ year }: { year: number }) {
           </section>
         </main>
 
-        {/* Footer */}
         <footer
           aria-hidden={mobileOpen}
           className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
@@ -958,7 +954,6 @@ export default function HomePage({ year }: { year: number }) {
         </footer>
       </div>
 
-      {/* Estilos globales del fondo y líneas */}
       <style jsx global>{`
         .mw-global-bg {
           position: fixed;
@@ -1051,12 +1046,93 @@ export default function HomePage({ year }: { year: number }) {
 }
 
 export async function getServerSideProps({ locale }: { locale: string }) {
-  const { serverSideTranslations } = await import("next-i18next/serverSideTranslations");
+  const { sanityReadClient } = await import("../lib/sanityClient");
+  const { serverSideTranslations } = await import(
+    "next-i18next/serverSideTranslations"
+  );
+
+  const query = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
+      (
+        section == "noticias_autos" ||
+        section == "noticias_motos" ||
+        lower(category) == "autos" ||
+        lower(category) == "motos" ||
+        "autos" in categories[] ||
+        "motos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...8]{
+      "id": _id,
+      "title": coalesce(title, ""),
+      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+      "contentType": coalesce(contentType, "noticia"),
+      "section": coalesce(
+        section,
+        select(
+          lower(category) == "autos" => "noticias_autos",
+          lower(category) == "motos" => "noticias_motos",
+          "autos" in categories[] => "noticias_autos",
+          "motos" in categories[] => "noticias_motos",
+          ""
+        )
+      ),
+      "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "slug": slug.current,
+      "publishedAt": publishedAt,
+      "_createdAt": _createdAt
+    }
+  `;
+
+  const raw = await sanityReadClient.fetch(query);
+
+  const sectionLabel = (section: string) => {
+    if (section === "noticias_autos") return "Autos";
+    if (section === "noticias_motos") return "Motos";
+    return "Autos/Motos";
+  };
+
+  const routeForSection = (section: string) => {
+    if (section === "noticias_motos") return "motos";
+    return "autos";
+  };
+
+  const formatWhen = (iso?: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat("es-MX", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    }).format(d);
+  };
+
+  const featuredMixed: HomeNewsItem[] = (raw ?? []).map((it: any) => {
+    const section = String(it?.section || "");
+    const slug = String(it?.slug || "");
+    const route = routeForSection(section);
+
+    return {
+      id: String(it?.id || ""),
+      title: String(it?.title || ""),
+      excerpt: String(it?.excerpt || ""),
+      img: String(it?.img || "/images/noticia-1.jpg"),
+      href: `/noticias/${route}/${slug}`,
+      sectionLabel: sectionLabel(section),
+      typeLabel: String(it?.contentType || "noticia"),
+      when: formatWhen(it?.publishedAt || it?._createdAt),
+    };
+  });
 
   return {
     props: {
       ...(await serverSideTranslations(locale ?? "es", ["home"], nextI18NextConfig)),
       year: new Date().getFullYear(),
+      featuredMixed,
     },
   };
 }

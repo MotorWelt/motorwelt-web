@@ -1,5 +1,5 @@
 // pages/admin/contenido.tsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Seo from "../../components/Seo";
@@ -30,6 +30,35 @@ const Button: React.FC<
     </button>
   );
 };
+
+/* ---------- Helpers auth ---------- */
+function getCookie(name: string) {
+  if (typeof document === "undefined") return null;
+
+  const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  const match = document.cookie.match(
+    new RegExp("(^| )" + escaped + "=([^;]+)")
+  );
+
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === "undefined") return;
+
+  const secure =
+    typeof window !== "undefined" && window.location.protocol === "https:"
+      ? " Secure;"
+      : "";
+
+  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax;${secure}`;
+}
+
+function clearMwCookies() {
+  deleteCookie("mw_role");
+  deleteCookie("mw_name");
+  deleteCookie("mw_email");
+}
 
 /* ---------- Tipos ---------- */
 
@@ -110,6 +139,14 @@ function fmtDateShort(iso?: string) {
   }
 }
 
+function publicPathFromSection(section?: SectionSlug, slug?: string) {
+  if (!section || !slug) return null;
+
+  if (section === "noticias_autos") return `/noticias/autos/${slug}`;
+  if (section === "noticias_motos") return `/noticias/motos/${slug}`;
+  return null;
+}
+
 /* ---------- Tipos para listado y carga ---------- */
 type ContentListItem = {
   id: string;
@@ -121,6 +158,7 @@ type ContentListItem = {
   publishedAt?: string | null;
   authorEmail?: string;
   authorName?: string;
+  slug?: string;
 };
 
 type ContentDocPayload = {
@@ -155,6 +193,24 @@ type ContentDocPayload = {
 
   coverImageAssetId?: string;
   coverImageAssetUrl?: string;
+
+  slug?: string;
+};
+
+type SaveDraftResponse = {
+  ok: true;
+  id: string;
+  created?: boolean;
+  slug?: string;
+};
+
+type UpdateStatusResponse = {
+  ok: true;
+  id: string;
+  status: ContentStatus;
+  updatedAt: string;
+  publishedAt?: string | null;
+  slug?: string;
 };
 
 /* ============================================================================= */
@@ -167,6 +223,7 @@ const AdminContentEditorPage: React.FC = () => {
 
   // ✅ ID real del documento en Sanity
   const [docId, setDocId] = useState<string | null>(null);
+  const [docSlug, setDocSlug] = useState<string | null>(null);
 
   // Campos base
   const [title, setTitle] = useState("");
@@ -192,7 +249,7 @@ const AdminContentEditorPage: React.FC = () => {
   const [uploadingMainImage, setUploadingMainImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // ✅ Upload imágenes para el cuerpo / galería (nuevo)
+  // ✅ Upload imágenes para el cuerpo / galería
   const [uploadingInlineImages, setUploadingInlineImages] = useState(false);
   const [inlineUploadError, setInlineUploadError] = useState<string | null>(
     null
@@ -227,7 +284,6 @@ const AdminContentEditorPage: React.FC = () => {
     const out: { assetId: string; url: string }[] = [];
 
     for (const f of arr) {
-      // eslint-disable-next-line no-await-in-loop
       const up = await uploadImageToSanity(f);
       out.push({ assetId: up.assetId, url: up.url });
     }
@@ -251,7 +307,6 @@ const AdminContentEditorPage: React.FC = () => {
     const next = `${before}${text}${after}`;
     setBody(next);
 
-    // re-colocar cursor
     requestAnimationFrame(() => {
       try {
         el.focus();
@@ -262,7 +317,6 @@ const AdminContentEditorPage: React.FC = () => {
   };
 
   const ensureLineBreakBefore = () => {
-    // ayuda para que los inserts queden bien en markdown
     const el = bodyRef.current;
     if (!el) return "\n";
     const start = el.selectionStart ?? 0;
@@ -284,7 +338,6 @@ const AdminContentEditorPage: React.FC = () => {
     insertAtCursor(`${prefix}${blocks}\n`);
   };
 
-  // ✅ NUEVO: insertar video embebible dentro del body (mismo patrón del front: @[video](url))
   const insertVideoEmbed = (rawUrl: string) => {
     const url = (rawUrl || "").trim();
     if (!url) return;
@@ -301,8 +354,6 @@ const AdminContentEditorPage: React.FC = () => {
     try {
       const uploaded = await uploadManyToSanity(files);
       const urls = uploaded.map((u) => u.url);
-
-      // Inserta en el cuerpo donde está el cursor
       insertMarkdownImages(urls);
     } catch (err: any) {
       setInlineUploadError(err?.message || "No se pudieron subir las imágenes.");
@@ -322,7 +373,6 @@ const AdminContentEditorPage: React.FC = () => {
       const uploaded = await uploadManyToSanity(files);
       const urls = uploaded.map((u) => u.url);
 
-      // agrega al textarea de galería (una por línea)
       setGallery((prev) => {
         const prevTrim = (prev || "").trim();
         const nextChunk = urls.join("\n");
@@ -375,8 +425,13 @@ const AdminContentEditorPage: React.FC = () => {
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
+  const publicUrl = useMemo(() => {
+    return publicPathFromSection(section, docSlug || undefined);
+  }, [section, docSlug]);
+
   const resetEditorForNew = () => {
     setDocId(null);
+    setDocSlug(null);
     setTitle("");
     setSubtitle("");
     setSection("noticias_autos");
@@ -403,6 +458,7 @@ const AdminContentEditorPage: React.FC = () => {
     setAiError(null);
     setSocialCopies(null);
     setSocialError(null);
+    setSavingState("idle");
   };
 
   const fetchMyNotes = async () => {
@@ -428,9 +484,8 @@ const AdminContentEditorPage: React.FC = () => {
 
       const items = (data.items || []) as ContentListItem[];
       setMyNotes(items);
-      console.log("EDITOR ITEMS:", items);
     } catch (err: any) {
-      setMyNotes(items);
+      setMyNotes([]);
       setListError(err?.message || "Error cargando tus notas.");
     } finally {
       setListLoading(false);
@@ -456,8 +511,8 @@ const AdminContentEditorPage: React.FC = () => {
 
       const doc = data.doc as ContentDocPayload;
 
-      // ✅ Rellenamos editor
       setDocId(doc.id);
+      setDocSlug(doc.slug || null);
       setTitle(doc.title || "");
       setSubtitle(doc.subtitle || "");
       setSection((doc.section as SectionSlug) || "noticias_autos");
@@ -472,7 +527,6 @@ const AdminContentEditorPage: React.FC = () => {
       setVideoUrl(doc.videoUrl || "");
       setUseVideoAsHero(Boolean(doc.useVideoAsHero));
 
-      // Medios
       const coverUrl = doc.mainImageUrl || doc.coverImageAssetUrl || "";
       setMainImage(coverUrl);
 
@@ -494,9 +548,13 @@ const AdminContentEditorPage: React.FC = () => {
         setGallery("");
       }
 
-      // Limpieza de estados “de acción”
       setSavingState("idle");
       setSocialCopies(null);
+      setSocialError(null);
+      setAiSeoInsights(null);
+      setUploadError(null);
+      setInlineUploadError(null);
+      setGalleryUploadError(null);
     } catch (err: any) {
       setAiError(err?.message || "No se pudo cargar la nota.");
     } finally {
@@ -504,7 +562,6 @@ const AdminContentEditorPage: React.FC = () => {
     }
   };
 
-  // ✅ Eliminar nota
   const deleteNote = async (id: string) => {
     const ok =
       typeof window === "undefined"
@@ -530,12 +587,10 @@ const AdminContentEditorPage: React.FC = () => {
         throw new Error(data?.error || "No se pudo eliminar la nota.");
       }
 
-      // si borraste la que estás editando, limpiamos editor
       if (docId === id) {
         resetEditorForNew();
       }
 
-      // refrescamos listado
       fetchMyNotes().catch(() => {});
     } catch (err: any) {
       setListError(err?.message || "Error eliminando la nota.");
@@ -544,7 +599,6 @@ const AdminContentEditorPage: React.FC = () => {
     }
   };
 
-  // Carga inicial del listado cuando ya hay usuario
   useEffect(() => {
     if (!authReady) return;
     if (!currentUser) return;
@@ -552,26 +606,74 @@ const AdminContentEditorPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady, currentUser]);
 
+  useEffect(() => {
+    if (!authReady) return;
+    fetchMyNotes().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listStatus]);
+
   /* ---------- Protección de ruta ---------- */
   useEffect(() => {
+    if (!router.isReady) return;
     if (typeof window === "undefined") return;
+
     try {
+      const cRole = getCookie("mw_role");
+      const cEmail = getCookie("mw_email");
+      const cName = getCookie("mw_name");
+
+      if (cRole && cEmail && cName) {
+        const cookieUser = {
+          name: cName,
+          email: cEmail,
+          role: cRole,
+        };
+
+        setCurrentUser(cookieUser);
+        setAuthReady(true);
+
+        try {
+          localStorage.setItem(
+            LOCALSTORAGE_KEY,
+            JSON.stringify({
+              ...cookieUser,
+              loggedAt: new Date().toISOString(),
+            })
+          );
+        } catch {}
+
+        return;
+      }
+
       const stored = localStorage.getItem(LOCALSTORAGE_KEY);
       if (!stored) {
         router.replace("/admin/login");
         return;
       }
+
       const parsed = JSON.parse(stored);
+      if (!parsed?.name || !parsed?.email || !parsed?.role) {
+        localStorage.removeItem(LOCALSTORAGE_KEY);
+        router.replace("/admin/login");
+        return;
+      }
+
       setCurrentUser(parsed);
       setAuthReady(true);
     } catch {
+      try {
+        localStorage.removeItem(LOCALSTORAGE_KEY);
+      } catch {}
       router.replace("/admin/login");
     }
-  }, [router]);
+  }, [router.isReady, router]);
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem(LOCALSTORAGE_KEY);
+      try {
+        localStorage.removeItem(LOCALSTORAGE_KEY);
+      } catch {}
+      clearMwCookies();
       router.push("/admin/login");
     }
   };
@@ -583,14 +685,12 @@ const AdminContentEditorPage: React.FC = () => {
     return text.length > 180 ? text.slice(0, 177) + "…" : text;
   };
 
-  // ✅ ahora devuelve el ID creado
   const saveDraftReal = async (): Promise<string> => {
     setSavingState("saving");
     setAiError(null);
 
     try {
       const payload = {
-        // ✅ IMPORTANTÍSIMO: si ya existe doc, mandamos id para que NO cree otro
         id: docId || undefined,
 
         title,
@@ -619,14 +719,12 @@ const AdminContentEditorPage: React.FC = () => {
 
         updatedAt: new Date().toISOString(),
 
-        // ✅ URLs (modo rápido)
         mainImageUrl: mainImage || undefined,
         galleryUrls: gallery
           .split(/\n|,/)
           .map((s) => s.trim())
           .filter(Boolean),
 
-        // ✅ esto SÍ lo entiende tu save-draft (y no rompe si no existe)
         mainImageAsset: mainImageAsset || undefined,
       };
 
@@ -636,18 +734,20 @@ const AdminContentEditorPage: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as SaveDraftResponse & {
+        error?: string;
+      };
 
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error || "Error desconocido guardando borrador");
       }
 
       setDocId(data.id);
+      if (data.slug) setDocSlug(data.slug);
       setStatus("borrador");
       setSavingState("saved");
       setTimeout(() => setSavingState("idle"), 2000);
 
-      // ✅ refrescamos listado para que aparezca actualizado
       fetchMyNotes().catch(() => {});
 
       return data.id as string;
@@ -667,13 +767,7 @@ const AdminContentEditorPage: React.FC = () => {
 
   const updateStatusReal = async (
     nextStatus: ContentStatus
-  ): Promise<{
-    id: string;
-    status: ContentStatus;
-    updatedAt: string;
-    publishedAt?: string | null;
-  }> => {
-    // ✅ CLAVE: SIEMPRE guardar antes de cambiar status
+  ): Promise<UpdateStatusResponse> => {
     const id = await saveDraftReal();
 
     const res = await fetch("/api/ai/admin/content/update-status", {
@@ -682,21 +776,16 @@ const AdminContentEditorPage: React.FC = () => {
       body: JSON.stringify({ id, status: nextStatus }),
     });
 
-    const data = await res.json();
+    const data = (await res.json()) as UpdateStatusResponse & {
+      error?: string;
+    };
     if (!res.ok || !data?.ok) {
       throw new Error(data?.error || "Error actualizando status");
     }
 
-    return data as {
-      ok: true;
-      id: string;
-      status: ContentStatus;
-      updatedAt: string;
-      publishedAt?: string | null;
-    };
+    return data;
   };
 
-  // ✅ Conectados a Sanity
   const handleSendToReview = async () => {
     setSavingState("saving");
     setAiError(null);
@@ -704,6 +793,7 @@ const AdminContentEditorPage: React.FC = () => {
     try {
       const result = await updateStatusReal("revision");
       setDocId(result.id);
+      if (result.slug) setDocSlug(result.slug);
       setStatus(result.status);
       setSavingState("saved");
       setTimeout(() => setSavingState("idle"), 1500);
@@ -725,18 +815,13 @@ const AdminContentEditorPage: React.FC = () => {
 
     try {
       const result = await updateStatusReal("publicado");
+      void result;
 
-      // ✅ refrescamos listado para que ya aparezca en publicado
       fetchMyNotes().catch(() => {});
-
-      // ✅ limpieza del editor para arrancar una nueva (lo que pediste)
       resetEditorForNew();
 
-      // ✅ micro feedback visual
       setSavingState("saved");
       setTimeout(() => setSavingState("idle"), 1500);
-
-      void result;
     } catch (err: any) {
       console.error(err);
       setSavingState("idle");
@@ -1001,7 +1086,6 @@ const AdminContentEditorPage: React.FC = () => {
 
       <main className="min-h-screen bg-mw-surface/95 pt-20 pb-16">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          {/* Encabezado + breadcrumb */}
           <section className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <nav
@@ -1063,7 +1147,6 @@ const AdminContentEditorPage: React.FC = () => {
             </div>
           </section>
 
-          {/* Barra de estado / acciones rápidas */}
           <section className="mb-6 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-1">
@@ -1152,6 +1235,14 @@ const AdminContentEditorPage: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 justify-start md:justify-end">
+              {publicUrl && status === "publicado" && (
+                <Link href={publicUrl} target="_blank" rel="noreferrer">
+                  <Button variant="ghost" type="button" className="text-xs">
+                    Ver nota pública
+                  </Button>
+                </Link>
+              )}
+
               <Button
                 variant="ghost"
                 type="button"
@@ -1185,11 +1276,8 @@ const AdminContentEditorPage: React.FC = () => {
             </div>
           </section>
 
-          {/* Layout principal del editor */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2.1fr_1.4fr]">
-            {/* Columna izquierda */}
             <section className="space-y-6">
-              {/* Metadatos básicos */}
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
                 <h2 className="text-lg font-semibold text-white">
                   Metadatos de la nota
@@ -1296,7 +1384,6 @@ const AdminContentEditorPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Cuerpo del contenido */}
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -1323,7 +1410,6 @@ const AdminContentEditorPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ✅ Botonera para H2/H3/H4/H5 + insertar imagen + insertar video */}
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
@@ -1364,7 +1450,6 @@ const AdminContentEditorPage: React.FC = () => {
 
                   <span className="mx-1 h-5 w-px bg-white/10" />
 
-                  {/* botón para abrir picker y meter imagen donde esté el cursor */}
                   <input
                     ref={inlineImagesInputRef}
                     type="file"
@@ -1379,12 +1464,11 @@ const AdminContentEditorPage: React.FC = () => {
                     className="text-[11px] px-3 py-1.5"
                     onClick={() => inlineImagesInputRef.current?.click()}
                     disabled={uploadingInlineImages}
-                    title='Subir imágenes e insertarlas en el texto (donde esté el cursor)'
+                    title="Subir imágenes e insertarlas en el texto (donde esté el cursor)"
                   >
                     {uploadingInlineImages ? "Subiendo…" : "Imagen"}
                   </Button>
 
-                  {/* ✅ NUEVO: insertar video en el body */}
                   <Button
                     type="button"
                     variant="ghost"
@@ -1397,7 +1481,7 @@ const AdminContentEditorPage: React.FC = () => {
                       if (!url) return;
                       insertVideoEmbed(url);
                     }}
-                    title='Insertar video en el texto: @[video](url)'
+                    title="Insertar video en el texto: @[video](url)"
                   >
                     Video
                   </Button>
@@ -1436,7 +1520,6 @@ const AdminContentEditorPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* ✅ Mis notas (se queda aquí como ya lo dejaron) */}
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -1501,7 +1584,7 @@ const AdminContentEditorPage: React.FC = () => {
                   <p className="text-[11px] text-gray-500">
                     Tip: cambia filtros y dale a{" "}
                     <span className="text-gray-300 font-semibold">
-                      Refrescar
+                      Aplicar filtros
                     </span>
                     .
                   </p>
@@ -1542,9 +1625,6 @@ const AdminContentEditorPage: React.FC = () => {
 
                         const date = it.publishedAt || it.updatedAt;
 
-                        const isBusy =
-                          loadingDocId === it.id || deletingDocId === it.id;
-
                         return (
                           <div
                             key={it.id}
@@ -1582,7 +1662,6 @@ const AdminContentEditorPage: React.FC = () => {
                                 </p>
                               </div>
 
-                              {/* ✅ Botones: Editar + Eliminar */}
                               <div className="shrink-0 flex flex-col gap-2">
                                 <Button
                                   type="button"
@@ -1634,14 +1713,11 @@ const AdminContentEditorPage: React.FC = () => {
               </div>
             </section>
 
-            {/* Columna derecha: medios + SEO + copys */}
             <section className="space-y-6">
-              {/* Medios */}
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
                 <h2 className="text-lg font-semibold text-white">Medios</h2>
 
                 <div className="space-y-3">
-                  {/* ✅ Imagen principal (uploader real) */}
                   <div className="space-y-1">
                     <label className="text-xs text-gray-300">
                       Imagen principal
@@ -1684,7 +1760,6 @@ const AdminContentEditorPage: React.FC = () => {
                         <p className="text-[11px] text-gray-400 mb-2">
                           Subida OK:
                         </p>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={mainImageAsset.url}
                           alt="Preview"
@@ -1701,7 +1776,6 @@ const AdminContentEditorPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* ✅ Nuevo: subir imágenes para intercalar en el cuerpo (tipo FB) */}
                   <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2">
                     <p className="text-xs font-semibold text-white">
                       Imágenes para el cuerpo (intercaladas)
@@ -1735,7 +1809,6 @@ const AdminContentEditorPage: React.FC = () => {
                       Galería (una URL por línea o separadas por comas)
                     </label>
 
-                    {/* ✅ Nuevo: subir galería final sin pegar links */}
                     <div className="flex flex-col gap-2">
                       <input
                         type="file"
@@ -1792,7 +1865,6 @@ const AdminContentEditorPage: React.FC = () => {
                       </label>
                     </div>
 
-                    {/* ✅ NUEVO: recordatorio de cómo insertar video dentro del cuerpo */}
                     <p className="mt-2 text-[10px] text-gray-500">
                       Para meter un video dentro del texto usa el botón{" "}
                       <span className="text-gray-300 font-semibold">Video</span>{" "}
@@ -1806,7 +1878,6 @@ const AdminContentEditorPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* SEO */}
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold text-white">SEO</h2>
@@ -1929,7 +2000,6 @@ const AdminContentEditorPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Copys para redes (IA) */}
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
                 <div className="flex flex-col gap-3">
                   <div>
