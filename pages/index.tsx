@@ -1,5 +1,4 @@
-// pages/index.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslation } from "next-i18next";
@@ -9,7 +8,6 @@ import ProfileButton from "../components/ProfileButton";
 
 const nextI18NextConfig = require("../next-i18next.config.js");
 
-/** ---------- Botón con variantes NEÓN DE CONTORNO ---------- **/
 type ButtonVariant = "cyan" | "pink" | "link";
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   className?: string;
@@ -56,46 +54,7 @@ const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({
 const CardContent: React.FC<{
   className?: string;
   children: React.ReactNode;
-}> = ({ className = "", children }) => (
-  <div className={`p-5 ${className}`}>{children}</div>
-);
-
-/** ---------- Bloques de Publicidad (placeholders) ---------- **/
-type AdKind = "leaderboard" | "mpu" | "billboard";
-
-const AdSlot: React.FC<{ kind: AdKind; className?: string; label?: string }> = ({
-  kind,
-  className = "",
-  label,
-}) => {
-  const base =
-    "relative flex items-center justify-center rounded-2xl border border-mw-line/70 bg-mw-surface/70 text-center text-gray-400";
-
-  const sizes: Record<AdKind, string> = {
-    leaderboard: "h-20 sm:h-24 w-full",
-    billboard: "h-32 sm:h-44 w-full",
-    mpu: "w-full h-[250px] md:h-[336px]",
-  };
-
-  const txt: Record<AdKind, string> = {
-    leaderboard: "Publicidad — Leaderboard (728×90 / 970×250)",
-    billboard: "Publicidad — Billboard (970×250 / 970×90)",
-    mpu: "Publicidad — MPU (300×250 / 300×600)",
-  };
-
-  return (
-    <div
-      className={`${base} ${sizes[kind]} ${className}`}
-      aria-label={label || txt[kind]}
-    >
-      <span className="px-4 text-[11px] sm:text-xs md:text-sm">
-        {label || txt[kind]}
-      </span>
-      <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[0_0_24px_rgba(12,224,178,.15)]" />
-    </div>
-  );
-};
-/** ------------------------------------------- **/
+}> = ({ className = "", children }) => <div className={`p-5 ${className}`}>{children}</div>;
 
 type Streak = {
   top: string;
@@ -119,35 +78,275 @@ type HomeNewsItem = {
   when: string;
 };
 
+type PartnerLogo = {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  href?: string;
+};
+
+type AdKind = "leaderboard" | "mpu" | "billboard";
+
+type AdConfig = {
+  enabled: boolean;
+  label: string;
+  imageUrl: string;
+  href: string;
+};
+
+type HomeSettings = {
+  heroImageUrl: string;
+  ads: {
+    leaderboard: AdConfig;
+    mpu: AdConfig;
+    billboard: AdConfig;
+  };
+  partnerLogos: PartnerLogo[];
+};
+
+const DEFAULT_HOME_SETTINGS: HomeSettings = {
+  heroImageUrl: "/images/hero-gti.jpg",
+  ads: {
+    leaderboard: {
+      enabled: true,
+      label: "Publicidad — Leaderboard (728×90 / 970×250)",
+      imageUrl: "",
+      href: "",
+    },
+    mpu: {
+      enabled: true,
+      label: "Publicidad — MPU (300×250 / 300×600)",
+      imageUrl: "",
+      href: "",
+    },
+    billboard: {
+      enabled: true,
+      label: "Publicidad — Billboard (970×250 / 970×90)",
+      imageUrl: "",
+      href: "",
+    },
+  },
+  partnerLogos: [],
+};
+
+function fallbackItem(
+  id: string,
+  title: string,
+  excerpt: string,
+  img: string,
+  href: string,
+  sectionLabel: string,
+  typeLabel = "Destacada"
+): HomeNewsItem {
+  return {
+    id,
+    title,
+    excerpt,
+    img,
+    href,
+    sectionLabel,
+    typeLabel,
+    when: "",
+  };
+}
+
+async function uploadImageToSanity(file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch("/api/ai/admin/content/upload-image", {
+    method: "POST",
+    body: fd,
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data?.ok) {
+    throw new Error(data?.error || "Upload failed");
+  }
+
+  return data as { ok: true; assetId: string; url: string };
+}
+
+function sectionLabel(section: string) {
+  if (section === "noticias_autos") return "Autos";
+  if (section === "noticias_motos") return "Motos";
+  if (section === "deportes") return "Deportes";
+  if (section === "lifestyle") return "Lifestyle";
+  if (section === "tuning") return "Tuning";
+  return "MotorWelt";
+}
+
+function readCookie(name: string) {
+  if (typeof document === "undefined") return "";
+
+  const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+  const match = document.cookie.match(
+    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
+  );
+
+  return match ? decodeURIComponent(match[2]) : "";
+}
+
 export default function HomePage({
   year,
   featuredMixed = [],
+  sportsItems = [],
+  lifestyleItems = [],
+  tuningItems = [],
+  initialHomeSettings,
 }: {
   year: number;
   featuredMixed: HomeNewsItem[];
+  sportsItems: HomeNewsItem[];
+  lifestyleItems: HomeNewsItem[];
+  tuningItems: HomeNewsItem[];
+  initialHomeSettings?: HomeSettings;
 }) {
   const { t } = useTranslation("home");
   const router = useRouter();
-  const { locale, pathname, query } = router;
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [canEditHome, setCanEditHome] = useState(false);
+const [homeSettings, setHomeSettings] = useState<HomeSettings>(
+  initialHomeSettings ?? DEFAULT_HOME_SETTINGS
+);
+  const [savingHome, setSavingHome] = useState(false);
+  const [homeError, setHomeError] = useState<string | null>(null);
+
+  const heroInputRef = useRef<HTMLInputElement | null>(null);
+  const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
+  const mpuInputRef = useRef<HTMLInputElement | null>(null);
+  const billboardInputRef = useRef<HTMLInputElement | null>(null);
+  const partnerInputRef = useRef<HTMLInputElement | null>(null);
 
   const heroMixed =
     featuredMixed[0] ??
-    ({
-      id: "fallback-home-mix",
-      title: "Autos & Motos — Destacadas",
-      excerpt:
-        "Las notas más recientes del mundo sobre cuatro y dos ruedas, reunidas en un mismo espacio.",
-      img: "/images/noticia-1.jpg",
-      href: "/noticias/autos",
-      sectionLabel: "Autos/Motos",
-      typeLabel: "Destacada",
-      when: "",
-    } as HomeNewsItem);
+    fallbackItem(
+      "fallback-home-mix",
+      "Autos & Motos — Destacadas",
+      "Las notas más recientes del mundo sobre cuatro y dos ruedas, reunidas en un mismo espacio.",
+      "/images/noticia-1.jpg",
+      "/noticias/autos",
+      "Autos/Motos"
+    );
 
   const sidebarMixed =
     featuredMixed.slice(1, 6).length > 0 ? featuredMixed.slice(1, 6) : [heroMixed];
+
+  const safeSports =
+    sportsItems.length > 0
+      ? sportsItems.slice(0, 3)
+      : [
+          fallbackItem(
+            "fallback-sport-1",
+            "Deportes MotorWelt",
+            "Cobertura de rally, pista y motorsport.",
+            "/images/noticia-1.jpg",
+            "/deportes",
+            "Deportes",
+            "noticia"
+          ),
+          fallbackItem(
+            "fallback-sport-2",
+            "Más del mundo deportivo",
+            "Historias, técnica y adrenalina.",
+            "/images/noticia-2.jpg",
+            "/deportes",
+            "Deportes",
+            "noticia"
+          ),
+          fallbackItem(
+            "fallback-sport-3",
+            "Competición y cultura",
+            "Lo mejor de la acción dentro y fuera de la pista.",
+            "/images/noticia-3.jpg",
+            "/deportes",
+            "Deportes",
+            "noticia"
+          ),
+        ];
+
+  const heroLifestyle =
+    lifestyleItems[0] ??
+    fallbackItem(
+      "fallback-life-hero",
+      "Lifestyle — Cultura & Garaje",
+      "Historias de estilo, cultura y pasión alrededor del mundo automotriz y motociclista.",
+      "/images/noticia-3.jpg",
+      "/lifestyle",
+      "Lifestyle"
+    );
+
+  const sideLifestyle =
+    lifestyleItems.slice(1, 4).length > 0
+      ? lifestyleItems.slice(1, 4)
+      : [
+          fallbackItem(
+            "fallback-life-1",
+            "Cultura MotorWelt",
+            "Diseño, accesorios y el lenguaje visual que rodea esta escena.",
+            "/images/noticia-1.jpg",
+            "/lifestyle",
+            "Lifestyle"
+          ),
+          fallbackItem(
+            "fallback-life-2",
+            "Estilo y detalle",
+            "Pequeños elementos que elevan el carácter de cualquier proyecto.",
+            "/images/noticia-2.jpg",
+            "/lifestyle",
+            "Lifestyle"
+          ),
+          fallbackItem(
+            "fallback-life-3",
+            "Garage culture",
+            "Donde conviven la estética, la comunidad y la obsesión por el detalle.",
+            "/images/noticia-3.jpg",
+            "/lifestyle",
+            "Lifestyle"
+          ),
+        ];
+
+  const heroTuning =
+    tuningItems[0] ??
+    fallbackItem(
+      "fallback-tuning-hero",
+      "Tuning — Builds, mods y cultura",
+      "La parte más visual, aspiracional y obsesiva del mundo automotriz: proyectos, preparación, estética y carácter.",
+      "/images/noticia-2.jpg",
+      "/tuning",
+      "Tuning"
+    );
+
+  const sideTuning =
+    tuningItems.slice(1, 4).length > 0
+      ? tuningItems.slice(1, 4)
+      : [
+          fallbackItem(
+            "fallback-tuning-1",
+            "Builds con identidad",
+            "Proyectos que mezclan performance, estética y personalidad.",
+            "/images/noticia-1.jpg",
+            "/tuning",
+            "Tuning"
+          ),
+          fallbackItem(
+            "fallback-tuning-2",
+            "Mods que sí cambian el juego",
+            "Desde ruedas y suspensión hasta aero, interiores y detalle fino.",
+            "/images/noticia-2.jpg",
+            "/tuning",
+            "Tuning"
+          ),
+          fallbackItem(
+            "fallback-tuning-3",
+            "Cultura de garage",
+            "El lado más calle, más visual y más adictivo del universo MotorWelt.",
+            "/images/noticia-3.jpg",
+            "/tuning",
+            "Tuning"
+          ),
+        ];
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -160,37 +359,383 @@ export default function HomePage({
     setMobileOpen(false);
   }, [router.asPath]);
 
-  const streaks: Streak[] = [
-    { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
-    { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
-    { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
-    { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
-    { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
-    { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
-    { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
-    { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
-    { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
-    { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
-    { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
-    { top: "6%", left: "-38%", v: "cool", dir: "rev", delay: "0.6s", dur: "14s", op: 0.55, h: "1px" },
-    { top: "18%", left: "-33%", v: "warm", dir: "fwd", delay: "1.2s", dur: "12.8s", op: 0.55, h: "1px" },
-    { top: "22%", left: "-27%", v: "lime", dir: "rev", delay: "1.8s", dur: "10.8s", op: 0.5, h: "1px" },
-    { top: "34%", left: "-31%", v: "cool", dir: "fwd", delay: "2.4s", dur: "13.6s", op: 0.58, h: "1px" },
-    { top: "42%", left: "-36%", v: "warm", dir: "rev", delay: "3.0s", dur: "12.2s", op: 0.52, h: "1px" },
-    { top: "58%", left: "-21%", v: "lime", dir: "fwd", delay: "3.6s", dur: "11.8s", op: 0.5, h: "1px" },
-    { top: "66%", left: "-29%", v: "cool", dir: "rev", delay: "4.2s", dur: "14.4s", op: 0.55, h: "1px" },
-    { top: "74%", left: "-19%", v: "warm", dir: "fwd", delay: "4.8s", dur: "12.6s", op: 0.5, h: "1px" },
-    { top: "90%", left: "-25%", v: "lime", dir: "rev", delay: "5.4s", dur: "13.8s", op: 0.52, h: "1px" },
-    { top: "14%", left: "-32%", v: "cool", dir: "fwd", delay: ".2s", dur: "11.4s", op: 0.92, h: "3px" },
-    { top: "48%", left: "-35%", v: "warm", dir: "rev", delay: "2.9s", dur: "10.6s", op: 0.88, h: "3px" },
-    { top: "82%", left: "-28%", v: "lime", dir: "fwd", delay: "5.3s", dur: "12.4s", op: 0.86, h: "3px" },
-  ];
+useEffect(() => {
+  let role = readCookie("mw_role");
+
+  if (!role && typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("mw_admin_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        role = parsed?.role || "";
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  console.log("HOME ROLE DETECTED:", role);
+  setCanEditHome(["admin", "editor"].includes(role));
+}, []);
+
+  const streaks: Streak[] = useMemo(
+    () => [
+      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
+      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
+      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
+      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
+      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
+      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
+      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
+      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
+      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
+      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
+      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
+      { top: "6%", left: "-38%", v: "cool", dir: "rev", delay: "0.6s", dur: "14s", op: 0.55, h: "1px" },
+      { top: "18%", left: "-33%", v: "warm", dir: "fwd", delay: "1.2s", dur: "12.8s", op: 0.55, h: "1px" },
+      { top: "22%", left: "-27%", v: "lime", dir: "rev", delay: "1.8s", dur: "10.8s", op: 0.5, h: "1px" },
+      { top: "34%", left: "-31%", v: "cool", dir: "fwd", delay: "2.4s", dur: "13.6s", op: 0.58, h: "1px" },
+      { top: "42%", left: "-36%", v: "warm", dir: "rev", delay: "3.0s", dur: "12.2s", op: 0.52, h: "1px" },
+      { top: "58%", left: "-21%", v: "lime", dir: "fwd", delay: "3.6s", dur: "11.8s", op: 0.5, h: "1px" },
+      { top: "66%", left: "-29%", v: "cool", dir: "rev", delay: "4.2s", dur: "14.4s", op: 0.55, h: "1px" },
+      { top: "74%", left: "-19%", v: "warm", dir: "fwd", delay: "4.8s", dur: "12.6s", op: 0.5, h: "1px" },
+      { top: "90%", left: "-25%", v: "lime", dir: "rev", delay: "5.4s", dur: "13.8s", op: 0.52, h: "1px" },
+      { top: "14%", left: "-32%", v: "cool", dir: "fwd", delay: ".2s", dur: "11.4s", op: 0.92, h: "3px" },
+      { top: "48%", left: "-35%", v: "warm", dir: "rev", delay: "2.9s", dur: "10.6s", op: 0.88, h: "3px" },
+      { top: "82%", left: "-28%", v: "lime", dir: "fwd", delay: "5.3s", dur: "12.4s", op: 0.86, h: "3px" },
+    ],
+    []
+  );
+
+async function persistHomeSettings(nextSettings: HomeSettings) {
+  setSavingHome(true);
+  setHomeError(null);
+
+  try {
+    let role = readCookie("mw_role");
+    let email = readCookie("mw_email");
+    let name = readCookie("mw_name");
+
+    if ((!role || !email || !name) && typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("mw_admin_user");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          role = role || parsed?.role || "";
+          email = email || parsed?.email || "";
+          name = name || parsed?.name || "";
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const res = await fetch("/api/ai/admin/home/save", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "x-mw-role": role || "",
+        "x-mw-email": email || "",
+        "x-mw-name": name || "",
+      },
+      body: JSON.stringify({ settings: nextSettings }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "No se pudo guardar.");
+    }
+
+    setHomeSettings(nextSettings);
+  } catch (err: any) {
+    setHomeError(err?.message || "No se pudo guardar Home Settings.");
+  } finally {
+    setSavingHome(false);
+  }
+}
+
+  async function handleHeroImagePick(files?: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+
+    try {
+      const uploaded = await uploadImageToSanity(file);
+      const next = {
+        ...homeSettings,
+        heroImageUrl: uploaded.url,
+      };
+      await persistHomeSettings(next);
+    } catch (err: any) {
+      setHomeError(err?.message || "No se pudo subir la portada.");
+    }
+  }
+
+  async function handleAdImagePick(kind: AdKind, files?: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+
+    try {
+      const uploaded = await uploadImageToSanity(file);
+      const next = {
+        ...homeSettings,
+        ads: {
+          ...homeSettings.ads,
+          [kind]: {
+            ...homeSettings.ads[kind],
+            imageUrl: uploaded.url,
+          },
+        },
+      };
+      await persistHomeSettings(next);
+    } catch (err: any) {
+      setHomeError(err?.message || "No se pudo subir el anuncio.");
+    }
+  }
+
+  async function handleAddPartner(files?: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+
+    try {
+      const uploaded = await uploadImageToSanity(file);
+      const name =
+        typeof window !== "undefined"
+          ? window.prompt("Nombre del partner:", "Nuevo partner") || "Nuevo partner"
+          : "Nuevo partner";
+
+      const href =
+        typeof window !== "undefined"
+          ? window.prompt("Link del partner (opcional):", "") || ""
+          : "";
+
+      const next = {
+        ...homeSettings,
+        partnerLogos: [
+          ...homeSettings.partnerLogos,
+          {
+            id: `partner-${Date.now()}`,
+            name,
+            logoUrl: uploaded.url,
+            href,
+          },
+        ],
+      };
+
+      await persistHomeSettings(next);
+    } catch (err: any) {
+      setHomeError(err?.message || "No se pudo agregar el partner.");
+    }
+  }
+
+  async function toggleAd(kind: AdKind) {
+    const next = {
+      ...homeSettings,
+      ads: {
+        ...homeSettings.ads,
+        [kind]: {
+          ...homeSettings.ads[kind],
+          enabled: !homeSettings.ads[kind].enabled,
+        },
+      },
+    };
+
+    await persistHomeSettings(next);
+  }
+
+  async function editAdLink(kind: AdKind) {
+    if (typeof window === "undefined") return;
+    const current = homeSettings.ads[kind].href || "";
+    const href = window.prompt("Pega el link del anuncio:", current);
+    if (href === null) return;
+
+    const next = {
+      ...homeSettings,
+      ads: {
+        ...homeSettings.ads,
+        [kind]: {
+          ...homeSettings.ads[kind],
+          href: href.trim(),
+        },
+      },
+    };
+
+    await persistHomeSettings(next);
+  }
+
+  async function clearAdImage(kind: AdKind) {
+    const next = {
+      ...homeSettings,
+      ads: {
+        ...homeSettings.ads,
+        [kind]: {
+          ...homeSettings.ads[kind],
+          imageUrl: "",
+        },
+      },
+    };
+    await persistHomeSettings(next);
+  }
+
+  async function editPartnerLink(id: string) {
+    if (typeof window === "undefined") return;
+    const item = homeSettings.partnerLogos.find((p) => p.id === id);
+    if (!item) return;
+
+    const href = window.prompt("Pega el link del partner:", item.href || "");
+    if (href === null) return;
+
+    const next = {
+      ...homeSettings,
+      partnerLogos: homeSettings.partnerLogos.map((p) =>
+        p.id === id ? { ...p, href: href.trim() } : p
+      ),
+    };
+
+    await persistHomeSettings(next);
+  }
+
+  async function removePartner(id: string) {
+    const next = {
+      ...homeSettings,
+      partnerLogos: homeSettings.partnerLogos.filter((p) => p.id !== id),
+    };
+    await persistHomeSettings(next);
+  }
+
+  function renderEditableAd(kind: AdKind, className = "") {
+    const ad = homeSettings.ads[kind];
+
+    if (!ad.enabled && !canEditHome) return null;
+
+    const inputRef =
+      kind === "leaderboard"
+        ? leaderboardInputRef
+        : kind === "mpu"
+        ? mpuInputRef
+        : billboardInputRef;
+
+    const baseHeights: Record<AdKind, string> = {
+      leaderboard: "h-20 sm:h-24",
+      billboard: "h-32 sm:h-44",
+      mpu: "h-[250px] md:h-[336px]",
+    };
+
+    const wrapClass =
+      kind === "mpu"
+        ? `relative w-full ${baseHeights[kind]} rounded-2xl border border-mw-line/70 bg-mw-surface/70 overflow-hidden ${className}`
+        : `relative w-full ${baseHeights[kind]} rounded-2xl border border-mw-line/70 bg-mw-surface/70 overflow-hidden ${className}`;
+
+    return (
+      <div className={wrapClass}>
+        {ad.enabled ? (
+          ad.imageUrl ? (
+            ad.href ? (
+              <a
+                href={ad.href}
+                target="_blank"
+                rel="noreferrer"
+                className="block h-full w-full"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={ad.imageUrl}
+                  alt={ad.label || kind}
+                  className="h-full w-full object-cover"
+                />
+              </a>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={ad.imageUrl}
+                alt={ad.label || kind}
+                className="h-full w-full object-cover"
+              />
+            )
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
+              <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+                {ad.label}
+              </span>
+            </div>
+          )
+        ) : (
+          canEditHome && (
+            <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
+              <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+                {ad.label} · oculto
+              </span>
+            </div>
+          )
+        )}
+
+        {canEditHome && (
+          <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => toggleAd(kind)}
+              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            >
+              {ad.enabled ? "Ocultar" : "Mostrar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            >
+              Imagen
+            </button>
+            <button
+              type="button"
+              onClick={() => editAdLink(kind)}
+              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            >
+              Link
+            </button>
+            <button
+              type="button"
+              onClick={() => clearAdImage(kind)}
+              className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
+            >
+              Limpiar
+            </button>
+          </div>
+        )}
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleAdImagePick(kind, e.target.files)}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
-      <Seo
-        title={`MotorWelt — ${t("hero.title")}`}
-        description={t("hero.subtitle")}
+    <Seo
+  title={`MotorWelt — ${t("hero.title")}`}
+  description={t("hero.subtitle")}
+  image={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
+/>
+
+      <input
+        ref={heroInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleHeroImagePick(e.target.files)}
+      />
+
+      <input
+        ref={partnerInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleAddPartner(e.target.files)}
       />
 
       <div className="relative min-h-screen overflow-x-hidden text-gray-100">
@@ -217,6 +762,17 @@ export default function HomePage({
             </div>
           ))}
         </div>
+
+        {canEditHome && (
+          <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-2 text-xs text-white backdrop-blur">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
+              <span>Modo edición home</span>
+              {savingHome && <span className="text-[#0CE0B2]">Guardando…</span>}
+            </div>
+            {homeError && <div className="mt-1 text-red-300">{homeError}</div>}
+          </div>
+        )}
 
         <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
           <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
@@ -282,6 +838,12 @@ export default function HomePage({
               </div>
 
               <Link
+                href="/tuning"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
+                Tuning
+              </Link>
+              <Link
                 href="/deportes"
                 className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
               >
@@ -299,44 +861,11 @@ export default function HomePage({
               >
                 {t("nav.community")}
               </Link>
-              <Link
-                href="/producciones"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
-                {t("nav.productions")}
-              </Link>
-              <Link href="/suscripcion" className="inline-flex">
-                <Button variant="pink" className="h-10 px-4 py-0 leading-none">
-                  {t("nav.subscribe")}
-                </Button>
-              </Link>
             </nav>
 
             <div className="flex items-center justify-end gap-2 sm:gap-3">
               <div className="hidden sm:block">
                 <ProfileButton />
-              </div>
-
-              <div className="hidden items-center gap-3 text-sm md:flex">
-                <Link
-                  href={{ pathname, query }}
-                  locale="es"
-                  className={`inline-flex h-10 items-center leading-none hover:text-white ${
-                    locale === "es" ? "text-white" : "text-gray-300"
-                  }`}
-                >
-                  ES
-                </Link>
-                <span className="text-gray-500">|</span>
-                <Link
-                  href={{ pathname, query }}
-                  locale="en"
-                  className={`inline-flex h-10 items-center leading-none hover:text-white ${
-                    locale === "en" ? "text-white" : "text-gray-300"
-                  }`}
-                >
-                  EN
-                </Link>
               </div>
 
               <button
@@ -422,6 +951,13 @@ export default function HomePage({
                 </div>
 
                 <Link
+                  href="/tuning"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Tuning
+                </Link>
+                <Link
                   href="/deportes"
                   className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
                   onClick={() => setMobileOpen(false)}
@@ -442,46 +978,6 @@ export default function HomePage({
                 >
                   {t("nav.community")}
                 </Link>
-                <Link
-                  href="/producciones"
-                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {t("nav.productions")}
-                </Link>
-
-                <div className="mt-4">
-                  <Link href="/suscripcion" onClick={() => setMobileOpen(false)}>
-                    <Button variant="pink" className="w-full py-3 text-base">
-                      {t("nav.subscribe")}
-                    </Button>
-                  </Link>
-                </div>
-
-                <div className="mt-6 border-t border-mw-line/60 pt-4">
-                  <p className="mb-2 text-xs uppercase tracking-wide text-gray-400">
-                    Idioma
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href={{ pathname, query }}
-                      locale="es"
-                      onClick={() => setMobileOpen(false)}
-                      className={`${locale === "es" ? "text-white" : "text-gray-300"} hover:text-white`}
-                    >
-                      ES
-                    </Link>
-                    <span className="text-gray-500">|</span>
-                    <Link
-                      href={{ pathname, query }}
-                      locale="en"
-                      onClick={() => setMobileOpen(false)}
-                      className={`${locale === "en" ? "text-white" : "text-gray-300"} hover:text-white`}
-                    >
-                      EN
-                    </Link>
-                  </div>
-                </div>
               </nav>
             </aside>
           </div>
@@ -489,14 +985,25 @@ export default function HomePage({
 
         <main aria-hidden={mobileOpen} className="relative z-10 pt-16 lg:pt-[72px]">
           <section className="relative flex min-h-[72svh] flex-col items-center justify-center overflow-hidden sm:min-h-[78svh] lg:min-h-[84vh]">
-            <Image
-              src="/images/hero-gti.jpg"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+           <img
+  src={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
               alt="Hero MotorWelt"
-              fill
-              priority
-              sizes="100vw"
-              style={{ objectFit: "cover", filter: "brightness(.45) saturate(1.1)" }}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ filter: "brightness(.45) saturate(1.1)" }}
             />
+
+            {canEditHome && (
+              <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => heroInputRef.current?.click()}
+                  className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                >
+                  Cambiar portada
+                </button>
+              </div>
+            )}
 
             <div className="pointer-events-none absolute -left-10 -top-10 h-64 w-64 rotate-[-20deg] rounded-full bg-[#0CE0B2]/18 blur-3xl sm:h-80 sm:w-80" />
             <div className="pointer-events-none absolute -bottom-16 -right-16 h-72 w-72 rotate-[-20deg] rounded-full bg-[#FF7A1A]/20 blur-3xl sm:h-96 sm:w-96" />
@@ -518,9 +1025,9 @@ export default function HomePage({
                       {t("hero.ctaNews")}
                     </Button>
                   </Link>
-                  <Link href="/comunidad" className="w-full sm:w-auto">
+                  <Link href="/tuning" className="w-full sm:w-auto">
                     <Button variant="pink" className="w-full sm:w-auto">
-                      {t("hero.ctaCommunity")}
+                      Tuning
                     </Button>
                   </Link>
                 </div>
@@ -530,7 +1037,7 @@ export default function HomePage({
 
           <section className="py-5 sm:py-6">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <AdSlot kind="leaderboard" />
+              {renderEditableAd("leaderboard")}
             </div>
           </section>
 
@@ -629,32 +1136,110 @@ export default function HomePage({
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+                  Tuning — Builds & Culture
+                </h2>
+                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]" />
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card className="overflow-hidden">
+                  <div className="relative h-52 w-full sm:h-56">
+                    <Image
+                      src={heroTuning.img}
+                      alt={heroTuning.title}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </div>
+                  <CardContent className="p-5 sm:p-6">
+                    <div className="text-xs text-gray-400">{heroTuning.when}</div>
+                    <h3 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+                      {heroTuning.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
+                      {heroTuning.excerpt}
+                    </p>
+                    <div className="mt-4">
+                      <Link href={heroTuning.href}>
+                        <Button variant="link">Leer artículo</Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-6">
+                  {sideTuning.map((item) => (
+                    <Card key={item.id} className="overflow-hidden">
+                      <div className="relative h-36 w-full">
+                        <Image
+                          src={item.img}
+                          alt={item.title}
+                          fill
+                          sizes="(max-width: 1024px) 100vw, 50vw"
+                          style={{ objectFit: "cover" }}
+                        />
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="text-xs text-gray-400">{item.when}</div>
+                        <h4 className="mt-1 font-semibold text-white">{item.title}</h4>
+                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
+                          {item.excerpt}
+                        </p>
+                        <Link href={item.href} className="inline-block">
+                          <Button variant="link" className="mt-1">
+                            Leer más
+                          </Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 text-center">
+                <Link href="/tuning">
+                  <Button variant="pink" className="px-6 py-3">
+                    Ver más Tuning
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          <section className="py-10 sm:py-12">
+            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+              <div className="mb-8">
+                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                   Deportes — Destacados
                 </h2>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
               </div>
 
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                {[1, 2, 3].map((i) => (
+                {safeSports.map((item) => (
                   <Card
-                    key={`sports-${i}`}
+                    key={item.id}
                     className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,122,26,.16)]"
                   >
                     <div className="relative h-44 w-full">
                       <Image
-                        src={`/images/noticia-${((i % 3) + 1).toString()}.jpg`}
-                        alt={`Deportes ${i}`}
+                        src={item.img}
+                        alt={item.title}
                         fill
                         sizes="(max-width: 1280px) 50vw, 25vw"
                         style={{ objectFit: "cover" }}
                       />
                     </div>
                     <CardContent className="p-5">
-                      <h3 className="text-lg font-semibold text-white">Rally / Drift #{i}</h3>
-                      <p className="mt-2 text-sm text-gray-300">
-                        Setup, técnica y estrategia para competir con cabeza y corazón.
+                      <div className="text-xs text-gray-400">{item.when}</div>
+                      <h3 className="mt-1 text-lg font-semibold text-white">
+                        {item.title}
+                      </h3>
+                      <p className="mt-2 text-sm text-gray-300 line-clamp-2">
+                        {item.excerpt}
                       </p>
-                      <Link href="/deportes" className="inline-block">
+                      <Link href={item.href} className="inline-block">
                         <Button variant="link" className="mt-2">
                           Leer más
                         </Button>
@@ -664,7 +1249,7 @@ export default function HomePage({
                 ))}
 
                 <div className="sm:col-span-2 xl:col-span-1">
-                  <AdSlot kind="mpu" />
+                  {renderEditableAd("mpu")}
                 </div>
               </div>
 
@@ -691,23 +1276,23 @@ export default function HomePage({
                 <Card className="overflow-hidden">
                   <div className="relative h-52 w-full sm:h-56">
                     <Image
-                      src="/images/noticia-3.jpg"
-                      alt="Lifestyle destacado"
+                      src={heroLifestyle.img}
+                      alt={heroLifestyle.title}
                       fill
                       sizes="(max-width: 1024px) 100vw, 50vw"
                       style={{ objectFit: "cover" }}
                     />
                   </div>
                   <CardContent className="p-5 sm:p-6">
-                    <h3 className="text-xl font-semibold text-white sm:text-2xl">
-                      La escena nocturna: meets, estilos y el código no escrito
+                    <div className="text-xs text-gray-400">{heroLifestyle.when}</div>
+                    <h3 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+                      {heroLifestyle.title}
                     </h3>
                     <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
-                      ¿Qué hace auténtico a un meet? Afinamos el ojo a detalles: ruedas, fitment,
-                      wraps y ese toque personal que marca diferencia.
+                      {heroLifestyle.excerpt}
                     </p>
                     <div className="mt-4">
-                      <Link href="/lifestyle">
+                      <Link href={heroLifestyle.href}>
                         <Button variant="link">Leer artículo</Button>
                       </Link>
                     </div>
@@ -715,23 +1300,24 @@ export default function HomePage({
                 </Card>
 
                 <div className="grid gap-6">
-                  {[1, 2, 3].map((i) => (
-                    <Card key={`life-${i}`} className="overflow-hidden">
+                  {sideLifestyle.map((item) => (
+                    <Card key={item.id} className="overflow-hidden">
                       <div className="relative h-36 w-full">
                         <Image
-                          src={`/images/noticia-${((i % 3) + 1).toString()}.jpg`}
-                          alt={`Lifestyle ${i}`}
+                          src={item.img}
+                          alt={item.title}
                           fill
                           sizes="(max-width: 1024px) 100vw, 50vw"
                           style={{ objectFit: "cover" }}
                         />
                       </div>
                       <CardContent className="p-4">
-                        <h4 className="font-semibold text-white">Lifestyle #{i}</h4>
-                        <p className="mt-2 text-sm text-gray-300">
-                          Detalles que elevan el carácter: interiores, audio y accesorios.
+                        <div className="text-xs text-gray-400">{item.when}</div>
+                        <h4 className="mt-1 font-semibold text-white">{item.title}</h4>
+                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
+                          {item.excerpt}
                         </p>
-                        <Link href="/lifestyle" className="inline-block">
+                        <Link href={item.href} className="inline-block">
                           <Button variant="link" className="mt-1">
                             Leer más
                           </Button>
@@ -754,7 +1340,7 @@ export default function HomePage({
 
           <section className="py-8">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <AdSlot kind="billboard" />
+              {renderEditableAd("billboard")}
             </div>
           </section>
 
@@ -788,80 +1374,89 @@ export default function HomePage({
             </div>
           </section>
 
-          <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
-              <h2 className="glow-cool font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
-                {t("sections.productions")}
-              </h2>
-              <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-                {t("productions.text")}
-              </p>
-
-              <div className="mt-8">
-                <video
-                  src="/videos/teaser.mp4"
-                  controls
-                  className="mx-auto w-full max-w-4xl rounded-2xl border border-mw-line/70 bg-black/40"
-                />
-              </div>
-
-              <div className="mt-6">
-                <Link href="/producciones">
-                  <Button variant="cyan">{t("productions.cta")}</Button>
-                </Link>
-              </div>
-            </div>
-          </section>
-
           <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-white/90">Partners & Patrocinios</h3>
-                <div className="mx-4 h-px flex-1 bg-mw-line/50" />
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center justify-between w-full">
+                  <h3 className="font-semibold text-white/90">Partners & Patrocinios</h3>
+                  <div className="mx-4 h-px flex-1 bg-mw-line/50" />
+                </div>
+
+                {canEditHome && (
+                  <button
+                    type="button"
+                    onClick={() => partnerInputRef.current?.click()}
+                    className="ml-4 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90 whitespace-nowrap"
+                  >
+                    Agregar partner
+                  </button>
+                )}
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div
-                    key={i}
-                    className="flex h-16 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400"
-                  >
-                    LOGO #{i}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
+                {homeSettings.partnerLogos.length > 0
+                  ? homeSettings.partnerLogos.map((partner) => (
+                      <div
+                        key={partner.id}
+                        className="relative flex h-16 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400 overflow-hidden px-3"
+                      >
+                        {partner.href ? (
+                          <a
+                            href={partner.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex h-full w-full items-center justify-center"
+                          >
+                            {partner.logoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={partner.logoUrl}
+                                alt={partner.name}
+                                className="max-h-10 max-w-full object-contain"
+                              />
+                            ) : (
+                              partner.name
+                            )}
+                          </a>
+                        ) : partner.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={partner.logoUrl}
+                            alt={partner.name}
+                            className="max-h-10 max-w-full object-contain"
+                          />
+                        ) : (
+                          partner.name
+                        )}
 
-          <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 text-center sm:px-6 lg:px-8">
-              <h2 className="font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
-                {t("sections.subscription")}
-              </h2>
-              <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-white/60" />
-
-              <div className="mt-8 grid gap-6 md:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i}>
-                    <CardContent className="p-6">
-                      <h3 className="text-lg font-semibold text-white">
-                        {t(`subscription.benefit${i}.title`)}
-                      </h3>
-                      <p className="mt-2 text-sm text-gray-300">
-                        {t(`subscription.benefit${i}.desc`)}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="mt-8">
-                <Link href="/suscripcion">
-                  <Button variant="pink" className="px-6 py-3">
-                    {t("subscription.cta")}
-                  </Button>
-                </Link>
+                        {canEditHome && (
+                          <div className="absolute right-1 top-1 flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => editPartnerLink(partner.id)}
+                              className="rounded-full border border-white/20 bg-black/70 px-2 py-1 text-[9px] font-semibold text-white"
+                            >
+                              Link
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removePartner(partner.id)}
+                              className="rounded-full border border-red-400/50 bg-black/70 px-2 py-1 text-[9px] font-semibold text-red-200"
+                            >
+                              X
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  : [1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className="flex h-16 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400"
+                      >
+                        LOGO #{i}
+                      </div>
+                    ))}
               </div>
             </div>
           </section>
@@ -1051,7 +1646,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     "next-i18next/serverSideTranslations"
   );
 
-  const query = `
+  const mixedQuery = `
     *[
       _type in ["article", "post"] &&
       defined(slug.current) &&
@@ -1087,18 +1682,103 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     }
   `;
 
-  const raw = await sanityReadClient.fetch(query);
+  const sportsQuery = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
+      section == "deportes"
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...3]{
+      "id": _id,
+      "title": coalesce(title, ""),
+      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+      "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "publishedAt": publishedAt,
+      "_createdAt": _createdAt
+    }
+  `;
 
-  const sectionLabel = (section: string) => {
-    if (section === "noticias_autos") return "Autos";
-    if (section === "noticias_motos") return "Motos";
-    return "Autos/Motos";
-  };
+  const lifestyleQuery = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
+      section == "lifestyle"
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...4]{
+      "id": _id,
+      "title": coalesce(title, ""),
+      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+      "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "publishedAt": publishedAt,
+      "_createdAt": _createdAt
+    }
+  `;
 
-  const routeForSection = (section: string) => {
-    if (section === "noticias_motos") return "motos";
-    return "autos";
-  };
+  const tuningQuery = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
+      (
+        section == "tuning" ||
+        lower(category) == "tuning" ||
+        "tuning" in categories[] ||
+        "builds" in categories[] ||
+        "mods" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...4]{
+      "id": _id,
+      "title": coalesce(title, ""),
+      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+      "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "publishedAt": publishedAt,
+      "_createdAt": _createdAt
+    }
+  `;
+
+  const homeSettingsQuery = `
+    *[_type == "homeSettings" && _id == "homeSettings_main"][0]{
+      "heroImageUrl": coalesce(heroImageUrl, ""),
+      "ads": {
+        "leaderboard": {
+          "enabled": coalesce(ads.leaderboard.enabled, true),
+          "label": coalesce(ads.leaderboard.label, "Publicidad — Leaderboard (728×90 / 970×250)"),
+          "imageUrl": coalesce(ads.leaderboard.imageUrl, ""),
+          "href": coalesce(ads.leaderboard.href, "")
+        },
+        "mpu": {
+          "enabled": coalesce(ads.mpu.enabled, true),
+          "label": coalesce(ads.mpu.label, "Publicidad — MPU (300×250 / 300×600)"),
+          "imageUrl": coalesce(ads.mpu.imageUrl, ""),
+          "href": coalesce(ads.mpu.href, "")
+        },
+        "billboard": {
+          "enabled": coalesce(ads.billboard.enabled, true),
+          "label": coalesce(ads.billboard.label, "Publicidad — Billboard (970×250 / 970×90)"),
+          "imageUrl": coalesce(ads.billboard.imageUrl, ""),
+          "href": coalesce(ads.billboard.href, "")
+        }
+      },
+      "partnerLogos": coalesce(partnerLogos[]{
+        "id": coalesce(_key, name, "partner"),
+        "name": coalesce(name, "Partner"),
+        "logoUrl": coalesce(logoUrl, ""),
+        "href": coalesce(href, "")
+      }, [])
+    }
+  `;
+
+  const [mixedRaw, sportsRaw, lifestyleRaw, tuningRaw, homeSettingsRaw] =
+    await Promise.all([
+      sanityReadClient.fetch(mixedQuery),
+      sanityReadClient.fetch(sportsQuery),
+      sanityReadClient.fetch(lifestyleQuery),
+      sanityReadClient.fetch(tuningQuery),
+      sanityReadClient.fetch(homeSettingsQuery),
+    ]);
 
   const formatWhen = (iso?: string | null) => {
     if (!iso) return "";
@@ -1111,7 +1791,12 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     }).format(d);
   };
 
-  const featuredMixed: HomeNewsItem[] = (raw ?? []).map((it: any) => {
+  const routeForSection = (section: string) => {
+    if (section === "noticias_motos") return "motos";
+    return "autos";
+  };
+
+  const featuredMixed: HomeNewsItem[] = (mixedRaw ?? []).map((it: any) => {
     const section = String(it?.section || "");
     const slug = String(it?.slug || "");
     const route = routeForSection(section);
@@ -1128,11 +1813,87 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     };
   });
 
+  const sportsItems: HomeNewsItem[] = (sportsRaw ?? []).map((it: any) => ({
+    id: String(it?.id || ""),
+    title: String(it?.title || ""),
+    excerpt: String(it?.excerpt || ""),
+    img: String(it?.img || "/images/noticia-1.jpg"),
+    href: "/deportes",
+    sectionLabel: "Deportes",
+    typeLabel: "noticia",
+    when: formatWhen(it?.publishedAt || it?._createdAt),
+  }));
+
+  const lifestyleItems: HomeNewsItem[] = (lifestyleRaw ?? []).map((it: any) => ({
+    id: String(it?.id || ""),
+    title: String(it?.title || ""),
+    excerpt: String(it?.excerpt || ""),
+    img: String(it?.img || "/images/noticia-3.jpg"),
+    href: "/lifestyle",
+    sectionLabel: "Lifestyle",
+    typeLabel: "noticia",
+    when: formatWhen(it?.publishedAt || it?._createdAt),
+  }));
+
+  const tuningItems: HomeNewsItem[] = (tuningRaw ?? []).map((it: any) => ({
+    id: String(it?.id || ""),
+    title: String(it?.title || ""),
+    excerpt: String(it?.excerpt || ""),
+    img: String(it?.img || "/images/noticia-2.jpg"),
+    href: "/tuning",
+    sectionLabel: "Tuning",
+    typeLabel: "noticia",
+    when: formatWhen(it?.publishedAt || it?._createdAt),
+  }));
+
+  const initialHomeSettings: HomeSettings = {
+    heroImageUrl:
+      String(homeSettingsRaw?.heroImageUrl || "").trim() || DEFAULT_HOME_SETTINGS.heroImageUrl,
+    ads: {
+      leaderboard: {
+        enabled: Boolean(homeSettingsRaw?.ads?.leaderboard?.enabled ?? true),
+        label:
+          String(homeSettingsRaw?.ads?.leaderboard?.label || "").trim() ||
+          DEFAULT_HOME_SETTINGS.ads.leaderboard.label,
+        imageUrl: String(homeSettingsRaw?.ads?.leaderboard?.imageUrl || "").trim(),
+        href: String(homeSettingsRaw?.ads?.leaderboard?.href || "").trim(),
+      },
+      mpu: {
+        enabled: Boolean(homeSettingsRaw?.ads?.mpu?.enabled ?? true),
+        label:
+          String(homeSettingsRaw?.ads?.mpu?.label || "").trim() ||
+          DEFAULT_HOME_SETTINGS.ads.mpu.label,
+        imageUrl: String(homeSettingsRaw?.ads?.mpu?.imageUrl || "").trim(),
+        href: String(homeSettingsRaw?.ads?.mpu?.href || "").trim(),
+      },
+      billboard: {
+        enabled: Boolean(homeSettingsRaw?.ads?.billboard?.enabled ?? true),
+        label:
+          String(homeSettingsRaw?.ads?.billboard?.label || "").trim() ||
+          DEFAULT_HOME_SETTINGS.ads.billboard.label,
+        imageUrl: String(homeSettingsRaw?.ads?.billboard?.imageUrl || "").trim(),
+        href: String(homeSettingsRaw?.ads?.billboard?.href || "").trim(),
+      },
+    },
+    partnerLogos: Array.isArray(homeSettingsRaw?.partnerLogos)
+      ? homeSettingsRaw.partnerLogos.map((item: any, index: number) => ({
+          id: String(item?.id || `partner-${index}`),
+          name: String(item?.name || `Partner ${index + 1}`),
+          logoUrl: String(item?.logoUrl || ""),
+          href: String(item?.href || ""),
+        }))
+      : [],
+  };
+
   return {
     props: {
       ...(await serverSideTranslations(locale ?? "es", ["home"], nextI18NextConfig)),
       year: new Date().getFullYear(),
       featuredMixed,
+      sportsItems,
+      lifestyleItems,
+      tuningItems,
+      initialHomeSettings,
     },
   };
 }
