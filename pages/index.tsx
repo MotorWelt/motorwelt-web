@@ -618,18 +618,23 @@ export default function HomePage({
         ? mpuInputRef
         : billboardInputRef;
 
-   const wrapClass = `
-  relative w-full mx-auto
-  ${
-    kind === "mpu"
-      ? "max-w-[300px] aspect-[300/395]"
-      : kind === "leaderboard"
-      ? "max-w-[970px] h-[123px]"
-      : "max-w-[966px] h-[260px]"
-  }
-  rounded-2xl border border-mw-line/70
-  bg-mw-surface/70 overflow-hidden ${className}
-`;
+    const wrapClass = `
+      relative w-full mx-auto
+      ${
+        kind === "mpu"
+          ? "max-w-[300px] aspect-[300/395]"
+          : kind === "leaderboard"
+          ? "max-w-[970px] aspect-[970/90]"
+          : "max-w-[970px] aspect-[970/250]"
+      }
+      rounded-2xl border border-mw-line/70
+      bg-mw-surface/70 overflow-hidden ${className}
+    `;
+
+    const imageClass =
+      kind === "mpu"
+        ? "h-full w-full object-contain object-center bg-black/30"
+        : "h-full w-full object-cover object-center bg-black/20";
 
     return (
       <div className={wrapClass}>
@@ -640,13 +645,13 @@ export default function HomePage({
                 href={ad.href}
                 target="_blank"
                 rel="noreferrer"
-                className="block h-full w-full bg-black/30"
+                className="block h-full w-full"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={ad.imageUrl}
                   alt={ad.label || kind}
-                  className="h-full w-full object-contain object-center"
+                  className={imageClass}
                 />
               </a>
             ) : (
@@ -654,7 +659,7 @@ export default function HomePage({
               <img
                 src={ad.imageUrl}
                 alt={ad.label || kind}
-                className="h-full w-full object-contain object-center bg-black/30"
+                className={imageClass}
               />
             )
           ) : (
@@ -715,6 +720,81 @@ export default function HomePage({
           onChange={(e) => handleAdImagePick(kind, e.target.files)}
         />
       </div>
+    );
+  }
+
+  function renderMobileCardsRail(
+    title: string,
+    barClass: string,
+    items: HomeNewsItem[],
+    ctaHref: string,
+    ctaLabel: string,
+    ctaVariant: ButtonVariant = "cyan"
+  ) {
+    return (
+      <section className="py-10 sm:py-12 md:hidden">
+        <div className="mx-auto w-full max-w-[1200px] px-4">
+          <div className="mb-8">
+            <h2 className="font-display text-2xl font-bold tracking-wide text-white">
+              {title}
+            </h2>
+            <div className={`mt-2 h-1 w-24 rounded-full ${barClass}`} />
+          </div>
+
+          <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
+            <div className="flex gap-4 snap-x snap-mandatory">
+              {items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="block w-[84%] min-w-[84%] shrink-0 snap-start"
+                >
+                  <Card className="overflow-hidden">
+                    <div className="relative h-56 w-full">
+                      <Image
+                        src={item.img}
+                        alt={item.title}
+                        fill
+                        sizes="84vw"
+                        style={{ objectFit: "cover" }}
+                      />
+                    </div>
+
+                    <CardContent className="p-5">
+                      <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                        <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                        {item.sectionLabel} · {item.typeLabel}
+                      </div>
+
+                      <h3 className="text-[2rem] font-semibold leading-[1.05] text-white">
+                        {item.title}
+                      </h3>
+
+                      <p className="mt-3 text-base leading-relaxed text-gray-300 line-clamp-3">
+                        {item.excerpt}
+                      </p>
+
+                      <div className="mt-5">
+                        <span className="text-[#43A1AD] underline underline-offset-4">
+                          Leer más
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <Link href={ctaHref}>
+              <Button variant={ctaVariant} className="w-full">
+                {ctaLabel}
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
     );
   }
 
@@ -786,7 +866,7 @@ export default function HomePage({
         )}
 
         <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-          <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
+          <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:h-[72px] lg:px-8">
             <div className="flex items-center">
               <Link
                 href="/"
@@ -804,85 +884,87 @@ export default function HomePage({
               </Link>
             </div>
 
-            <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
-              <Link
-                href="/tuning"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
-                Tuning
-              </Link>
-
-              <div className="group relative">
-                <button
-                  type="button"
-                  aria-haspopup="menu"
-                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
+            <div className="hidden md:flex items-center justify-end gap-4 lg:gap-6 flex-1">
+              <nav className="flex items-center gap-6 text-sm font-medium">
+                <Link
+                  href="/tuning"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
                 >
-                  {t("nav.news")}
-                  <svg
-                    className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M6 9l6 6 6-6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+                  Tuning
+                </Link>
 
-                <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
-                    <Link
-                      href="/noticias/autos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
+                <div className="group relative">
+                  <button
+                    type="button"
+                    aria-haspopup="menu"
+                    className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
+                  >
+                    {t("nav.news")}
+                    <svg
+                      className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
                     >
-                      Autos
-                    </Link>
-                    <Link
-                      href="/noticias/motos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                    >
-                      Motos
-                    </Link>
+                      <path
+                        d="M6 9l6 6 6-6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+
+                  <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                    <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
+                      <Link
+                        href="/noticias/autos"
+                        className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
+                      >
+                        Autos
+                      </Link>
+                      <Link
+                        href="/noticias/motos"
+                        className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
+                      >
+                        Motos
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <Link
-                href="/deportes"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
-                Deportes
-              </Link>
-              <Link
-                href="/lifestyle"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
-                Lifestyle
-              </Link>
-              <Link
-                href="/comunidad"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
-                {t("nav.community")}
-              </Link>
-            </nav>
+                <Link
+                  href="/deportes"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Deportes
+                </Link>
+                <Link
+                  href="/lifestyle"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Lifestyle
+                </Link>
+                <Link
+                  href="/comunidad"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  {t("nav.community")}
+                </Link>
+              </nav>
 
-            <div className="flex items-center justify-end gap-2 sm:gap-3">
-              <div className="hidden sm:block">
-                <ProfileButton />
-              </div>
+              <ProfileButton />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 md:hidden">
+              <ProfileButton />
 
               <button
                 onClick={() => setMobileOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none md:hidden"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
                 aria-label="Abrir menú"
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
@@ -937,10 +1019,6 @@ export default function HomePage({
               </div>
 
               <nav className="px-4 py-3">
-                <div className="mb-4 sm:hidden">
-                  <ProfileButton />
-                </div>
-
                 <Link
                   href="/tuning"
                   className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
@@ -1054,7 +1132,16 @@ export default function HomePage({
             </div>
           </section>
 
-          <section className="py-10 sm:py-12">
+          {renderMobileCardsRail(
+            "Tuning — Builds & Culture",
+            "bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]",
+            [heroTuning, ...sideTuning],
+            "/tuning",
+            "Ver más Tuning",
+            "pink"
+          )}
+
+          <section className="hidden md:block py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
@@ -1129,7 +1216,16 @@ export default function HomePage({
             </div>
           </section>
 
-          <section className="py-12 sm:py-16">
+          {renderMobileCardsRail(
+            "Autos & Motos — Destacadas",
+            "bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A]",
+            [heroMixed, ...sidebarMixed],
+            "/noticias/autos",
+            "Ver más de Autos",
+            "cyan"
+          )}
+
+          <section className="hidden md:block py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
@@ -1220,7 +1316,16 @@ export default function HomePage({
             </div>
           </section>
 
-          <section className="py-10 sm:py-12">
+          {renderMobileCardsRail(
+            "Deportes — Destacados",
+            "bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]",
+            safeSports,
+            "/deportes",
+            "Ver todo Deportes",
+            "cyan"
+          )}
+
+          <section className="hidden md:block py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
@@ -1276,7 +1381,16 @@ export default function HomePage({
             </div>
           </section>
 
-          <section className="py-10 sm:py-12">
+          {renderMobileCardsRail(
+            "Lifestyle — Cultura & Garaje",
+            "bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]",
+            [heroLifestyle, ...sideLifestyle],
+            "/lifestyle",
+            "Ver más Lifestyle",
+            "cyan"
+          )}
+
+          <section className="hidden md:block py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="glow-cool font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
@@ -1633,6 +1747,13 @@ export default function HomePage({
         }
         .streak-lime {
           background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .9), transparent);
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
         }
 
         @media (prefers-reduced-motion: reduce) {
