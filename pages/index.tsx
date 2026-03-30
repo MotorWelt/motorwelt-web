@@ -178,12 +178,10 @@ function sectionLabel(section: string) {
 
 function readCookie(name: string) {
   if (typeof document === "undefined") return "";
-
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const match = document.cookie.match(
     new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
   );
-
   return match ? decodeURIComponent(match[2]) : "";
 }
 
@@ -207,9 +205,10 @@ export default function HomePage({
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [canEditHome, setCanEditHome] = useState(false);
-const [homeSettings, setHomeSettings] = useState<HomeSettings>(
-  initialHomeSettings ?? DEFAULT_HOME_SETTINGS
-);
+  const [spectatorMode, setSpectatorMode] = useState(false);
+  const [homeSettings, setHomeSettings] = useState<HomeSettings>(
+    initialHomeSettings ?? DEFAULT_HOME_SETTINGS
+  );
   const [savingHome, setSavingHome] = useState(false);
   const [homeError, setHomeError] = useState<string | null>(null);
 
@@ -359,24 +358,30 @@ const [homeSettings, setHomeSettings] = useState<HomeSettings>(
     setMobileOpen(false);
   }, [router.asPath]);
 
-useEffect(() => {
-  let role = readCookie("mw_role");
+  useEffect(() => {
+    let role = readCookie("mw_role");
 
-  if (!role && typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem("mw_admin_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        role = parsed?.role || "";
+    if (!role && typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("mw_admin_user");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          role = parsed?.role || "";
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
-  }
 
-  console.log("HOME ROLE DETECTED:", role);
-  setCanEditHome(["admin", "editor"].includes(role));
-}, []);
+    setCanEditHome(role === "admin" || role === "editor");
+  }, []);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    setSpectatorMode(router.query.view === "spectator");
+  }, [router.isReady, router.query.view]);
+
+  const editControlsVisible = canEditHome && !spectatorMode;
 
   const streaks: Streak[] = useMemo(
     () => [
@@ -407,54 +412,32 @@ useEffect(() => {
     []
   );
 
-async function persistHomeSettings(nextSettings: HomeSettings) {
-  setSavingHome(true);
-  setHomeError(null);
+  async function persistHomeSettings(nextSettings: HomeSettings) {
+    setSavingHome(true);
+    setHomeError(null);
 
-  try {
-    let role = readCookie("mw_role");
-    let email = readCookie("mw_email");
-    let name = readCookie("mw_name");
+    try {
+      const res = await fetch("/api/ai/admin/home/save", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ settings: nextSettings }),
+      });
 
-    if ((!role || !email || !name) && typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem("mw_admin_user");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          role = role || parsed?.role || "";
-          email = email || parsed?.email || "";
-          name = name || parsed?.name || "";
-        }
-      } catch {
-        // ignore
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo guardar.");
       }
+
+      setHomeSettings(nextSettings);
+    } catch (err: any) {
+      setHomeError(err?.message || "No se pudo guardar Home Settings.");
+    } finally {
+      setSavingHome(false);
     }
-
-    const res = await fetch("/api/ai/admin/home/save", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        "x-mw-role": role || "",
-        "x-mw-email": email || "",
-        "x-mw-name": name || "",
-      },
-      body: JSON.stringify({ settings: nextSettings }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data?.ok) {
-      throw new Error(data?.error || "No se pudo guardar.");
-    }
-
-    setHomeSettings(nextSettings);
-  } catch (err: any) {
-    setHomeError(err?.message || "No se pudo guardar Home Settings.");
-  } finally {
-    setSavingHome(false);
   }
-}
 
   async function handleHeroImagePick(files?: FileList | null) {
     const file = files?.[0];
@@ -604,10 +587,29 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
     await persistHomeSettings(next);
   }
 
+  function toggleSpectatorMode() {
+    const nextQuery = { ...router.query };
+
+    if (spectatorMode) {
+      delete nextQuery.view;
+    } else {
+      nextQuery.view = "spectator";
+    }
+
+    router.push(
+      {
+        pathname: router.pathname,
+        query: nextQuery,
+      },
+      undefined,
+      { shallow: true }
+    );
+  }
+
   function renderEditableAd(kind: AdKind, className = "") {
     const ad = homeSettings.ads[kind];
 
-    if (!ad.enabled && !canEditHome) return null;
+    if (!ad.enabled && !editControlsVisible) return null;
 
     const inputRef =
       kind === "leaderboard"
@@ -616,16 +618,18 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
         ? mpuInputRef
         : billboardInputRef;
 
-    const baseHeights: Record<AdKind, string> = {
-      leaderboard: "h-20 sm:h-24",
-      billboard: "h-32 sm:h-44",
-      mpu: "h-[250px] md:h-[336px]",
-    };
-
-    const wrapClass =
-      kind === "mpu"
-        ? `relative w-full ${baseHeights[kind]} rounded-2xl border border-mw-line/70 bg-mw-surface/70 overflow-hidden ${className}`
-        : `relative w-full ${baseHeights[kind]} rounded-2xl border border-mw-line/70 bg-mw-surface/70 overflow-hidden ${className}`;
+   const wrapClass = `
+  relative w-full mx-auto
+  ${
+    kind === "mpu"
+      ? "max-w-[300px] aspect-[300/395]"
+      : kind === "leaderboard"
+      ? "max-w-[970px] h-[123px]"
+      : "max-w-[966px] h-[260px]"
+  }
+  rounded-2xl border border-mw-line/70
+  bg-mw-surface/70 overflow-hidden ${className}
+`;
 
     return (
       <div className={wrapClass}>
@@ -636,13 +640,13 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                 href={ad.href}
                 target="_blank"
                 rel="noreferrer"
-                className="block h-full w-full"
+                className="block h-full w-full bg-black/30"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={ad.imageUrl}
                   alt={ad.label || kind}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain object-center"
                 />
               </a>
             ) : (
@@ -650,7 +654,7 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
               <img
                 src={ad.imageUrl}
                 alt={ad.label || kind}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain object-center bg-black/30"
               />
             )
           ) : (
@@ -661,7 +665,7 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
             </div>
           )
         ) : (
-          canEditHome && (
+          editControlsVisible && (
             <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
               <span className="px-4 text-[11px] sm:text-xs md:text-sm">
                 {ad.label} · oculto
@@ -670,7 +674,7 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
           )
         )}
 
-        {canEditHome && (
+        {editControlsVisible && (
           <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
@@ -716,11 +720,11 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
 
   return (
     <>
-    <Seo
-  title={`MotorWelt — ${t("hero.title")}`}
-  description={t("hero.subtitle")}
-  image={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
-/>
+      <Seo
+        title={`MotorWelt — ${t("hero.title")}`}
+        description={t("hero.subtitle")}
+        image={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
+      />
 
       <input
         ref={heroInputRef}
@@ -764,13 +768,20 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
         </div>
 
         {canEditHome && (
-          <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-2 text-xs text-white backdrop-blur">
+          <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
-              <span>Modo edición home</span>
+              <span>{spectatorMode ? "Vista espectador" : "Modo edición home"}</span>
               {savingHome && <span className="text-[#0CE0B2]">Guardando…</span>}
             </div>
             {homeError && <div className="mt-1 text-red-300">{homeError}</div>}
+            <button
+              type="button"
+              onClick={toggleSpectatorMode}
+              className="mt-2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            >
+              {spectatorMode ? "Volver a editar" : "Ver como espectador"}
+            </button>
           </div>
         )}
 
@@ -794,6 +805,13 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
             </div>
 
             <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+              <Link
+                href="/tuning"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
+                Tuning
+              </Link>
+
               <div className="group relative">
                 <button
                   type="button"
@@ -837,12 +855,6 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                 </div>
               </div>
 
-              <Link
-                href="/tuning"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
-                Tuning
-              </Link>
               <Link
                 href="/deportes"
                 className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
@@ -929,6 +941,14 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                   <ProfileButton />
                 </div>
 
+                <Link
+                  href="/tuning"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Tuning
+                </Link>
+
                 <p className="px-3 pb-1 pt-2 text-xs uppercase tracking-wide text-gray-400">
                   {t("nav.news")}
                 </p>
@@ -950,13 +970,6 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                   </Link>
                 </div>
 
-                <Link
-                  href="/tuning"
-                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Tuning
-                </Link>
                 <Link
                   href="/deportes"
                   className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
@@ -986,14 +999,14 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
         <main aria-hidden={mobileOpen} className="relative z-10 pt-16 lg:pt-[72px]">
           <section className="relative flex min-h-[72svh] flex-col items-center justify-center overflow-hidden sm:min-h-[78svh] lg:min-h-[84vh]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-           <img
-  src={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
+            <img
+              src={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
               alt="Hero MotorWelt"
               className="absolute inset-0 h-full w-full object-cover"
               style={{ filter: "brightness(.45) saturate(1.1)" }}
             />
 
-            {canEditHome && (
+            {editControlsVisible && (
               <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -1020,14 +1033,14 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                 </p>
 
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-                  <Link href="/noticias/autos" className="w-full sm:w-auto">
-                    <Button variant="cyan" className="w-full sm:w-auto">
-                      {t("hero.ctaNews")}
-                    </Button>
-                  </Link>
                   <Link href="/tuning" className="w-full sm:w-auto">
                     <Button variant="pink" className="w-full sm:w-auto">
                       Tuning
+                    </Button>
+                  </Link>
+                  <Link href="/noticias/autos" className="w-full sm:w-auto">
+                    <Button variant="cyan" className="w-full sm:w-auto">
+                      {t("hero.ctaNews")}
                     </Button>
                   </Link>
                 </div>
@@ -1038,6 +1051,81 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
           <section className="py-5 sm:py-6">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               {renderEditableAd("leaderboard")}
+            </div>
+          </section>
+
+          <section className="py-10 sm:py-12">
+            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+              <div className="mb-8">
+                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+                  Tuning — Builds & Culture
+                </h2>
+                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]" />
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card className="overflow-hidden">
+                  <div className="relative h-52 w-full sm:h-56">
+                    <Image
+                      src={heroTuning.img}
+                      alt={heroTuning.title}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </div>
+                  <CardContent className="p-5 sm:p-6">
+                    <div className="text-xs text-gray-400">{heroTuning.when}</div>
+                    <h3 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+                      {heroTuning.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
+                      {heroTuning.excerpt}
+                    </p>
+                    <div className="mt-4">
+                      <Link href={heroTuning.href}>
+                        <Button variant="link">Leer artículo</Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-6">
+                  {sideTuning.map((item) => (
+                    <Card key={item.id} className="overflow-hidden">
+                      <div className="relative h-36 w-full">
+                        <Image
+                          src={item.img}
+                          alt={item.title}
+                          fill
+                          sizes="(max-width: 1024px) 100vw, 50vw"
+                          style={{ objectFit: "cover" }}
+                        />
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="text-xs text-gray-400">{item.when}</div>
+                        <h4 className="mt-1 font-semibold text-white">{item.title}</h4>
+                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
+                          {item.excerpt}
+                        </p>
+                        <Link href={item.href} className="inline-block">
+                          <Button variant="link" className="mt-1">
+                            Leer más
+                          </Button>
+                        </Link>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-8 text-center">
+                <Link href="/tuning">
+                  <Button variant="pink" className="px-6 py-3">
+                    Ver más Tuning
+                  </Button>
+                </Link>
+              </div>
             </div>
           </section>
 
@@ -1126,81 +1214,6 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                 <Link href="/noticias/motos" className="w-full sm:w-auto">
                   <Button variant="cyan" className="w-full px-6 py-3 sm:w-auto">
                     Ver más de Motos
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          <section className="py-10 sm:py-12">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <div className="mb-8">
-                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
-                  Tuning — Builds & Culture
-                </h2>
-                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]" />
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card className="overflow-hidden">
-                  <div className="relative h-52 w-full sm:h-56">
-                    <Image
-                      src={heroTuning.img}
-                      alt={heroTuning.title}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-                  <CardContent className="p-5 sm:p-6">
-                    <div className="text-xs text-gray-400">{heroTuning.when}</div>
-                    <h3 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
-                      {heroTuning.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
-                      {heroTuning.excerpt}
-                    </p>
-                    <div className="mt-4">
-                      <Link href={heroTuning.href}>
-                        <Button variant="link">Leer artículo</Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="grid gap-6">
-                  {sideTuning.map((item) => (
-                    <Card key={item.id} className="overflow-hidden">
-                      <div className="relative h-36 w-full">
-                        <Image
-                          src={item.img}
-                          alt={item.title}
-                          fill
-                          sizes="(max-width: 1024px) 100vw, 50vw"
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="text-xs text-gray-400">{item.when}</div>
-                        <h4 className="mt-1 font-semibold text-white">{item.title}</h4>
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                          {item.excerpt}
-                        </p>
-                        <Link href={item.href} className="inline-block">
-                          <Button variant="link" className="mt-1">
-                            Leer más
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-8 text-center">
-                <Link href="/tuning">
-                  <Button variant="pink" className="px-6 py-3">
-                    Ver más Tuning
                   </Button>
                 </Link>
               </div>
@@ -1382,7 +1395,7 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                   <div className="mx-4 h-px flex-1 bg-mw-line/50" />
                 </div>
 
-                {canEditHome && (
+                {editControlsVisible && (
                   <button
                     type="button"
                     onClick={() => partnerInputRef.current?.click()}
@@ -1398,24 +1411,24 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                   ? homeSettings.partnerLogos.map((partner) => (
                       <div
                         key={partner.id}
-                        className="relative flex h-16 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400 overflow-hidden px-3"
+                        className="relative flex h-20 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400 overflow-hidden"
                       >
                         {partner.href ? (
                           <a
                             href={partner.href}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex h-full w-full items-center justify-center"
+                            className="flex h-full w-full items-center justify-center bg-black/20 p-2"
                           >
                             {partner.logoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={partner.logoUrl}
                                 alt={partner.name}
-                                className="max-h-10 max-w-full object-contain"
+                                className="h-full w-full object-contain object-center"
                               />
                             ) : (
-                              partner.name
+                              <span className="px-3">{partner.name}</span>
                             )}
                           </a>
                         ) : partner.logoUrl ? (
@@ -1423,14 +1436,14 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                           <img
                             src={partner.logoUrl}
                             alt={partner.name}
-                            className="max-h-10 max-w-full object-contain"
+                            className="h-full w-full object-contain object-center bg-black/20 p-2"
                           />
                         ) : (
-                          partner.name
+                          <span className="px-3">{partner.name}</span>
                         )}
 
-                        {canEditHome && (
-                          <div className="absolute right-1 top-1 flex gap-1">
+                        {editControlsVisible && (
+                          <div className="absolute right-1 top-1 flex gap-1 z-10">
                             <button
                               type="button"
                               onClick={() => editPartnerLink(partner.id)}
@@ -1452,7 +1465,7 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
                   : [1, 2, 3, 4, 5].map((i) => (
                       <div
                         key={i}
-                        className="flex h-16 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400"
+                        className="flex h-20 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 text-xs text-gray-400"
                       >
                         LOGO #{i}
                       </div>

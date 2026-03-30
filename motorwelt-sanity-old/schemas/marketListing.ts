@@ -1,17 +1,15 @@
-import { defineType, defineField } from 'sanity'
-
-export default defineType({
+export default {
   name: 'marketListing',
   title: 'Market Listing',
   type: 'document',
   fields: [
-    defineField({
+    {
       name: 'title',
       title: 'Título',
       type: 'string',
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
+      validation: (Rule: any) => Rule.required(),
+    },
+    {
       name: 'category',
       title: 'Categoría',
       type: 'string',
@@ -22,30 +20,30 @@ export default defineType({
         ],
         layout: 'radio',
       },
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
+      validation: (Rule: any) => Rule.required(),
+    },
+    {
       name: 'year',
       title: 'Año',
       type: 'number',
-    }),
-    defineField({
+    },
+    {
       name: 'price',
       title: 'Precio',
       type: 'number',
-    }),
-    defineField({
+    },
+    {
       name: 'location',
       title: 'Ubicación',
       type: 'string',
-    }),
-    defineField({
+    },
+    {
       name: 'images',
       title: 'Imágenes',
       type: 'array',
       of: [{ type: 'image' }],
-    }),
-    defineField({
+    },
+    {
       name: 'status',
       title: 'Estatus',
       type: 'string',
@@ -57,6 +55,6 @@ export default defineType({
         ],
       },
       initialValue: 'available',
-    }),
+    },
   ],
-})
+}

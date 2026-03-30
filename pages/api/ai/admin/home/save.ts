@@ -52,12 +52,27 @@ export default async function handler(
 
     const cookieRole = getCookieValue(req.headers.cookie, "mw_role");
     const headerRole = String(req.headers["x-mw-role"] || "");
-    const role = cookieRole || headerRole;
+    const bodyRole = String(req.body?.session?.role || "");
+
+    const role = cookieRole || headerRole || bodyRole;
+
+    console.log("HOME SAVE AUTH DEBUG:", {
+      cookieRole,
+      headerRole,
+      bodyRole,
+      finalRole: role,
+    });
 
     if (!["admin", "editor"].includes(role)) {
       return res.status(403).json({
         ok: false,
         error: "Unauthorized - Session not found",
+        debug: {
+          cookieRole,
+          headerRole,
+          bodyRole,
+          finalRole: role,
+        },
       });
     }
 

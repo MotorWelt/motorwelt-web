@@ -1,15 +1,14 @@
 import { defineConfig } from "sanity";
-import { structureTool } from "sanity/structure";
 import { visionTool } from "@sanity/vision";
-import { schemaTypes } from "./schemaTypes";
+import { schemaTypes } from "./schemas";
 
 export default defineConfig({
   name: "default",
-  title: "MotorWelt Market",
+  title: "MotorWelt",
   projectId: "juiaa7d6",
   dataset: "production",
 
-  plugins: [structureTool(), visionTool()],
+  plugins: [visionTool()],
 
   schema: {
     types: schemaTypes,
