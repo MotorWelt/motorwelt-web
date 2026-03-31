@@ -1320,71 +1320,75 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
             </div>
           </section>
 
-          {renderMobileCardsRail(
-            "Deportes — Destacados",
-            "bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]",
-            safeSports,
-            "/deportes",
-            "Ver todo Deportes",
-            "cyan"
-          )}
+         <section className="md:hidden py-10 sm:py-12">
+  <div className="mx-auto w-full max-w-[1200px] px-4">
+    <div className="mb-8">
+      <h2 className="font-display text-2xl font-bold tracking-wide text-white">
+        Deportes — Destacados
+      </h2>
+      <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
+    </div>
 
-          <section className="hidden md:block py-10 sm:py-12">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <div className="mb-8">
-                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
-                  Deportes — Destacados
-                </h2>
-                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
+    <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
+      <div className="flex gap-4 snap-x snap-mandatory">
+        {safeSports.map((item) => (
+          <Link
+            key={item.id}
+            href={item.href}
+            className="block w-[84%] min-w-[84%] shrink-0 snap-start"
+          >
+            <Card className="overflow-hidden">
+              <div className="relative h-56 w-full">
+                <Image
+                  src={item.img}
+                  alt={item.title}
+                  fill
+                  sizes="84vw"
+                  style={{ objectFit: "cover" }}
+                />
               </div>
 
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                {safeSports.map((item) => (
-                  <Card
-                    key={item.id}
-                    className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,122,26,.16)]"
-                  >
-                    <div className="relative h-44 w-full">
-                      <Image
-                        src={item.img}
-                        alt={item.title}
-                        fill
-                        sizes="(max-width: 1280px) 50vw, 25vw"
-                        style={{ objectFit: "cover" }}
-                      />
-                    </div>
-                    <CardContent className="p-5">
-                      <div className="text-xs text-gray-400">{item.when}</div>
-                      <h3 className="mt-1 text-lg font-semibold text-white">
-                        {item.title}
-                      </h3>
-                      <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                        {item.excerpt}
-                      </p>
-                      <Link href={item.href} className="inline-block mt-auto">
-                        <Button variant="link" className="mt-3">
-                          Leer más
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                <div className="sm:col-span-2 xl:col-span-1">
-                  {renderEditableAd("mpu")}
+              <CardContent className="p-5">
+                <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                  <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                  {item.sectionLabel} · {item.typeLabel}
                 </div>
-              </div>
 
-              <div className="mt-8 text-center">
-                <Link href="/deportes">
-                  <Button variant="cyan" className="px-6 py-3">
-                    Ver todo Deportes
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </section>
+                <h3 className="text-[2rem] font-semibold leading-[1.05] text-white">
+                  {item.title}
+                </h3>
 
+                <p className="mt-3 text-base leading-relaxed text-gray-300 line-clamp-3">
+                  {item.excerpt}
+                </p>
+
+                <div className="mt-5">
+                  <span className="text-[#43A1AD] underline underline-offset-4">
+                    Leer más
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
+
+    <div className="mt-6">
+      {renderEditableAd("mpu")}
+    </div>
+
+    <div className="mt-6 text-center">
+      <Link href="/deportes">
+        <Button variant="cyan" className="w-full">
+          Ver todo Deportes
+        </Button>
+      </Link>
+    </div>
+  </div>
+</section>
+
+<section className="hidden md:block py-10 sm:py-12">
           {renderMobileCardsRail(
             "Lifestyle — Cultura & Garaje",
             "bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]",
