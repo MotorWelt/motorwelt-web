@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { serialize } from "cookie";
 import { sanityReadClient } from "@/lib/sanityClient";
 
 type LoginResponse =
@@ -16,16 +15,19 @@ type LoginResponse =
       error: string;
     };
 
-function buildCookie(name: string, value: string) {
+function makeCookie(name: string, value: string) {
   const isProd = process.env.NODE_ENV === "production";
+  const encoded = encodeURIComponent(value);
 
-  return serialize(name, value, {
-    httpOnly: false,
-    secure: isProd,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  return [
+    `${name}=${encoded}`,
+    "Path=/",
+    "Max-Age=604800",
+    "SameSite=Lax",
+    isProd ? "Secure" : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
 }
 
 export default async function handler(
@@ -86,9 +88,9 @@ export default async function handler(
     };
 
     res.setHeader("Set-Cookie", [
-      buildCookie("mw_role", safeUser.role),
-      buildCookie("mw_name", safeUser.name),
-      buildCookie("mw_email", safeUser.email),
+      makeCookie("mw_role", safeUser.role),
+      makeCookie("mw_name", safeUser.name),
+      makeCookie("mw_email", safeUser.email),
     ]);
 
     return res.status(200).json({
