@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { serialize } from "cookie";
 import { sanityReadClient } from "@/lib/sanityClient";
 
 type LoginResponse =
@@ -14,6 +15,18 @@ type LoginResponse =
       ok: false;
       error: string;
     };
+
+function buildCookie(name: string, value: string) {
+  const isProd = process.env.NODE_ENV === "production";
+
+  return serialize(name, value, {
+    httpOnly: false,
+    secure: isProd,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -66,13 +79,21 @@ export default async function handler(
         .json({ ok: false, error: "Contraseña incorrecta." });
     }
 
+    const safeUser = {
+      name: String(user.name || ""),
+      email: String(user.email || ""),
+      role: (user.role || "autor") as "admin" | "editor" | "autor",
+    };
+
+    res.setHeader("Set-Cookie", [
+      buildCookie("mw_role", safeUser.role),
+      buildCookie("mw_name", safeUser.name),
+      buildCookie("mw_email", safeUser.email),
+    ]);
+
     return res.status(200).json({
       ok: true,
-      user: {
-        name: String(user.name || ""),
-        email: String(user.email || ""),
-        role: (user.role || "autor") as "admin" | "editor" | "autor",
-      },
+      user: safeUser,
     });
   } catch (err: any) {
     console.error("ADMIN LOGIN ERROR:", err);
