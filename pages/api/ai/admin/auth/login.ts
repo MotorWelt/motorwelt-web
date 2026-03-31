@@ -43,9 +43,10 @@ export default async function handler(
     const rawPassword = String(req.body?.password || "").trim();
 
     if (!rawEmail || !rawPassword) {
-      return res
-        .status(400)
-        .json({ ok: false, error: "Faltan credenciales." });
+      return res.status(400).json({
+        ok: false,
+        error: "Faltan credenciales.",
+      });
     }
 
     const query = /* groq */ `
@@ -64,21 +65,24 @@ export default async function handler(
     const user = await sanityReadClient.fetch(query, { email: rawEmail });
 
     if (!user) {
-      return res
-        .status(401)
-        .json({ ok: false, error: "Usuario no encontrado." });
+      return res.status(401).json({
+        ok: false,
+        error: "Usuario no encontrado.",
+      });
     }
 
     if (!user.active) {
-      return res
-        .status(403)
-        .json({ ok: false, error: "Usuario inactivo." });
+      return res.status(403).json({
+        ok: false,
+        error: "Usuario inactivo.",
+      });
     }
 
     if (String(user.password || "") !== rawPassword) {
-      return res
-        .status(401)
-        .json({ ok: false, error: "Contraseña incorrecta." });
+      return res.status(401).json({
+        ok: false,
+        error: "Contraseña incorrecta.",
+      });
     }
 
     const safeUser = {

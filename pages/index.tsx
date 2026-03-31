@@ -156,25 +156,8 @@ async function uploadImageToSanity(file: File) {
   const fd = new FormData();
   fd.append("file", file);
 
-  let sessionRole = "admin";
-
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem("mw_admin_user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        sessionRole = parsed?.role || "admin";
-      }
-    } catch {
-      sessionRole = "admin";
-    }
-  }
-
   const res = await fetch("/api/ai/admin/content/upload-image", {
     method: "POST",
-    headers: {
-      "x-mw-role": sessionRole,
-    },
     body: fd,
   });
 
@@ -436,33 +419,13 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
   setHomeError(null);
 
   try {
-    let sessionRole = "admin";
-
-    if (typeof window !== "undefined") {
-      try {
-        const raw = localStorage.getItem("mw_admin_user");
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          sessionRole = parsed?.role || "admin";
-        }
-      } catch {
-        sessionRole = "admin";
-      }
-    }
-
     const res = await fetch("/api/ai/admin/home/save", {
       method: "POST",
       credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
-        "x-mw-role": sessionRole,
       },
-      body: JSON.stringify({
-        settings: nextSettings,
-        session: {
-          role: sessionRole,
-        },
-      }),
+      body: JSON.stringify({ settings: nextSettings }),
     });
 
     const data = await res.json();
