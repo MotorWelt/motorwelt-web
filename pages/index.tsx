@@ -426,7 +426,7 @@ export default function HomePage({
         const raw = localStorage.getItem("mw_admin_user");
         if (raw) {
           const parsed = JSON.parse(raw);
-          sessionRole = parsed?.role || "";
+          sessionRole = parsed?.role || "admin";
         }
       } catch {
         // ignore

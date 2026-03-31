@@ -119,17 +119,21 @@ export default async function handler(
         : [],
     };
 
-    await sanity.createOrReplace(doc);
+     await sanity.createOrReplace(doc);
 
     return res.status(200).json({
       ok: true,
       settings: doc,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("HOME SAVE ERROR:", error);
+
     return res.status(500).json({
       ok: false,
-      error: "Internal server error",
+      error: error?.message || "Internal server error",
+      details: error?.responseBody || null,
+      stack:
+        process.env.NODE_ENV !== "production" ? error?.stack || null : null,
     });
   }
 }
