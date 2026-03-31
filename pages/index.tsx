@@ -414,32 +414,52 @@ export default function HomePage({
     []
   );
 
-  async function persistHomeSettings(nextSettings: HomeSettings) {
-    setSavingHome(true);
-    setHomeError(null);
+ async function persistHomeSettings(nextSettings: HomeSettings) {
+  setSavingHome(true);
+  setHomeError(null);
 
-    try {
-      const res = await fetch("/api/ai/admin/home/save", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ settings: nextSettings }),
-      });
+  try {
+    let sessionRole = "";
 
-      const data = await res.json();
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || "No se pudo guardar.");
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("mw_admin_user");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          sessionRole = parsed?.role || "";
+        }
+      } catch {
+        // ignore
       }
-
-      setHomeSettings(nextSettings);
-    } catch (err: any) {
-      setHomeError(err?.message || "No se pudo guardar Home Settings.");
-    } finally {
-      setSavingHome(false);
     }
+
+    const res = await fetch("/api/ai/admin/home/save", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        ...(sessionRole ? { "x-mw-role": sessionRole } : {}),
+      },
+      body: JSON.stringify({
+        settings: nextSettings,
+        session: {
+          role: sessionRole,
+        },
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "No se pudo guardar.");
+    }
+
+    setHomeSettings(nextSettings);
+  } catch (err: any) {
+    setHomeError(err?.message || "No se pudo guardar Home Settings.");
+  } finally {
+    setSavingHome(false);
   }
+}
 
   async function handleHeroImagePick(files?: FileList | null) {
     const file = files?.[0];
