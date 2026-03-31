@@ -46,6 +46,13 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
+    console.log("HOME SAVE ENV CHECK", {
+      hasProjectId: Boolean(process.env.SANITY_PROJECT_ID),
+      hasDataset: Boolean(process.env.SANITY_DATASET),
+      hasApiVersion: Boolean(process.env.SANITY_API_VERSION),
+      hasWriteToken: Boolean(process.env.SANITY_WRITE_TOKEN),
+    });
+
     if (req.method !== "POST") {
       return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
@@ -85,6 +92,13 @@ export default async function handler(
       });
     }
 
+    if (!process.env.SANITY_WRITE_TOKEN) {
+      return res.status(500).json({
+        ok: false,
+        error: "Missing SANITY_WRITE_TOKEN on server",
+      });
+    }
+
     const doc = {
       _id: "homeSettings_main",
       _type: "homeSettings",
@@ -119,7 +133,7 @@ export default async function handler(
         : [],
     };
 
-     await sanity.createOrReplace(doc);
+    await sanity.createOrReplace(doc);
 
     return res.status(200).json({
       ok: true,
