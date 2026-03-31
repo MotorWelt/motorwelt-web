@@ -45,7 +45,7 @@ const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({
   children,
 }) => (
   <div
-    className={`rounded-2xl border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/50 ${className}`}
+    className={`h-full rounded-2xl border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/50 flex flex-col ${className}`}
   >
     {children}
   </div>
@@ -54,7 +54,9 @@ const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({
 const CardContent: React.FC<{
   className?: string;
   children: React.ReactNode;
-}> = ({ className = "", children }) => <div className={`p-5 ${className}`}>{children}</div>;
+}> = ({ className = "", children }) => (
+  <div className={`p-5 flex flex-1 flex-col ${className}`}>{children}</div>
+);
 
 type Streak = {
   top: string;
@@ -632,7 +634,7 @@ export default function HomePage({
     `;
 
     const imageClass =
-      kind === "mpu"
+      kind === "mpu" || kind === "leaderboard"
         ? "h-full w-full object-contain object-center bg-black/30"
         : "h-full w-full object-cover object-center bg-black/20";
 
@@ -866,7 +868,7 @@ export default function HomePage({
         )}
 
         <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-          <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:h-[72px] lg:px-8">
+          <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
             <div className="flex items-center">
               <Link
                 href="/"
@@ -884,7 +886,7 @@ export default function HomePage({
               </Link>
             </div>
 
-            <div className="hidden md:flex items-center justify-end gap-4 lg:gap-6 flex-1">
+            <div className="hidden md:flex items-center justify-center">
               <nav className="flex items-center gap-6 text-sm font-medium">
                 <Link
                   href="/tuning"
@@ -955,7 +957,9 @@ export default function HomePage({
                   {t("nav.community")}
                 </Link>
               </nav>
+            </div>
 
+            <div className="hidden md:flex items-center justify-end">
               <ProfileButton />
             </div>
 
@@ -1169,7 +1173,7 @@ export default function HomePage({
                     <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
                       {heroTuning.excerpt}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 mt-auto">
                       <Link href={heroTuning.href}>
                         <Button variant="link">Leer artículo</Button>
                       </Link>
@@ -1195,8 +1199,8 @@ export default function HomePage({
                         <p className="mt-2 text-sm text-gray-300 line-clamp-2">
                           {item.excerpt}
                         </p>
-                        <Link href={item.href} className="inline-block">
-                          <Button variant="link" className="mt-1">
+                        <Link href={item.href} className="inline-block mt-auto">
+                          <Button variant="link" className="mt-3">
                             Leer más
                           </Button>
                         </Link>
@@ -1257,7 +1261,7 @@ export default function HomePage({
                     <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
                       {heroMixed.excerpt}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 mt-auto">
                       <Link href={heroMixed.href}>
                         <Button variant="link">Leer la nota</Button>
                       </Link>
@@ -1357,8 +1361,8 @@ export default function HomePage({
                       <p className="mt-2 text-sm text-gray-300 line-clamp-2">
                         {item.excerpt}
                       </p>
-                      <Link href={item.href} className="inline-block">
-                        <Button variant="link" className="mt-2">
+                      <Link href={item.href} className="inline-block mt-auto">
+                        <Button variant="link" className="mt-3">
                           Leer más
                         </Button>
                       </Link>
@@ -1418,7 +1422,7 @@ export default function HomePage({
                     <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
                       {heroLifestyle.excerpt}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 mt-auto">
                       <Link href={heroLifestyle.href}>
                         <Button variant="link">Leer artículo</Button>
                       </Link>
@@ -1444,8 +1448,8 @@ export default function HomePage({
                         <p className="mt-2 text-sm text-gray-300 line-clamp-2">
                           {item.excerpt}
                         </p>
-                        <Link href={item.href} className="inline-block">
-                          <Button variant="link" className="mt-1">
+                        <Link href={item.href} className="inline-block mt-auto">
+                          <Button variant="link" className="mt-3">
                             Leer más
                           </Button>
                         </Link>
