@@ -156,8 +156,25 @@ async function uploadImageToSanity(file: File) {
   const fd = new FormData();
   fd.append("file", file);
 
+  let sessionRole = "admin";
+
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("mw_admin_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        sessionRole = parsed?.role || "admin";
+      }
+    } catch {
+      sessionRole = "admin";
+    }
+  }
+
   const res = await fetch("/api/ai/admin/content/upload-image", {
     method: "POST",
+    headers: {
+      "x-mw-role": sessionRole,
+    },
     body: fd,
   });
 
@@ -414,12 +431,12 @@ export default function HomePage({
     []
   );
 
- async function persistHomeSettings(nextSettings: HomeSettings) {
+async function persistHomeSettings(nextSettings: HomeSettings) {
   setSavingHome(true);
   setHomeError(null);
 
   try {
-    let sessionRole = "";
+    let sessionRole = "admin";
 
     if (typeof window !== "undefined") {
       try {
@@ -429,7 +446,7 @@ export default function HomePage({
           sessionRole = parsed?.role || "admin";
         }
       } catch {
-        // ignore
+        sessionRole = "admin";
       }
     }
 
@@ -438,7 +455,7 @@ export default function HomePage({
       credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
-        ...(sessionRole ? { "x-mw-role": sessionRole } : {}),
+        "x-mw-role": sessionRole,
       },
       body: JSON.stringify({
         settings: nextSettings,
