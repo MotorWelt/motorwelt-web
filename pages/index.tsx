@@ -414,32 +414,32 @@ export default function HomePage({
     []
   );
 
-async function persistHomeSettings(nextSettings: HomeSettings) {
-  setSavingHome(true);
-  setHomeError(null);
+  async function persistHomeSettings(nextSettings: HomeSettings) {
+    setSavingHome(true);
+    setHomeError(null);
 
-  try {
-    const res = await fetch("/api/ai/admin/home/save", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ settings: nextSettings }),
-    });
+    try {
+      const res = await fetch("/api/ai/admin/home/save", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ settings: nextSettings }),
+      });
 
-    const data = await res.json();
-    if (!res.ok || !data?.ok) {
-      throw new Error(data?.error || "No se pudo guardar.");
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo guardar.");
+      }
+
+      setHomeSettings(nextSettings);
+    } catch (err: any) {
+      setHomeError(err?.message || "No se pudo guardar Home Settings.");
+    } finally {
+      setSavingHome(false);
     }
-
-    setHomeSettings(nextSettings);
-  } catch (err: any) {
-    setHomeError(err?.message || "No se pudo guardar Home Settings.");
-  } finally {
-    setSavingHome(false);
   }
-}
 
   async function handleHeroImagePick(files?: FileList | null) {
     const file = files?.[0];
@@ -608,122 +608,123 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
     );
   }
 
-  function renderEditableAd(kind: AdKind, className = "") {
-    const ad = homeSettings.ads[kind];
+function renderEditableAd(kind: AdKind, className = "") {
+  const ad = homeSettings.ads[kind];
 
-    if (!ad.enabled && !editControlsVisible) return null;
+  if (!ad.enabled && !editControlsVisible) return null;
 
-    const inputRef =
-      kind === "leaderboard"
-        ? leaderboardInputRef
-        : kind === "mpu"
-        ? mpuInputRef
-        : billboardInputRef;
+  const inputRef =
+    kind === "leaderboard"
+      ? leaderboardInputRef
+      : kind === "mpu"
+      ? mpuInputRef
+      : billboardInputRef;
 
-    const wrapClass = `
-      relative w-full mx-auto
-      ${
-        kind === "mpu"
-          ? "max-w-[300px] aspect-[300/395]"
-          : kind === "leaderboard"
-          ? "max-w-[970px] aspect-[970/90]"
-          : "max-w-[970px] aspect-[970/250]"
-      }
-      rounded-2xl border border-mw-line/70
-      bg-mw-surface/70 overflow-hidden ${className}
-    `;
+  const wrapClass = `
+    relative w-full mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70
+    ${
+      kind === "mpu"
+        ? "max-w-[300px] aspect-[300/395]"
+        : kind === "leaderboard"
+        ? "max-w-[970px] aspect-[970/120] min-h-[50px] sm:min-h-[70px] md:min-h-0"
+        : "max-w-[970px] aspect-[970/250]"
+    }
+    ${className}
+  `;
 
-    const imageClass =
-      kind === "mpu" || kind === "leaderboard"
-        ? "h-full w-full object-contain object-center bg-black/30"
-        : "h-full w-full object-cover object-center bg-black/20";
+  const imageClass =
+    kind === "leaderboard"
+      ? "h-full w-full object-cover object-center bg-black/20"
+      : kind === "mpu"
+      ? "h-full w-full object-contain object-center bg-black/30"
+      : "h-full w-full object-cover object-center bg-black/20";
 
-    return (
-      <div className={wrapClass}>
-        {ad.enabled ? (
-          ad.imageUrl ? (
-            ad.href ? (
-              <a
-                href={ad.href}
-                target="_blank"
-                rel="noreferrer"
-                className="block h-full w-full"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={ad.imageUrl}
-                  alt={ad.label || kind}
-                  className={imageClass}
-                />
-              </a>
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
+  return (
+    <div className={wrapClass}>
+      {ad.enabled ? (
+        ad.imageUrl ? (
+          ad.href ? (
+            <a
+              href={ad.href}
+              target="_blank"
+              rel="noreferrer"
+              className="block h-full w-full"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={ad.imageUrl}
                 alt={ad.label || kind}
                 className={imageClass}
               />
-            )
+            </a>
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
-              <span className="px-4 text-[11px] sm:text-xs md:text-sm">
-                {ad.label}
-              </span>
-            </div>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={ad.imageUrl}
+              alt={ad.label || kind}
+              className={imageClass}
+            />
           )
         ) : (
-          editControlsVisible && (
-            <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
-              <span className="px-4 text-[11px] sm:text-xs md:text-sm">
-                {ad.label} · oculto
-              </span>
-            </div>
-          )
-        )}
-
-        {editControlsVisible && (
-          <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => toggleAd(kind)}
-              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-            >
-              {ad.enabled ? "Ocultar" : "Mostrar"}
-            </button>
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-            >
-              Imagen
-            </button>
-            <button
-              type="button"
-              onClick={() => editAdLink(kind)}
-              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-            >
-              Link
-            </button>
-            <button
-              type="button"
-              onClick={() => clearAdImage(kind)}
-              className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
-            >
-              Limpiar
-            </button>
+          <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
+            <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+              {ad.label}
+            </span>
           </div>
-        )}
+        )
+      ) : (
+        editControlsVisible && (
+          <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
+            <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+              {ad.label} · oculto
+            </span>
+          </div>
+        )
+      )}
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleAdImagePick(kind, e.target.files)}
-        />
-      </div>
-    );
-  }
+      {editControlsVisible && (
+        <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => toggleAd(kind)}
+            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
+            {ad.enabled ? "Ocultar" : "Mostrar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
+            Imagen
+          </button>
+          <button
+            type="button"
+            onClick={() => editAdLink(kind)}
+            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
+            Link
+          </button>
+          <button
+            type="button"
+            onClick={() => clearAdImage(kind)}
+            className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
+          >
+            Limpiar
+          </button>
+        </div>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => handleAdImagePick(kind, e.target.files)}
+      />
+    </div>
+  );
+}
 
   function renderMobileCardsRail(
     title: string,
@@ -1130,8 +1131,8 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
             </div>
           </section>
 
-          <section className="py-5 sm:py-6">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <section className="py-4 sm:py-6">
+            <div className="mx-auto w-full max-w-[1200px] px-2 sm:px-6 lg:px-8">
               {renderEditableAd("leaderboard")}
             </div>
           </section>
@@ -1320,75 +1321,137 @@ async function persistHomeSettings(nextSettings: HomeSettings) {
             </div>
           </section>
 
-         <section className="md:hidden py-10 sm:py-12">
-  <div className="mx-auto w-full max-w-[1200px] px-4">
-    <div className="mb-8">
-      <h2 className="font-display text-2xl font-bold tracking-wide text-white">
-        Deportes — Destacados
-      </h2>
-      <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
-    </div>
+          {/* MPU MOBILE: debajo de Autos/Motos y arriba de Deportes */}
+          <section className="py-6 md:hidden">
+            <div className="mx-auto w-full max-w-[1200px] px-4">
+              <div className="flex justify-center">
+                {renderEditableAd("mpu", "max-w-[300px]")}
+              </div>
+            </div>
+          </section>
 
-    <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-      <div className="flex gap-4 snap-x snap-mandatory">
-        {safeSports.map((item) => (
-          <Link
-            key={item.id}
-            href={item.href}
-            className="block w-[84%] min-w-[84%] shrink-0 snap-start"
-          >
-            <Card className="overflow-hidden">
-              <div className="relative h-56 w-full">
-                <Image
-                  src={item.img}
-                  alt={item.title}
-                  fill
-                  sizes="84vw"
-                  style={{ objectFit: "cover" }}
-                />
+          {/* DEPORTES MOBILE */}
+          <section className="py-10 sm:py-12 md:hidden">
+            <div className="mx-auto w-full max-w-[1200px] px-4">
+              <div className="mb-8">
+                <h2 className="font-display text-2xl font-bold tracking-wide text-white">
+                  Deportes — Destacados
+                </h2>
+                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
               </div>
 
-              <CardContent className="p-5">
-                <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
-                  <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                  {item.sectionLabel} · {item.typeLabel}
+              <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
+                <div className="flex gap-4 snap-x snap-mandatory">
+                  {safeSports.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className="block w-[84%] min-w-[84%] shrink-0 snap-start"
+                    >
+                      <Card className="overflow-hidden">
+                        <div className="relative h-56 w-full">
+                          <Image
+                            src={item.img}
+                            alt={item.title}
+                            fill
+                            sizes="84vw"
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+
+                        <CardContent className="p-5">
+                          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                            {item.sectionLabel} · {item.typeLabel}
+                          </div>
+
+                          <h3 className="text-[2rem] font-semibold leading-[1.05] text-white">
+                            {item.title}
+                          </h3>
+
+                          <p className="mt-3 text-base leading-relaxed text-gray-300 line-clamp-3">
+                            {item.excerpt}
+                          </p>
+
+                          <div className="mt-5">
+                            <span className="text-[#43A1AD] underline underline-offset-4">
+                              Leer más
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
                 </div>
+              </div>
 
-                <h3 className="text-[2rem] font-semibold leading-[1.05] text-white">
-                  {item.title}
-                </h3>
+              <div className="mt-6 text-center">
+                <Link href="/deportes">
+                  <Button variant="cyan" className="w-full">
+                    Ver todo Deportes
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </section>
 
-                <p className="mt-3 text-base leading-relaxed text-gray-300 line-clamp-3">
-                  {item.excerpt}
-                </p>
+          {/* DEPORTES DESKTOP */}
+          <section className="hidden md:block py-10 sm:py-12">
+            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+              <div className="mb-8">
+                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+                  Deportes — Destacados
+                </h2>
+                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
+              </div>
 
-                <div className="mt-5">
-                  <span className="text-[#43A1AD] underline underline-offset-4">
-                    Leer más
-                  </span>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                {safeSports.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,122,26,.16)]"
+                  >
+                    <div className="relative h-44 w-full">
+                      <Image
+                        src={item.img}
+                        alt={item.title}
+                        fill
+                        sizes="(max-width: 1280px) 50vw, 25vw"
+                        style={{ objectFit: "cover" }}
+                      />
+                    </div>
+                    <CardContent className="p-5">
+                      <div className="text-xs text-gray-400">{item.when}</div>
+                      <h3 className="mt-1 text-lg font-semibold text-white">
+                        {item.title}
+                      </h3>
+                      <p className="mt-2 text-sm text-gray-300 line-clamp-2">
+                        {item.excerpt}
+                      </p>
+                      <Link href={item.href} className="inline-block mt-auto">
+                        <Button variant="link" className="mt-3">
+                          Leer más
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                <div className="sm:col-span-2 xl:col-span-1">
+                  {renderEditableAd("mpu")}
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-    </div>
+              </div>
 
-    <div className="mt-6">
-      {renderEditableAd("mpu")}
-    </div>
+              <div className="mt-8 text-center">
+                <Link href="/deportes">
+                  <Button variant="cyan" className="px-6 py-3">
+                    Ver todo Deportes
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </section>
 
-    <div className="mt-6 text-center">
-      <Link href="/deportes">
-        <Button variant="cyan" className="w-full">
-          Ver todo Deportes
-        </Button>
-      </Link>
-    </div>
-  </div>
-</section>
-
-<section className="hidden md:block py-10 sm:py-12">
           {renderMobileCardsRail(
             "Lifestyle — Cultura & Garaje",
             "bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]",
