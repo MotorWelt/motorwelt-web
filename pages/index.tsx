@@ -626,7 +626,7 @@ function renderEditableAd(kind: AdKind, className = "") {
       kind === "mpu"
         ? "max-w-[300px] aspect-[300/395]"
         : kind === "leaderboard"
-        ? "max-w-[970px] aspect-[970/120] min-h-[50px] sm:min-h-[70px] md:min-h-0"
+        ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
         : "max-w-[970px] aspect-[970/250]"
     }
     ${className}
