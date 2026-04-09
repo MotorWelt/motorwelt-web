@@ -3,13 +3,15 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 /**
  * ✅ Usa el mismo sanity client de tu proyecto
- * (según tu contexto: sanityReadClient / sanityWriteClient).
  */
 import { sanityReadClient } from "@/lib/sanityClient";
 
 type GetBody = { id?: string };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   const isPost = req.method === "POST";
   const isGet = req.method === "GET";
 
@@ -19,10 +21,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const id =
-      isPost
-        ? String(((req.body || {}) as GetBody).id || "").trim()
-        : String(req.query.id || "").trim();
+    const id = isPost
+      ? String(((req.body || {}) as GetBody).id || "").trim()
+      : String(req.query.id || "").trim();
 
     if (!id) {
       return res.status(400).json({ ok: false, error: "Falta id" });
@@ -45,6 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         tags,
 
         videoUrl,
+        reelUrl,
         useVideoAsHero,
 
         seoTitle,
@@ -58,6 +60,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         mainImageUrl,
         galleryUrls,
+
+        "slug": slug.current,
 
         coverImageAssetId,
 

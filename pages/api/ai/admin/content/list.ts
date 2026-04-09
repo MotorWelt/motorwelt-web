@@ -67,9 +67,7 @@ export default async function handler(
     }
 
     if (q) {
-      filters.push(
-        `(title match $q || subtitle match $q || excerpt match $q)`
-      );
+      filters.push(`(title match $q || subtitle match $q || excerpt match $q)`);
       params.q = `*${q}*`;
     }
 
@@ -81,13 +79,18 @@ export default async function handler(
       [0...$limit]{
         "id": _id,
         title,
+        "slug": slug.current,
         "section": coalesce(
           section,
           select(
             lower(category) == "autos" => "noticias_autos",
             lower(category) == "motos" => "noticias_motos",
+            lower(category) == "tuning" => "tuning",
             "autos" in categories[] => "noticias_autos",
             "motos" in categories[] => "noticias_motos",
+            "tuning" in categories[] => "tuning",
+            "builds" in categories[] => "tuning",
+            "mods" in categories[] => "tuning",
             ""
           )
         ),

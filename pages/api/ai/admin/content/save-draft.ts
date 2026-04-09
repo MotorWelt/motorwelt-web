@@ -24,32 +24,36 @@ type SaveDraftRequest = {
   authorEmail?: string;
 
   mainImageUrl?: string;
-  // ⚠️ OJO: esto existe en tu UI pero NO en tu schema.
-  // Lo dejamos en request para compatibilidad, pero NO lo guardamos como campo.
+  // Compatibilidad con la UI actual
   mainImageAsset?: { assetId: string; url: string } | null;
 
   galleryUrls?: string[] | string;
 
   videoUrl?: string;
+  reelUrl?: string;
   useVideoAsHero?: boolean;
 
   slug?: string;
 };
 
 type Data =
-  | { ok: true; id: string; created?: boolean }
+  | { ok: true; id: string; created?: boolean; slug?: string }
   | { ok: false; error: string };
 
 function normalizeStringArray(input: unknown): string[] {
   if (!input) return [];
-  if (Array.isArray(input))
+
+  if (Array.isArray(input)) {
     return input.map(String).map((s) => s.trim()).filter(Boolean);
+  }
+
   if (typeof input === "string") {
     return input
       .split(/\n|,/)
       .map((s) => s.trim())
       .filter(Boolean);
   }
+
   return [];
 }
 
@@ -126,6 +130,7 @@ export default async function handler(
       mainImageAsset,
       galleryUrls,
       videoUrl,
+      reelUrl,
       useVideoAsHero,
       slug,
     } = body;
@@ -144,8 +149,7 @@ export default async function handler(
     const normalizedTags = normalizeStringArray(tags);
     const normalizedGallery = normalizeStringArray(galleryUrls);
 
-    // ✅ En tu schema el campo real es mainImageUrl (string).
-    // Si la UI manda mainImageAsset, usamos su url pero NO guardamos el objeto.
+    // Si la UI manda mainImageAsset, usamos su URL
     const resolvedMainImageUrl = mainImageAsset?.url || mainImageUrl || "";
 
     let finalSlug: string | null = null;
@@ -163,7 +167,7 @@ export default async function handler(
       finalSlug = await makeUniqueSlug(title);
     }
 
-    const docBase: any = {
+    const docBase: Record<string, any> = {
       _type: "article",
       title,
       subtitle: subtitle || "",
@@ -185,13 +189,11 @@ export default async function handler(
 
       slug: { _type: "slug", current: finalSlug },
 
-      // ✅ Campo existente en schema
+      // Campos de medios
       mainImageUrl: resolvedMainImageUrl,
-
-      // ✅ Campo existente en schema
       galleryUrls: normalizedGallery,
-
       videoUrl: videoUrl || "",
+      reelUrl: reelUrl || "",
       useVideoAsHero: !!useVideoAsHero,
 
       updatedAt: now,
@@ -206,7 +208,13 @@ export default async function handler(
       });
 
       const updated = await patch.commit();
-      return res.status(200).json({ ok: true, id: updated._id, created: false });
+
+      return res.status(200).json({
+        ok: true,
+        id: updated._id,
+        created: false,
+        slug: finalSlug || undefined,
+      });
     }
 
     const createdDoc = await sanityAdminClient.create({
@@ -214,7 +222,12 @@ export default async function handler(
       ...(shouldSetPublishedAt ? { publishedAt: now } : {}),
     });
 
-    return res.status(200).json({ ok: true, id: createdDoc._id, created: true });
+    return res.status(200).json({
+      ok: true,
+      id: createdDoc._id,
+      created: true,
+      slug: finalSlug || undefined,
+    });
   } catch (error: any) {
     console.error("SANITY SAVE ERROR:", error?.message || error);
     return res.status(500).json({

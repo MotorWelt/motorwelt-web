@@ -9,18 +9,25 @@ import ProfileButton from "../components/ProfileButton";
 const nextI18NextConfig = require("../next-i18next.config.js");
 
 type ButtonVariant = "cyan" | "pink" | "link";
+
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   className?: string;
   children: React.ReactNode;
   variant?: ButtonVariant;
 };
 
-const Button: React.FC<ButtonProps> = ({
+type LinkButtonProps = {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+  variant?: ButtonVariant;
+};
+
+const getButtonClasses = (
+  variant: ButtonVariant = "cyan",
   className = "",
-  children,
-  variant = "cyan",
-  ...props
-}) => {
+  isLinkElement = false
+) => {
   const base =
     "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition will-change-transform focus:outline-none";
 
@@ -30,13 +37,35 @@ const Button: React.FC<ButtonProps> = ({
     pink:
       "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40",
     link:
-      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0",
+      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
   };
 
+  return `${base} ${styles[variant]} ${className}`.trim();
+};
+
+const Button: React.FC<ButtonProps> = ({
+  className = "",
+  children,
+  variant = "cyan",
+  ...props
+}) => {
   return (
-    <button {...props} className={`${base} ${styles[variant]} ${className}`}>
+    <button {...props} className={getButtonClasses(variant, className)}>
       {children}
     </button>
+  );
+};
+
+const LinkButton: React.FC<LinkButtonProps> = ({
+  href,
+  className = "",
+  children,
+  variant = "cyan",
+}) => {
+  return (
+    <Link href={href} className={getButtonClasses(variant, className, true)}>
+      {children}
+    </Link>
   );
 };
 
@@ -104,6 +133,14 @@ type HomeSettings = {
     billboard: AdConfig;
   };
   partnerLogos: PartnerLogo[];
+};
+
+type HomeSectionCard = {
+  title: string;
+  href: string;
+  accent: string;
+  accentDot: string;
+  subtitle: string;
 };
 
 const DEFAULT_HOME_SETTINGS: HomeSettings = {
@@ -185,6 +222,22 @@ function readCookie(name: string) {
     new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
   );
   return match ? decodeURIComponent(match[2]) : "";
+}
+
+function detailHref(
+  section: "tuning" | "deportes" | "lifestyle",
+  slug?: string | null
+) {
+  const cleanSlug = String(slug || "").trim();
+  if (!cleanSlug) return `/${section}`;
+  return `/${section}/${cleanSlug}`;
+}
+
+function splitFiveItemLayout(items: HomeNewsItem[]) {
+  return {
+    left: items.slice(0, 2),
+    right: items.slice(2, 5),
+  };
 }
 
 export default function HomePage({
@@ -279,8 +332,8 @@ export default function HomePage({
     );
 
   const sideLifestyle =
-    lifestyleItems.slice(1, 4).length > 0
-      ? lifestyleItems.slice(1, 4)
+    lifestyleItems.slice(1, 5).length > 0
+      ? lifestyleItems.slice(1, 5)
       : [
           fallbackItem(
             "fallback-life-1",
@@ -306,6 +359,14 @@ export default function HomePage({
             "/lifestyle",
             "Lifestyle"
           ),
+          fallbackItem(
+            "fallback-life-4",
+            "Objetos con carácter",
+            "Lo visual, lo funcional y lo aspiracional dentro del universo MotorWelt.",
+            "/images/noticia-1.jpg",
+            "/lifestyle",
+            "Lifestyle"
+          ),
         ];
 
   const heroTuning =
@@ -320,8 +381,8 @@ export default function HomePage({
     );
 
   const sideTuning =
-    tuningItems.slice(1, 4).length > 0
-      ? tuningItems.slice(1, 4)
+    tuningItems.slice(1, 5).length > 0
+      ? tuningItems.slice(1, 5)
       : [
           fallbackItem(
             "fallback-tuning-1",
@@ -347,7 +408,69 @@ export default function HomePage({
             "/tuning",
             "Tuning"
           ),
+          fallbackItem(
+            "fallback-tuning-4",
+            "Más allá del stance",
+            "Preparación, presencia y builds que cuentan una historia.",
+            "/images/noticia-1.jpg",
+            "/tuning",
+            "Tuning"
+          ),
         ];
+
+  const tuningDesktopItems = [heroTuning, ...sideTuning].slice(0, 5);
+  const tuningDesktopColumns = splitFiveItemLayout(tuningDesktopItems);
+
+  const lifestyleDesktopItems = [heroLifestyle, ...sideLifestyle].slice(0, 5);
+  const lifestyleDesktopColumns = splitFiveItemLayout(lifestyleDesktopItems);
+
+  const heroSectionCards: HomeSectionCard[] = useMemo(
+    () => [
+      {
+        title: "Autos",
+        href: "/noticias/autos",
+        accent: "from-[#0CE0B2]/45 via-[#0CE0B2]/15 to-transparent",
+        accentDot: "bg-[#0CE0B2]",
+        subtitle: "Pruebas, lanzamientos y cultura automotriz",
+      },
+      {
+        title: "Motos",
+        href: "/noticias/motos",
+        accent: "from-[#43A1AD]/45 via-[#43A1AD]/15 to-transparent",
+        accentDot: "bg-[#43A1AD]",
+        subtitle: "Dos ruedas, estilo y carácter",
+      },
+      {
+        title: "Tuning",
+        href: "/tuning",
+        accent: "from-[#FF7A1A]/45 via-[#FF7A1A]/15 to-transparent",
+        accentDot: "bg-[#FF7A1A]",
+        subtitle: "Builds, mods y garage culture",
+      },
+      {
+        title: "Deportes",
+        href: "/deportes",
+        accent: "from-[#A3FF12]/35 via-[#A3FF12]/10 to-transparent",
+        accentDot: "bg-[#A3FF12]",
+        subtitle: "Pista, rally, racing y adrenalina",
+      },
+      {
+        title: "Lifestyle",
+        href: "/lifestyle",
+        accent: "from-[#E2A24C]/45 via-[#E2A24C]/15 to-transparent",
+        accentDot: "bg-[#E2A24C]",
+        subtitle: "Diseño, estilo y cultura visual",
+      },
+      {
+        title: "Comunidad",
+        href: "/comunidad",
+        accent: "from-[#ffffff]/20 via-[#ffffff]/8 to-transparent",
+        accentDot: "bg-white",
+        subtitle: "Eventos, meets y la gente detrás de esto",
+      },
+    ],
+    []
+  );
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -608,123 +731,126 @@ export default function HomePage({
     );
   }
 
-function renderEditableAd(kind: AdKind, className = "") {
-  const ad = homeSettings.ads[kind];
+  function renderEditableAd(kind: AdKind, className = "") {
+    const ad = homeSettings.ads[kind];
 
-  if (!ad.enabled && !editControlsVisible) return null;
+    if (!ad.enabled && !editControlsVisible) return null;
 
-  const inputRef =
-    kind === "leaderboard"
-      ? leaderboardInputRef
-      : kind === "mpu"
-      ? mpuInputRef
-      : billboardInputRef;
+    const inputRef =
+      kind === "leaderboard"
+        ? leaderboardInputRef
+        : kind === "mpu"
+        ? mpuInputRef
+        : billboardInputRef;
 
-  const wrapClass = `
-    relative w-full mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70
-    ${
-      kind === "mpu"
-        ? "max-w-[300px] aspect-[300/395]"
-        : kind === "leaderboard"
-        ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
-        : "max-w-[970px] aspect-[970/250]"
-    }
-    ${className}
-  `;
+    const wrapClass = `
+      relative w-full mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70
+      ${
+        kind === "mpu"
+          ? "max-w-[300px] aspect-[300/395]"
+          : kind === "leaderboard"
+          ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
+          : "max-w-[970px] aspect-[970/250]"
+      }
+      ${className}
+    `;
 
-  const imageClass =
-    kind === "leaderboard"
-      ? "h-full w-full object-cover object-center bg-black/20"
-      : kind === "mpu"
-      ? "h-full w-full object-contain object-center bg-black/30"
-      : "h-full w-full object-cover object-center bg-black/20";
+    const imageClass =
+      kind === "leaderboard"
+        ? "h-full w-full object-cover object-center bg-black/20"
+        : kind === "mpu"
+        ? "h-full w-full object-contain object-center bg-black/30"
+        : "h-full w-full object-cover object-center bg-black/20";
 
-  return (
-    <div className={wrapClass}>
-      {ad.enabled ? (
-        ad.imageUrl ? (
-          ad.href ? (
-            <a
-              href={ad.href}
-              target="_blank"
-              rel="noreferrer"
-              className="block h-full w-full"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+    return (
+      <div className={wrapClass}>
+        {ad.enabled ? (
+          ad.imageUrl ? (
+            ad.href ? (
+              <a
+                href={ad.href}
+                target="_blank"
+                rel="noreferrer"
+                className="block h-full w-full"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={ad.imageUrl}
+                  alt={ad.label || kind}
+                  className={imageClass}
+                />
+              </a>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={ad.imageUrl}
                 alt={ad.label || kind}
                 className={imageClass}
               />
-            </a>
+            )
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={ad.imageUrl}
-              alt={ad.label || kind}
-              className={imageClass}
-            />
+            <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
+              <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+                {ad.label}
+              </span>
+            </div>
           )
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
-            <span className="px-4 text-[11px] sm:text-xs md:text-sm">
-              {ad.label}
-            </span>
-          </div>
-        )
-      ) : (
-        editControlsVisible && (
-          <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
-            <span className="px-4 text-[11px] sm:text-xs md:text-sm">
-              {ad.label} · oculto
-            </span>
-          </div>
-        )
-      )}
+          editControlsVisible && (
+            <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
+              <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+                {ad.label} · oculto
+              </span>
+            </div>
+          )
+        )}
 
-      {editControlsVisible && (
-        <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => toggleAd(kind)}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
-            {ad.enabled ? "Ocultar" : "Mostrar"}
-          </button>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
-            Imagen
-          </button>
-          <button
-            type="button"
-            onClick={() => editAdLink(kind)}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
-            Link
-          </button>
-          <button
-            type="button"
-            onClick={() => clearAdImage(kind)}
-            className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
-          >
-            Limpiar
-          </button>
-        </div>
-      )}
+        {editControlsVisible && (
+          <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => toggleAd(kind)}
+              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            >
+              {ad.enabled ? "Ocultar" : "Mostrar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            >
+              Imagen
+            </button>
+            <button
+              type="button"
+              onClick={() => editAdLink(kind)}
+              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            >
+              Link
+            </button>
+            <button
+              type="button"
+              onClick={() => clearAdImage(kind)}
+              className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
+            >
+              Limpiar
+            </button>
+          </div>
+        )}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => handleAdImagePick(kind, e.target.files)}
-      />
-    </div>
-  );
-}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            void handleAdImagePick(kind, e.target.files);
+            e.currentTarget.value = "";
+          }}
+        />
+      </div>
+    );
+  }
 
   function renderMobileCardsRail(
     title: string,
@@ -761,6 +887,7 @@ function renderEditableAd(kind: AdKind, className = "") {
                         sizes="84vw"
                         style={{ objectFit: "cover" }}
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                     </div>
 
                     <CardContent className="p-5">
@@ -790,14 +917,127 @@ function renderEditableAd(kind: AdKind, className = "") {
           </div>
 
           <div className="mt-6 text-center">
-            <Link href={ctaHref}>
-              <Button variant={ctaVariant} className="w-full">
-                {ctaLabel}
-              </Button>
-            </Link>
+            <LinkButton href={ctaHref} variant={ctaVariant} className="w-full">
+              {ctaLabel}
+            </LinkButton>
           </div>
         </div>
       </section>
+    );
+  }
+
+  function renderHeroSectionsRail() {
+    return (
+      <section className="relative -mt-10 z-20 pb-4 sm:-mt-12 sm:pb-6 lg:-mt-14">
+        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+          <div className="rounded-[28px] border border-white/10 bg-black/35 p-3 shadow-[0_18px_60px_rgba(0,0,0,.35)] backdrop-blur-xl sm:p-4">
+            <div className="mb-3 flex items-center justify-between px-1 sm:px-2">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.28em] text-gray-400 sm:text-[11px]">
+                  Explora el universo
+                </p>
+                <h2 className="mt-1 text-base font-semibold text-white sm:text-lg">
+                  Secciones principales
+                </h2>
+              </div>
+
+              <div className="hidden md:flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                Feed rápido
+              </div>
+            </div>
+
+            <div className="hidden gap-3 md:grid md:grid-cols-3 xl:grid-cols-6">
+              {heroSectionCards.map((item) => (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05]"
+                >
+                  <div
+                    className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-80`}
+                  />
+                  <div className="relative z-10">
+                    <div className="mb-4 flex items-center justify-between">
+                      <span className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`} />
+                      <span className="text-[10px] uppercase tracking-[0.22em] text-gray-500 transition group-hover:text-gray-300">
+                        Go
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                      {item.subtitle}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="-mx-3 overflow-x-auto px-3 no-scrollbar md:hidden">
+              <div className="flex gap-3">
+                {heroSectionCards.map((item) => (
+                  <Link
+                    key={item.title}
+                    href={item.href}
+                    className="group relative min-w-[220px] max-w-[220px] overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4"
+                  >
+                    <div
+                      className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-80`}
+                    />
+                    <div className="relative z-10">
+                      <div className="mb-4 flex items-center justify-between">
+                        <span className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`} />
+                        <span className="text-[10px] uppercase tracking-[0.22em] text-gray-500">
+                          Go
+                        </span>
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                        {item.subtitle}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderStackedFeatureCard(item: HomeNewsItem, priority = false) {
+    return (
+      <Card
+        key={item.id}
+        className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]"
+      >
+        <div className="relative h-44 w-full">
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            style={{ objectFit: "cover" }}
+            priority={priority}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        </div>
+        <CardContent className="p-4 sm:p-5">
+          <div className="text-xs text-gray-400">{item.when}</div>
+          <h3 className="mt-1 text-lg font-semibold text-white">{item.title}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-gray-300 line-clamp-2">
+            {item.excerpt}
+          </p>
+          <div className="mt-4 mt-auto">
+            <Link href={item.href}>
+              <span className={getButtonClasses("link")}>Leer más</span>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -814,7 +1054,10 @@ function renderEditableAd(kind: AdKind, className = "") {
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => handleHeroImagePick(e.target.files)}
+        onChange={(e) => {
+          void handleHeroImagePick(e.target.files);
+          e.currentTarget.value = "";
+        }}
       />
 
       <input
@@ -822,7 +1065,10 @@ function renderEditableAd(kind: AdKind, className = "") {
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => handleAddPartner(e.target.files)}
+        onChange={(e) => {
+          void handleAddPartner(e.target.files);
+          e.currentTarget.value = "";
+        }}
       />
 
       <div className="relative min-h-screen overflow-x-hidden text-gray-100">
@@ -1079,57 +1325,62 @@ function renderEditableAd(kind: AdKind, className = "") {
           </div>
         )}
 
-        <main aria-hidden={mobileOpen} className="relative z-10 pt-16 lg:pt-[72px]">
-          <section className="relative flex min-h-[72svh] flex-col items-center justify-center overflow-hidden sm:min-h-[78svh] lg:min-h-[84vh]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
-              alt="Hero MotorWelt"
-              className="absolute inset-0 h-full w-full object-cover"
-              style={{ filter: "brightness(.45) saturate(1.1)" }}
-            />
+        <main aria-hidden={mobileOpen} className="relative z-10">
+          <section className="relative isolate overflow-hidden">
+            <div className="relative flex min-h-[76svh] flex-col justify-end overflow-hidden sm:min-h-[82svh] lg:min-h-[90vh]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
+                alt="Hero MotorWelt"
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{ filter: "brightness(.34) saturate(1.12) contrast(1.06)" }}
+              />
 
-            {editControlsVisible && (
-              <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => heroInputRef.current?.click()}
-                  className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
-                >
-                  Cambiar portada
-                </button>
-              </div>
-            )}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(12,224,178,.14),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(255,122,26,.16),transparent_30%),linear-gradient(180deg,rgba(0,0,0,.22)_0%,rgba(0,0,0,.38)_24%,rgba(0,0,0,.64)_58%,rgba(2,10,10,.9)_100%)]" />
+              <div className="absolute inset-y-0 left-0 hidden w-[62%] bg-gradient-to-r from-black/78 via-black/46 to-transparent lg:block" />
+              <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#041210] via-[#041210]/72 to-transparent" />
 
-            <div className="pointer-events-none absolute -left-10 -top-10 h-64 w-64 rotate-[-20deg] rounded-full bg-[#0CE0B2]/18 blur-3xl sm:h-80 sm:w-80" />
-            <div className="pointer-events-none absolute -bottom-16 -right-16 h-72 w-72 rotate-[-20deg] rounded-full bg-[#FF7A1A]/20 blur-3xl sm:h-96 sm:w-96" />
+              <div className="pointer-events-none absolute -left-10 top-20 h-64 w-64 rotate-[-20deg] rounded-full bg-[#0CE0B2]/16 blur-3xl sm:h-80 sm:w-80" />
+              <div className="pointer-events-none absolute top-[16%] right-[8%] h-44 w-44 rounded-full bg-[#FF7A1A]/16 blur-3xl sm:h-56 sm:w-56" />
+              <div className="pointer-events-none absolute -bottom-16 -right-16 h-72 w-72 rotate-[-20deg] rounded-full bg-[#FF7A1A]/18 blur-3xl sm:h-96 sm:w-96" />
 
-            <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8">
-              <div className="mx-auto max-w-4xl text-center">
-                <h1 className="font-display text-[2.35rem] font-extrabold leading-[0.95] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-                  <span className="glow-cool block sm:inline">MotorWelt:</span>{" "}
-                  <span className="glow-warm block sm:inline">{t("hero.title")}</span>
-                </h1>
+              {editControlsVisible && (
+                <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => heroInputRef.current?.click()}
+                    className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                  >
+                    Cambiar portada
+                  </button>
+                </div>
+              )}
 
-                <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg md:text-xl">
-                  {t("hero.subtitle")}
-                </p>
+              <div className="relative z-10 w-full px-4 pb-16 pt-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
+                <div className="mx-auto flex w-full max-w-[1200px] justify-center">
+                  <div className="w-full max-w-4xl text-center">
+                    <div className="flex justify-center">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
+                        <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                        MotorWelt
+                      </div>
+                    </div>
 
-                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-                  <Link href="/tuning" className="w-full sm:w-auto">
-                    <Button variant="pink" className="w-full sm:w-auto">
-                      Tuning
-                    </Button>
-                  </Link>
-                  <Link href="/noticias/autos" className="w-full sm:w-auto">
-                    <Button variant="cyan" className="w-full sm:w-auto">
-                      {t("hero.ctaNews")}
-                    </Button>
-                  </Link>
+                    <h1 className="mx-auto mt-5 max-w-[920px] font-display text-[2.9rem] font-black leading-[0.9] tracking-[-0.05em] text-white sm:text-[4.2rem] md:text-[5.1rem] lg:text-[5.9rem] xl:text-[6.15rem]">
+                      <span className="glow-cool block">MotorWelt</span>
+                      <span className="block text-white/95">{t("hero.title")}</span>
+                    </h1>
+
+                    <p className="mx-auto mt-6 max-w-[760px] text-base leading-relaxed text-gray-200 sm:text-lg md:text-[1.08rem]">
+                      {t("hero.subtitle")}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
+
+          {renderHeroSectionsRail()}
 
           <section className="py-4 sm:py-6">
             <div className="mx-auto w-full max-w-[1200px] px-2 sm:px-6 lg:px-8">
@@ -1156,67 +1407,23 @@ function renderEditableAd(kind: AdKind, className = "") {
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                <Card className="overflow-hidden">
-                  <div className="relative h-52 w-full sm:h-56">
-                    <Image
-                      src={heroTuning.img}
-                      alt={heroTuning.title}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-                  <CardContent className="p-5 sm:p-6">
-                    <div className="text-xs text-gray-400">{heroTuning.when}</div>
-                    <h3 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
-                      {heroTuning.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
-                      {heroTuning.excerpt}
-                    </p>
-                    <div className="mt-4 mt-auto">
-                      <Link href={heroTuning.href}>
-                        <Button variant="link">Leer artículo</Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="grid gap-6">
+                  {tuningDesktopColumns.left.map((item, index) =>
+                    renderStackedFeatureCard(item, index === 0)
+                  )}
+                </div>
 
                 <div className="grid gap-6">
-                  {sideTuning.map((item) => (
-                    <Card key={item.id} className="overflow-hidden">
-                      <div className="relative h-36 w-full">
-                        <Image
-                          src={item.img}
-                          alt={item.title}
-                          fill
-                          sizes="(max-width: 1024px) 100vw, 50vw"
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="text-xs text-gray-400">{item.when}</div>
-                        <h4 className="mt-1 font-semibold text-white">{item.title}</h4>
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                          {item.excerpt}
-                        </p>
-                        <Link href={item.href} className="inline-block mt-auto">
-                          <Button variant="link" className="mt-3">
-                            Leer más
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {tuningDesktopColumns.right.map((item) =>
+                    renderStackedFeatureCard(item)
+                  )}
                 </div>
               </div>
 
               <div className="mt-8 text-center">
-                <Link href="/tuning">
-                  <Button variant="pink" className="px-6 py-3">
-                    Ver más Tuning
-                  </Button>
-                </Link>
+                <LinkButton href="/tuning" variant="pink" className="px-6 py-3">
+                  Ver más Tuning
+                </LinkButton>
               </div>
             </div>
           </section>
@@ -1250,6 +1457,7 @@ function renderEditableAd(kind: AdKind, className = "") {
                       style={{ objectFit: "cover" }}
                       priority
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-transparent" />
                   </div>
                   <CardContent className="p-5 sm:p-6">
                     <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400 sm:text-xs">
@@ -1264,7 +1472,7 @@ function renderEditableAd(kind: AdKind, className = "") {
                     </p>
                     <div className="mt-4 mt-auto">
                       <Link href={heroMixed.href}>
-                        <Button variant="link">Leer la nota</Button>
+                        <span className={getButtonClasses("link")}>Leer la nota</span>
                       </Link>
                     </div>
                   </CardContent>
@@ -1306,22 +1514,25 @@ function renderEditableAd(kind: AdKind, className = "") {
               </div>
 
               <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
-                <Link href="/noticias/autos" className="w-full sm:w-auto">
-                  <Button variant="cyan" className="w-full px-6 py-3 sm:w-auto">
-                    Ver más de Autos
-                  </Button>
-                </Link>
+                <LinkButton
+                  href="/noticias/autos"
+                  variant="cyan"
+                  className="w-full px-6 py-3 sm:w-auto"
+                >
+                  Ver más de Autos
+                </LinkButton>
                 <span className="hidden text-gray-500 sm:inline">/</span>
-                <Link href="/noticias/motos" className="w-full sm:w-auto">
-                  <Button variant="cyan" className="w-full px-6 py-3 sm:w-auto">
-                    Ver más de Motos
-                  </Button>
-                </Link>
+                <LinkButton
+                  href="/noticias/motos"
+                  variant="cyan"
+                  className="w-full px-6 py-3 sm:w-auto"
+                >
+                  Ver más de Motos
+                </LinkButton>
               </div>
             </div>
           </section>
 
-          {/* MPU MOBILE: debajo de Autos/Motos y arriba de Deportes */}
           <section className="py-6 md:hidden">
             <div className="mx-auto w-full max-w-[1200px] px-4">
               <div className="flex justify-center">
@@ -1330,7 +1541,6 @@ function renderEditableAd(kind: AdKind, className = "") {
             </div>
           </section>
 
-          {/* DEPORTES MOBILE */}
           <section className="py-10 sm:py-12 md:hidden">
             <div className="mx-auto w-full max-w-[1200px] px-4">
               <div className="mb-8">
@@ -1357,6 +1567,7 @@ function renderEditableAd(kind: AdKind, className = "") {
                             sizes="84vw"
                             style={{ objectFit: "cover" }}
                           />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                         </div>
 
                         <CardContent className="p-5">
@@ -1386,16 +1597,13 @@ function renderEditableAd(kind: AdKind, className = "") {
               </div>
 
               <div className="mt-6 text-center">
-                <Link href="/deportes">
-                  <Button variant="cyan" className="w-full">
-                    Ver todo Deportes
-                  </Button>
-                </Link>
+                <LinkButton href="/deportes" variant="cyan" className="w-full">
+                  Ver todo Deportes
+                </LinkButton>
               </div>
             </div>
           </section>
 
-          {/* DEPORTES DESKTOP */}
           <section className="hidden md:block py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
@@ -1419,6 +1627,7 @@ function renderEditableAd(kind: AdKind, className = "") {
                         sizes="(max-width: 1280px) 50vw, 25vw"
                         style={{ objectFit: "cover" }}
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                     </div>
                     <CardContent className="p-5">
                       <div className="text-xs text-gray-400">{item.when}</div>
@@ -1429,9 +1638,7 @@ function renderEditableAd(kind: AdKind, className = "") {
                         {item.excerpt}
                       </p>
                       <Link href={item.href} className="inline-block mt-auto">
-                        <Button variant="link" className="mt-3">
-                          Leer más
-                        </Button>
+                        <span className={getButtonClasses("link", "mt-3")}>Leer más</span>
                       </Link>
                     </CardContent>
                   </Card>
@@ -1443,11 +1650,9 @@ function renderEditableAd(kind: AdKind, className = "") {
               </div>
 
               <div className="mt-8 text-center">
-                <Link href="/deportes">
-                  <Button variant="cyan" className="px-6 py-3">
-                    Ver todo Deportes
-                  </Button>
-                </Link>
+                <LinkButton href="/deportes" variant="cyan" className="px-6 py-3">
+                  Ver todo Deportes
+                </LinkButton>
               </div>
             </div>
           </section>
@@ -1471,67 +1676,23 @@ function renderEditableAd(kind: AdKind, className = "") {
               </div>
 
               <div className="grid gap-6 md:grid-cols-2">
-                <Card className="overflow-hidden">
-                  <div className="relative h-52 w-full sm:h-56">
-                    <Image
-                      src={heroLifestyle.img}
-                      alt={heroLifestyle.title}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-                  <CardContent className="p-5 sm:p-6">
-                    <div className="text-xs text-gray-400">{heroLifestyle.when}</div>
-                    <h3 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
-                      {heroLifestyle.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
-                      {heroLifestyle.excerpt}
-                    </p>
-                    <div className="mt-4 mt-auto">
-                      <Link href={heroLifestyle.href}>
-                        <Button variant="link">Leer artículo</Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="grid gap-6">
+                  {lifestyleDesktopColumns.left.map((item, index) =>
+                    renderStackedFeatureCard(item, index === 0)
+                  )}
+                </div>
 
                 <div className="grid gap-6">
-                  {sideLifestyle.map((item) => (
-                    <Card key={item.id} className="overflow-hidden">
-                      <div className="relative h-36 w-full">
-                        <Image
-                          src={item.img}
-                          alt={item.title}
-                          fill
-                          sizes="(max-width: 1024px) 100vw, 50vw"
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="text-xs text-gray-400">{item.when}</div>
-                        <h4 className="mt-1 font-semibold text-white">{item.title}</h4>
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                          {item.excerpt}
-                        </p>
-                        <Link href={item.href} className="inline-block mt-auto">
-                          <Button variant="link" className="mt-3">
-                            Leer más
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {lifestyleDesktopColumns.right.map((item) =>
+                    renderStackedFeatureCard(item)
+                  )}
                 </div>
               </div>
 
               <div className="mt-8 text-center">
-                <Link href="/lifestyle">
-                  <Button variant="cyan" className="px-6 py-3">
-                    Ver más Lifestyle
-                  </Button>
-                </Link>
+                <LinkButton href="/lifestyle" variant="cyan" className="px-6 py-3">
+                  Ver más Lifestyle
+                </LinkButton>
               </div>
             </div>
           </section>
@@ -1561,13 +1722,14 @@ function renderEditableAd(kind: AdKind, className = "") {
                     sizes="(max-width: 768px) 100vw, 768px"
                     style={{ objectFit: "cover" }}
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
                 </div>
               </div>
 
               <div className="mt-6">
-                <Link href="/comunidad">
-                  <Button variant="pink">{t("community.cta")}</Button>
-                </Link>
+                <LinkButton href="/comunidad" variant="pink">
+                  {t("community.cta")}
+                </LinkButton>
               </div>
             </div>
           </section>
@@ -1628,7 +1790,7 @@ function renderEditableAd(kind: AdKind, className = "") {
                         )}
 
                         {editControlsVisible && (
-                          <div className="absolute right-1 top-1 flex gap-1 z-10">
+                          <div className="absolute right-1 top-1 z-10 flex gap-1">
                             <button
                               type="button"
                               onClick={() => editPartnerLink(partner.id)}
@@ -1899,6 +2061,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "slug": slug.current,
       "publishedAt": publishedAt,
       "_createdAt": _createdAt
     }
@@ -1911,11 +2074,12 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       coalesce(status, "publicado") == "publicado" &&
       section == "lifestyle"
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0...4]{
+    | order(coalesce(publishedAt, _createdAt) desc)[0...5]{
       "id": _id,
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "slug": slug.current,
       "publishedAt": publishedAt,
       "_createdAt": _createdAt
     }
@@ -1934,11 +2098,12 @@ export async function getServerSideProps({ locale }: { locale: string }) {
         "mods" in categories[]
       )
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0...4]{
+    | order(coalesce(publishedAt, _createdAt) desc)[0...5]{
       "id": _id,
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "slug": slug.current,
       "publishedAt": publishedAt,
       "_createdAt": _createdAt
     }
@@ -2023,7 +2188,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     title: String(it?.title || ""),
     excerpt: String(it?.excerpt || ""),
     img: String(it?.img || "/images/noticia-1.jpg"),
-    href: "/deportes",
+    href: detailHref("deportes", it?.slug),
     sectionLabel: "Deportes",
     typeLabel: "noticia",
     when: formatWhen(it?.publishedAt || it?._createdAt),
@@ -2034,7 +2199,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     title: String(it?.title || ""),
     excerpt: String(it?.excerpt || ""),
     img: String(it?.img || "/images/noticia-3.jpg"),
-    href: "/lifestyle",
+    href: detailHref("lifestyle", it?.slug),
     sectionLabel: "Lifestyle",
     typeLabel: "noticia",
     when: formatWhen(it?.publishedAt || it?._createdAt),
@@ -2045,7 +2210,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     title: String(it?.title || ""),
     excerpt: String(it?.excerpt || ""),
     img: String(it?.img || "/images/noticia-2.jpg"),
-    href: "/tuning",
+    href: detailHref("tuning", it?.slug),
     sectionLabel: "Tuning",
     typeLabel: "noticia",
     when: formatWhen(it?.publishedAt || it?._createdAt),

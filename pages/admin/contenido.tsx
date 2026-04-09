@@ -67,9 +67,15 @@ type SectionSlug =
   | "noticias_motos"
   | "deportes"
   | "lifestyle"
-  | "comunidad";
+  | "comunidad"
+  | "tuning";
 
-type ContentType = "noticia" | "cronica" | "opinion" | "review" | "entrevista";
+type ContentType =
+  | "noticia"
+  | "cronica"
+  | "opinion"
+  | "review"
+  | "entrevista";
 
 type ContentStatus = "borrador" | "revision" | "publicado";
 
@@ -144,6 +150,7 @@ function publicPathFromSection(section?: SectionSlug, slug?: string) {
 
   if (section === "noticias_autos") return `/noticias/autos/${slug}`;
   if (section === "noticias_motos") return `/noticias/motos/${slug}`;
+  if (section === "tuning") return `/tuning/${slug}`;
   return null;
 }
 
@@ -177,6 +184,7 @@ type ContentDocPayload = {
   tags?: string[];
 
   videoUrl?: string;
+  reelUrl?: string;
   useVideoAsHero?: boolean;
 
   seoTitle?: string;
@@ -239,6 +247,7 @@ const AdminContentEditorPage: React.FC = () => {
   const [mainImage, setMainImage] = useState("");
   const [gallery, setGallery] = useState<string>(""); // coma o salto de línea
   const [videoUrl, setVideoUrl] = useState("");
+  const [reelUrl, setReelUrl] = useState("");
   const [useVideoAsHero, setUseVideoAsHero] = useState(false);
 
   // ✅ Upload real (imagen principal)
@@ -442,6 +451,7 @@ const AdminContentEditorPage: React.FC = () => {
     setMainImage("");
     setGallery("");
     setVideoUrl("");
+    setReelUrl("");
     setUseVideoAsHero(false);
 
     setMainImageAsset(null);
@@ -525,6 +535,7 @@ const AdminContentEditorPage: React.FC = () => {
       setSeoDescription(doc.seoDescription || "");
 
       setVideoUrl(doc.videoUrl || "");
+      setReelUrl(doc.reelUrl || "");
       setUseVideoAsHero(Boolean(doc.useVideoAsHero));
 
       const coverUrl = doc.mainImageUrl || doc.coverImageAssetUrl || "";
@@ -709,6 +720,7 @@ const AdminContentEditorPage: React.FC = () => {
           .filter(Boolean),
 
         videoUrl: videoUrl || undefined,
+        reelUrl: reelUrl || undefined,
         useVideoAsHero,
 
         seoTitle: (seoTitle || title) || undefined,
@@ -1338,6 +1350,7 @@ const AdminContentEditorPage: React.FC = () => {
                         <option value="deportes">Deportes</option>
                         <option value="lifestyle">Lifestyle</option>
                         <option value="comunidad">Comunidad</option>
+                        <option value="tuning">Tuning</option>
                       </select>
                     </div>
                     <div className="space-y-1">
@@ -1873,6 +1886,26 @@ const AdminContentEditorPage: React.FC = () => {
                         @[video](url)
                       </code>
                       ).
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="content-reel"
+                      className="text-xs text-gray-300"
+                    >
+                      Reel / short format (Instagram, TikTok, Shorts)
+                    </label>
+                    <input
+                      id="content-reel"
+                      value={reelUrl}
+                      onChange={(e) => setReelUrl(e.target.value)}
+                      placeholder="https://www.instagram.com/reel/... o https://www.tiktok.com/..."
+                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                    />
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      Este campo alimentará la sección de reels en Tuning. Por
+                      ahora será por link externo.
                     </p>
                   </div>
                 </div>
