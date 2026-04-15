@@ -1,0 +1,9 @@
+{
+  "name": "MotorWelt",
+  "short_name": "MotorWelt",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#041210",
+  "theme_color": "#041210",
+  "icons": []
+}
