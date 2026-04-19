@@ -128,6 +128,15 @@ type PhotoGalleryEntry = {
   when: string;
 };
 
+type MediaEntry = {
+  id: string;
+  title: string;
+  subtitle: string;
+  coverImageUrl: string;
+  mediaUrl: string;
+  when: string;
+};
+
 type TuningPageSettings = {
   heroImageUrl: string;
   ads: {
@@ -135,6 +144,8 @@ type TuningPageSettings = {
     billboard: AdConfig;
   };
   photoGalleries: PhotoGalleryEntry[];
+  videoEntries: MediaEntry[];
+  reelEntries: MediaEntry[];
 };
 
 const DEFAULT_TUNING_SETTINGS: TuningPageSettings = {
@@ -154,6 +165,8 @@ const DEFAULT_TUNING_SETTINGS: TuningPageSettings = {
     },
   },
   photoGalleries: [],
+  videoEntries: [],
+  reelEntries: [],
 };
 
 function fallbackItem(
@@ -178,7 +191,7 @@ function fallbackItem(
   };
 }
 
-async function uploadImageToSanity(file: File) {
+async function uploadAssetToSanity(file: File) {
   const fd = new FormData();
   fd.append("file", file);
 
@@ -193,6 +206,14 @@ async function uploadImageToSanity(file: File) {
   }
 
   return data as { ok: true; assetId: string; url: string };
+}
+
+async function uploadImageToSanity(file: File) {
+  return uploadAssetToSanity(file);
+}
+
+async function uploadMediaToSanity(file: File) {
+  return uploadAssetToSanity(file);
 }
 
 function readCookie(name: string) {
@@ -224,6 +245,46 @@ function detectMediaPlatform(url?: string | null): MediaPlatform {
   if (value.includes("instagram.com")) return "instagram";
   if (value.includes("tiktok.com")) return "tiktok";
   return "unknown";
+}
+
+function getYoutubeVideoId(url?: string | null): string {
+  const value = String(url || "").trim();
+  if (!value) return "";
+
+  try {
+    if (value.includes("youtu.be/")) {
+      return value.split("youtu.be/")[1]?.split(/[?&#]/)[0] || "";
+    }
+
+    const parsed = new URL(value);
+    const v = parsed.searchParams.get("v");
+    if (v) return v;
+
+    const path = parsed.pathname;
+    if (path.includes("/shorts/")) {
+      return path.split("/shorts/")[1]?.split("/")[0] || "";
+    }
+
+    if (path.includes("/embed/")) {
+      return path.split("/embed/")[1]?.split("/")[0] || "";
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function getYoutubePreviewImage(url?: string | null): string {
+  const id = getYoutubeVideoId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "";
+}
+
+function getMediaPreviewImage(url?: string | null): string {
+  const platform = detectMediaPlatform(url);
+  if (platform === "youtube") return getYoutubePreviewImage(url);
+  if (isDirectVideoUrl(url)) return String(url || "").trim();
+  return "";
 }
 
 function getYoutubeEmbedUrl(url?: string | null): string {
@@ -296,6 +357,24 @@ function getEmbedUrl(kind: VisualMediaKind, url?: string | null): string {
 
   return "";
 }
+function isDirectVideoUrl(url?: string | null): boolean {
+  const value = String(url || "").toLowerCase().trim();
+  if (!value) return false;
+  return /(\.mp4|\.webm|\.mov|\.m4v|\.ogg)(\?|#|$)/.test(value);
+}
+
+function isPlayableVideoUrl(url?: string | null): boolean {
+  return Boolean(getEmbedUrl("video", url) || isDirectVideoUrl(url));
+}
+
+function getMediaPoster(item: { img?: string; mediaUrl?: string; kind?: VisualMediaKind }): string | undefined {
+  if (item.img && !isDirectVideoUrl(item.img)) return item.img;
+  const derivedPreview = getMediaPreviewImage(item.mediaUrl);
+  if (derivedPreview) return derivedPreview;
+  if (item.mediaUrl && !isDirectVideoUrl(item.mediaUrl)) return item.mediaUrl;
+  return undefined;
+}
+
 
 function buildVisualItems(
   items: TuningItem[],
@@ -309,6 +388,10 @@ function buildVisualItems(
       kind === "video" ? item.videoUrl : kind === "reel" ? item.reelUrl : "";
     const platform = detectMediaPlatform(mediaUrl);
     const embedUrl = getEmbedUrl(kind, mediaUrl);
+    const previewImage =
+      kind === "photo"
+        ? ""
+        : getMediaPreviewImage(mediaUrl) || item.img || item.galleryUrls?.[0] || "";
 
     return {
       id: `${kind}-${item.id || index}`,
@@ -320,7 +403,10 @@ function buildVisualItems(
           : kind === "video"
           ? "Cortes con movimiento, atmósfera y presencia."
           : "Formato corto con impacto inmediato y energía visual."),
-      img: item.img || item.galleryUrls?.[0] || "/images/noticia-2.jpg",
+      img:
+        kind === "photo"
+          ? item.img || item.galleryUrls?.[0] || "/images/noticia-2.jpg"
+          : previewImage || "/images/noticia-2.jpg",
       href: item.href || "/tuning",
       when: item.when || "",
       kind,
@@ -334,7 +420,7 @@ function buildVisualItems(
 function getKindLabel(kind: VisualMediaKind) {
   if (kind === "photo") return "Fotos";
   if (kind === "video") return "Video";
-  return "Reel";
+  return "Formato corto";
 }
 
 function getKindAccent(kind: VisualMediaKind) {
@@ -380,6 +466,21 @@ function normalizeGalleryEntry(raw: any): PhotoGalleryEntry {
   };
 }
 
+function normalizeMediaEntry(raw: any, kind: Exclude<VisualMediaKind, "photo">): MediaEntry {
+  const mediaUrl = String(raw?.mediaUrl || raw?.videoUrl || raw?.reelUrl || raw?.sourceUrl || raw?.href || "").trim();
+  const cover = String(raw?.coverImageUrl || raw?.img || raw?.previewImageUrl || "").trim();
+  const derivedPreview = getMediaPreviewImage(mediaUrl);
+
+  return {
+    id: String(raw?.id || `${kind}-${Date.now()}`),
+    title: String(raw?.title || (kind === "video" ? "Nuevo video" : "Nuevo formato corto")),
+    subtitle: String(raw?.subtitle || raw?.excerpt || ""),
+    coverImageUrl: cover || derivedPreview || "",
+    mediaUrl,
+    when: String(raw?.when || ""),
+  };
+}
+
 function sanitizeTuningSettings(
   raw?: any,
   fallbackHero = "/images/noticia-2.jpg"
@@ -409,6 +510,12 @@ function sanitizeTuningSettings(
     },
     photoGalleries: Array.isArray(raw?.photoGalleries)
       ? raw.photoGalleries.map(normalizeGalleryEntry)
+      : [],
+    videoEntries: Array.isArray(raw?.videoEntries)
+      ? raw.videoEntries.map((entry: any) => normalizeMediaEntry(entry, "video"))
+      : [],
+    reelEntries: Array.isArray(raw?.reelEntries)
+      ? raw.reelEntries.map((entry: any) => normalizeMediaEntry(entry, "reel"))
       : [],
   };
 }
@@ -762,10 +869,16 @@ export default function TuningPage({
   const [editingGallery, setEditingGallery] = useState<PhotoGalleryEntry | null>(
     null
   );
+  const [editingVideo, setEditingVideo] = useState<MediaEntry | null>(null);
+  const [editingReel, setEditingReel] = useState<MediaEntry | null>(null);
 
   const heroInputRef = useRef<HTMLInputElement | null>(null);
   const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
+  const videoCoverInputRef = useRef<HTMLInputElement | null>(null);
+  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
+  const reelCoverInputRef = useRef<HTMLInputElement | null>(null);
+  const reelFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const featured =
     tuningItems[0] ??
@@ -881,7 +994,7 @@ export default function TuningPage({
     [fallbackPhotoItems, tuningSettings.photoGalleries]
   );
 
-  const videoItems = useMemo(
+  const fallbackVideoItems = useMemo(
     () =>
       buildVisualItems(videoSource, "video", [
         secondary[0] ?? featured,
@@ -890,7 +1003,26 @@ export default function TuningPage({
     [featured, secondary, videoSource]
   );
 
-  const reelItems = useMemo(
+  const videoItems = useMemo<VisualMediaItem[]>(
+    () =>
+      (tuningSettings.videoEntries || []).length > 0
+        ? tuningSettings.videoEntries.map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            subtitle: entry.subtitle,
+            img: entry.coverImageUrl || getMediaPreviewImage(entry.mediaUrl) || "/images/noticia-2.jpg",
+            href: "/tuning",
+            when: entry.when,
+            kind: "video" as const,
+            mediaUrl: entry.mediaUrl,
+            embedUrl: getEmbedUrl("video", entry.mediaUrl),
+            platform: detectMediaPlatform(entry.mediaUrl),
+          }))
+        : fallbackVideoItems,
+    [fallbackVideoItems, tuningSettings.videoEntries]
+  );
+
+  const fallbackReelItems = useMemo(
     () =>
       buildVisualItems(reelSource, "reel", [
         featured,
@@ -899,6 +1031,25 @@ export default function TuningPage({
         secondary[2] ?? featured,
       ]),
     [featured, reelSource, secondary]
+  );
+
+  const reelItems = useMemo<VisualMediaItem[]>(
+    () =>
+      (tuningSettings.reelEntries || []).length > 0
+        ? tuningSettings.reelEntries.map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            subtitle: entry.subtitle,
+            img: entry.coverImageUrl || getMediaPreviewImage(entry.mediaUrl) || "/images/noticia-2.jpg",
+            href: "/tuning",
+            when: entry.when,
+            kind: "reel" as const,
+            mediaUrl: entry.mediaUrl,
+            embedUrl: getEmbedUrl("reel", entry.mediaUrl),
+            platform: detectMediaPlatform(entry.mediaUrl),
+          }))
+        : fallbackReelItems,
+    [fallbackReelItems, tuningSettings.reelEntries]
   );
 
   const mainTuningItems = useMemo(() => {
@@ -935,11 +1086,11 @@ export default function TuningPage({
 
   useEffect(() => {
     document.body.style.overflow =
-      mobileOpen || !!activeMedia || !!editingGallery ? "hidden" : "";
+      mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [mobileOpen, activeMedia, editingGallery]);
+  }, [mobileOpen, activeMedia, editingGallery, editingVideo, editingReel]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -1260,6 +1411,10 @@ export default function TuningPage({
     }
   }
 
+  function setGalleryCover(url: string) {
+    setEditingGallery((prev) => (prev ? { ...prev, coverImageUrl: url } : prev));
+  }
+
   function removeGalleryImage(url: string) {
     setEditingGallery((prev) => {
       if (!prev) return prev;
@@ -1279,8 +1434,219 @@ export default function TuningPage({
     });
   }
 
-  function setGalleryCover(url: string) {
-    setEditingGallery((prev) => (prev ? { ...prev, coverImageUrl: url } : prev));
+  function openMediaEditor(kind: "video" | "reel", item?: VisualMediaItem) {
+    const source = item
+      ? normalizeMediaEntry({
+          id: item.id,
+          title: item.title,
+          subtitle: item.subtitle,
+          coverImageUrl: item.img,
+          mediaUrl: item.mediaUrl,
+          when: item.when,
+        }, kind)
+      : normalizeMediaEntry({
+          id: `${kind}-${Date.now()}`,
+          title: kind === "video" ? "Nuevo video" : "Nuevo formato corto",
+          subtitle: "",
+          coverImageUrl: "",
+          mediaUrl: "",
+          when: "",
+        }, kind);
+
+    if (kind === "video") setEditingVideo(source);
+    else setEditingReel(source);
+  }
+
+  async function saveMediaDraft(kind: "video" | "reel") {
+    const editingItem = kind === "video" ? editingVideo : editingReel;
+    if (!editingItem) return;
+
+    const normalized = normalizeMediaEntry(editingItem, kind);
+    const key = kind === "video" ? "videoEntries" : "reelEntries";
+    const currentEntries = (tuningSettings[key] || []) as MediaEntry[];
+    const exists = currentEntries.some((entry) => entry.id === normalized.id);
+
+    const nextSettings: TuningPageSettings = {
+      ...tuningSettings,
+      [key]: exists
+        ? currentEntries.map((entry) => (entry.id === normalized.id ? normalized : entry))
+        : [normalized, ...currentEntries],
+    };
+
+    await persistTuningSettings(nextSettings);
+    if (kind === "video") setEditingVideo(null);
+    else setEditingReel(null);
+  }
+
+  async function uploadMediaFile(kind: "video" | "reel", files?: FileList | null) {
+    const file = files?.[0];
+    const editingItem = kind === "video" ? editingVideo : editingReel;
+    if (!file || !editingItem) return;
+
+    try {
+      const uploaded = await uploadMediaToSanity(file);
+      updateEditingMedia(kind, (prev) => ({
+        ...prev,
+        mediaUrl: uploaded.url,
+        coverImageUrl: prev.coverImageUrl?.trim()
+          ? prev.coverImageUrl
+          : getMediaPreviewImage(uploaded.url),
+      }));
+    } catch (err: any) {
+      setTuningError(err?.message || `No se pudo subir el ${kind}.`);
+    }
+  }
+
+  async function uploadMediaCover(kind: "video" | "reel", files?: FileList | null) {
+    const file = files?.[0];
+    const editingItem = kind === "video" ? editingVideo : editingReel;
+    if (!file || !editingItem) return;
+
+    try {
+      const uploaded = await uploadImageToSanity(file);
+      updateEditingMedia(kind, (prev) => ({ ...prev, coverImageUrl: uploaded.url }));
+    } catch (err: any) {
+      setTuningError(err?.message || "No se pudo subir la portada del video.");
+    }
+  }
+
+  async function removeMediaEntry(kind: "video" | "reel", id: string) {
+    const key = kind === "video" ? "videoEntries" : "reelEntries";
+    const nextSettings: TuningPageSettings = {
+      ...tuningSettings,
+      [key]: ((tuningSettings[key] || []) as MediaEntry[]).filter((entry) => entry.id !== id),
+    };
+
+    await persistTuningSettings(nextSettings);
+    if (kind === "video") setEditingVideo(null);
+    else setEditingReel(null);
+  }
+
+  function renderMediaVisual(item: VisualMediaItem, _sizes: string, className = "") {
+    const poster = getMediaPoster(item);
+
+    if (poster) {
+      return <img src={poster} alt={item.title} className={className} />;
+    }
+
+    if (item.mediaUrl && isDirectVideoUrl(item.mediaUrl)) {
+      return (
+        <video
+          src={item.mediaUrl}
+          className={className}
+          muted
+          playsInline
+          preload="metadata"
+        />
+      );
+    }
+
+    return <img src={item.img} alt={item.title} className={className} />;
+  }
+
+    function updateEditingMedia(kind: "video" | "reel", updater: (prev: MediaEntry) => MediaEntry) {
+    if (kind === "video") {
+      setEditingVideo((prev) => (prev ? updater(prev) : prev));
+      return;
+    }
+
+    setEditingReel((prev) => (prev ? updater(prev) : prev));
+  }
+
+  function closeMediaEditor(kind: "video" | "reel") {
+    if (kind === "video") setEditingVideo(null);
+    else setEditingReel(null);
+  }
+
+  function renderMediaEditor(kind: "video" | "reel") {
+    const editingItem = kind === "video" ? editingVideo : editingReel;
+    const coverRef = kind === "video" ? videoCoverInputRef : reelCoverInputRef;
+    const fileRef = kind === "video" ? videoFileInputRef : reelFileInputRef;
+
+    if (!editingItem) return null;
+
+    return (
+      <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
+        <div className="w-full max-w-3xl overflow-hidden rounded-[28px] border border-white/10 bg-[#041210] shadow-[0_24px_120px_rgba(0,0,0,.45)]">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-gray-400">
+                {kind === "video" ? "Editor de video" : "Editor de formato corto"}
+              </p>
+              <h3 className="mt-1 text-2xl font-semibold text-white">
+                {editingItem.title || (kind === "video" ? "Nuevo video" : "Nuevo formato corto")}
+              </h3>
+            </div>
+            <button type="button" onClick={() => closeMediaEditor(kind)} className="rounded-full border border-white/10 bg-white/5 p-3 text-white hover:bg-white/10">✕</button>
+          </div>
+
+          <div className="grid gap-0 lg:grid-cols-[1.1fr_.9fr]">
+            <div className="relative min-h-[320px] overflow-hidden border-b border-white/10 bg-black lg:min-h-[440px] lg:border-b-0 lg:border-r">
+              {editingItem.mediaUrl && isDirectVideoUrl(editingItem.mediaUrl) ? (
+                <video
+                  src={editingItem.mediaUrl}
+                  poster={getMediaPoster({ img: editingItem.coverImageUrl, mediaUrl: editingItem.mediaUrl, kind })}
+                  className="h-full w-full object-cover"
+                  controls
+                  playsInline
+                  preload="metadata"
+                />
+              ) : editingItem.mediaUrl && getEmbedUrl(kind, editingItem.mediaUrl) ? (
+                <iframe
+                  src={getEmbedUrl(kind, editingItem.mediaUrl)}
+                  title={editingItem.title}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : editingItem.coverImageUrl ? (
+                <img src={editingItem.coverImageUrl} alt={editingItem.title} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">Carga un video o pega el link fuente.</div>
+              )}
+            </div>
+
+            <div className="space-y-4 p-5 sm:p-6">
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Título</span>
+                <input value={editingItem.title} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, title: e.target.value }))} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder={kind === "video" ? "Título del video" : "Título del formato corto"} />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Descripción</span>
+                <textarea value={editingItem.subtitle} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, subtitle: e.target.value }))} className="min-h-[110px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder="Texto corto editorial" />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Link original / fuente</span>
+                <input value={editingItem.mediaUrl} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, mediaUrl: e.target.value, coverImageUrl: prev.coverImageUrl || e.target.value }))} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder="https://..." />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Fecha</span>
+                <input value={editingItem.when} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, when: e.target.value }))} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder="07 abr 2026" />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button type="button" variant="cyan" className="w-full" onClick={() => fileRef.current?.click()}>Subir {kind === "video" ? "video" : "formato corto"}</Button>
+                <Button type="button" variant="pink" className="w-full" onClick={() => coverRef.current?.click()}>Subir portada</Button>
+              </div>
+
+              <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => uploadMediaFile(kind, e.target.files)} />
+              <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={(e) => uploadMediaCover(kind, e.target.files)} />
+
+              <div className="flex flex-col gap-3 pt-2">
+                <Button type="button" variant="cyan" className="w-full" onClick={() => saveMediaDraft(kind)}>Guardar</Button>
+                {((kind === "video" ? tuningSettings.videoEntries : tuningSettings.reelEntries) || []).some((entry) => entry.id === editingItem.id) ? (
+                  <button type="button" onClick={() => removeMediaEntry(kind, editingItem.id)} className="inline-flex w-full items-center justify-center rounded-2xl border border-red-500/25 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/10">Eliminar</button>
+                ) : null}
+                <button type="button" onClick={() => closeMediaEditor(kind)} className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/5">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   function renderEditableAd(kind: AdKind, className = "") {
@@ -1682,6 +2048,9 @@ export default function TuningPage({
           />
         )}
 
+        {renderMediaEditor("video")}
+        {renderMediaEditor("reel")}
+
         {activeMedia && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5">
             <button
@@ -1737,9 +2106,19 @@ export default function TuningPage({
                 </div>
               </div>
 
-              <div className="grid gap-0 lg:grid-cols-[1.5fr_.7fr]">
+              <div
+                className={`grid gap-0 ${
+                  activeMedia.kind === "reel"
+                    ? "lg:grid-cols-[1fr_.78fr]"
+                    : "lg:grid-cols-[1.5fr_.7fr]"
+                }`}
+              >
                 <div className="bg-black">
-                  <div className="relative aspect-[16/10]">
+                  <div
+                    className={`relative ${
+                      activeMedia.kind === "reel" ? "aspect-[4/5]" : "aspect-[16/10]"
+                    }`}
+                  >
                     {activeMedia.kind === "photo" ? (
                       <>
                         <img
@@ -1783,6 +2162,36 @@ export default function TuningPage({
                           </>
                         ) : null}
                       </>
+                    ) : activeMedia.kind === "reel" && activeMedia.embedUrl ? (
+                      <div className="flex h-full w-full items-center justify-center bg-black">
+                        <iframe
+                          src={activeMedia.embedUrl}
+                          title={activeMedia.title}
+                          className="h-full w-full max-w-[420px]"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : activeMedia.kind === "reel" && activeMedia.mediaUrl && isDirectVideoUrl(activeMedia.mediaUrl) ? (
+                      <div className="flex h-full w-full items-center justify-center bg-black">
+                        <video
+                          src={activeMedia.mediaUrl}
+                          poster={getMediaPoster(activeMedia)}
+                          className="h-full w-full object-contain"
+                          controls
+                          playsInline
+                          preload="metadata"
+                        />
+                      </div>
+                    ) : activeMedia.mediaUrl && isDirectVideoUrl(activeMedia.mediaUrl) ? (
+                      <video
+                        src={activeMedia.mediaUrl}
+                        poster={getMediaPoster(activeMedia)}
+                        className="h-full w-full object-cover"
+                        controls
+                        playsInline
+                        preload="metadata"
+                      />
                     ) : activeMedia.embedUrl ? (
                       <iframe
                         src={activeMedia.embedUrl}
@@ -1796,7 +2205,7 @@ export default function TuningPage({
                         <img
                           src={activeMedia.img}
                           alt={activeMedia.title}
-                          className="h-full w-full object-cover"
+                          className={`h-full w-full ${activeMedia.kind === "reel" ? "object-contain" : "object-cover"}`}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
                         {activeMedia.kind !== "photo" && (
@@ -1863,25 +2272,15 @@ export default function TuningPage({
                     <p className="mt-4 text-sm leading-relaxed text-gray-400">
                       {activeMedia.kind === "photo"
                         ? "Esta galería se muestra dentro del mismo modal para mantener una lectura más editorial y visual dentro de Tuning."
-                        : activeMedia.embedUrl
-                        ? "Este preview ya está conectado para reproducirse desde el link externo."
-                        : "Esta vista está pensada como preview inmersivo para desktop y mobile, con un lenguaje más visual y editorial alineado al tono de MotorWelt."}
+                        : activeMedia.mediaUrl && isPlayableVideoUrl(activeMedia.mediaUrl)
+                        ? "Este preview ya permite reproducirse dentro del mismo modal sin sacarlo del flujo visual de la sección."
+                        : activeMedia.kind === "reel"
+                        ? "Este formato corto se mantiene dentro del mismo modal con una proporción más limpia y alineada a la ventana de preview."
+                        : "Esta vista se mantiene como preview editorial fija, pero el botón inferior te lleva al video original."}
                     </p>
                   </div>
 
                   <div className="mt-6 flex flex-col gap-3">
-                    {activeMedia.kind !== "photo" ? (
-                      <Link href={activeMedia.href}>
-                        <Button
-                          variant="pink"
-                          className="w-full"
-                          onClick={() => setActiveMedia(null)}
-                        >
-                          Abrir historia completa
-                        </Button>
-                      </Link>
-                    ) : null}
-
                     {activeMedia.mediaUrl ? (
                       <a
                         href={activeMedia.mediaUrl}
@@ -1889,7 +2288,7 @@ export default function TuningPage({
                         rel="noreferrer"
                         className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/5"
                       >
-                        Abrir {activeMedia.kind === "video" ? "video" : "reel"}{" "}
+                        Abrir {activeMedia.kind === "video" ? "video" : "formato corto"}{" "}
                         original
                       </a>
                     ) : null}
@@ -1909,7 +2308,7 @@ export default function TuningPage({
         )}
 
         <main
-          aria-hidden={mobileOpen || !!activeMedia || !!editingGallery}
+          aria-hidden={mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel}
           className="relative z-10"
         >
           <section className="relative isolate overflow-hidden pt-16 lg:pt-[72px]">
@@ -2251,26 +2650,52 @@ export default function TuningPage({
                     <h3 className="mt-1 text-2xl font-semibold text-white">
                       Piezas con movimiento y energía editorial
                     </h3>
+                    {editControlsVisible ? (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => openMediaEditor("video")}
+                          className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90"
+                        >
+                          Nuevo video
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="hidden gap-5 lg:grid lg:grid-cols-2">
                     {videoItems.slice(0, 4).map((item) => (
-                      <button
+                      <div
                         key={item.id}
-                        type="button"
-                        onClick={() => openMediaPreview(item)}
-                        className={`group overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                        className={`group relative overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                           item.kind
                         )}`}
                       >
+                        {editControlsVisible ? (
+                          <div className="absolute right-4 top-4 z-20">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openMediaEditor("video", item);
+                              }}
+                              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => openMediaPreview(item)}
+                          className="block w-full text-left"
+                        >
                         <div className="relative aspect-[16/9] w-full">
-                          <Image
-                            src={item.img}
-                            alt={item.title}
-                            fill
-                            sizes="(max-width: 1024px) 100vw, 50vw"
-                            style={{ objectFit: "cover" }}
-                          />
+                          {renderMediaVisual(
+                            item,
+                            "(max-width: 1024px) 100vw, 50vw",
+                            "h-full w-full object-cover"
+                          )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
 
                           <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
@@ -2305,29 +2730,45 @@ export default function TuningPage({
                             </p>
                           </div>
                         </div>
-                      </button>
+                        </button>
+                      </div>
                     ))}
                   </div>
 
                   <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar lg:hidden">
                     <div className="flex gap-4 snap-x snap-mandatory">
                       {videoItems.slice(0, 4).map((item) => (
-                        <button
+                        <div
                           key={item.id}
-                          type="button"
-                          onClick={() => openMediaPreview(item)}
                           className={`group relative min-w-[84%] max-w-[84%] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )} sm:min-w-[62%] sm:max-w-[62%]`}
                         >
+                          {editControlsVisible ? (
+                            <div className="absolute right-3 top-3 z-20">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openMediaEditor("video", item);
+                                }}
+                                className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                              >
+                                Editar
+                              </button>
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => openMediaPreview(item)}
+                            className="block w-full text-left"
+                          >
                           <div className="relative aspect-[16/10] w-full">
-                            <Image
-                              src={item.img}
-                              alt={item.title}
-                              fill
-                              sizes="(max-width: 640px) 84vw, 62vw"
-                              style={{ objectFit: "cover" }}
-                            />
+                            {renderMediaVisual(
+                              item,
+                              "(max-width: 640px) 84vw, 62vw",
+                              "h-full w-full object-cover"
+                            )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
 
                             <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
@@ -2362,7 +2803,8 @@ export default function TuningPage({
                               </p>
                             </div>
                           </div>
-                        </button>
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -2371,36 +2813,62 @@ export default function TuningPage({
                 <div>
                   <div className="mb-5">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-[#A3FF12]">
-                      Short Format
+                      Formato corto
                     </p>
                     <h3 className="mt-1 text-2xl font-semibold text-white">
-                      Reels verticales para impacto rápido
+                      Formato corto para impacto rápido
                     </h3>
+                    {editControlsVisible ? (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => openMediaEditor("reel")}
+                          className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90"
+                        >
+                          Nuevo formato corto
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
 
-                  <div className="hidden gap-4 sm:grid sm:grid-cols-3 lg:grid-cols-4">
+                  <div className="hidden gap-5 sm:grid sm:grid-cols-2 xl:grid-cols-3">
                     {reelItems.slice(0, 4).map((item) => (
-                      <button
+                      <div
                         key={item.id}
-                        type="button"
-                        onClick={() => openMediaPreview(item)}
-                        className={`group overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                        className={`group relative overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                           item.kind
                         )}`}
                       >
-                        <div className="relative aspect-[9/16] w-full">
-                          <Image
-                            src={item.img}
-                            alt={item.title}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            style={{ objectFit: "cover" }}
-                          />
+                        {editControlsVisible ? (
+                          <div className="absolute right-3 top-3 z-20">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openMediaEditor("reel", item);
+                              }}
+                              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                            >
+                              Editar
+                            </button>
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => openMediaPreview(item)}
+                          className="block w-full text-left"
+                        >
+                        <div className="relative aspect-[4/5] w-full">
+                          {renderMediaVisual(
+                            item,
+                            "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
+                            "h-full w-full object-cover"
+                          )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
 
                           <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white backdrop-blur">
                             <span className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`} />
-                            Reel
+                            {getKindLabel(item.kind)}
                           </div>
 
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -2430,29 +2898,45 @@ export default function TuningPage({
                             </p>
                           </div>
                         </div>
-                      </button>
+                        </button>
+                      </div>
                     ))}
                   </div>
 
                   <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:hidden">
                     <div className="flex gap-4 snap-x snap-mandatory">
                       {reelItems.slice(0, 4).map((item) => (
-                        <button
+                        <div
                           key={item.id}
-                          type="button"
-                          onClick={() => openMediaPreview(item)}
-                          className={`group relative min-w-[58vw] max-w-[58vw] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative min-w-[72vw] max-w-[72vw] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )}`}
                         >
-                          <div className="relative aspect-[9/16] w-full">
-                            <Image
-                              src={item.img}
-                              alt={item.title}
-                              fill
-                              sizes="58vw"
-                              style={{ objectFit: "cover" }}
-                            />
+                          {editControlsVisible ? (
+                            <div className="absolute right-3 top-3 z-20">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openMediaEditor("reel", item);
+                                }}
+                                className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                              >
+                                Editar
+                              </button>
+                            </div>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => openMediaPreview(item)}
+                            className="block w-full text-left"
+                          >
+                          <div className="relative aspect-[4/5] w-full">
+                            {renderMediaVisual(
+                              item,
+                              "58vw",
+                              "h-full w-full object-cover"
+                            )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
 
                             <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white backdrop-blur">
@@ -2487,7 +2971,8 @@ export default function TuningPage({
                               </p>
                             </div>
                           </div>
-                        </button>
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -2648,7 +3133,7 @@ export default function TuningPage({
         </main>
 
         <footer
-          aria-hidden={mobileOpen || !!activeMedia || !!editingGallery}
+          aria-hidden={mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel}
           className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
           <div className="mx-auto grid w-full max-w-[1200px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
@@ -2910,7 +3395,9 @@ export async function getServerSideProps({ locale }: { locale: string }) {
           "href": coalesce(ads.billboard.href, "")
         }
       },
-      "photoGalleries": coalesce(photoGalleries, [])
+      "photoGalleries": coalesce(photoGalleries, []),
+      "videoEntries": coalesce(videoEntries, []),
+      "reelEntries": coalesce(reelEntries, [])
     }
   `;
 

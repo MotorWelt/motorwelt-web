@@ -12,6 +12,7 @@ const sanity = createClient({
 type PartnerLogo = {
   id: string;
   name: string;
+  imageUrl?: string;
   logoUrl?: string;
   href?: string;
 };
@@ -23,14 +24,41 @@ type AdConfig = {
   href: string;
 };
 
+type PhotoGalleryEntry = {
+  id: string;
+  title: string;
+  subtitle: string;
+  coverImageUrl: string;
+  galleryUrls: string[];
+  when: string;
+};
+
 type HomeSettingsPayload = {
   heroImageUrl: string;
   ads: {
     leaderboard: AdConfig;
-    mpu: AdConfig;
+    mpu?: AdConfig;
     billboard: AdConfig;
   };
-  partnerLogos: PartnerLogo[];
+  partnerLogos?: PartnerLogo[];
+};
+
+type TuningSettingsPayload = {
+  heroImageUrl: string;
+  ads: {
+    leaderboard: AdConfig;
+    billboard: AdConfig;
+  };
+  photoGalleries?: PhotoGalleryEntry[];
+};
+
+type StandardPageSettingsPayload = {
+  heroImageUrl: string;
+  ads: {
+    leaderboard: AdConfig;
+    billboard: AdConfig;
+  };
+  partnerLogos?: PartnerLogo[];
 };
 
 function getCookieValue(cookieHeader: string | undefined, name: string) {
@@ -41,12 +69,69 @@ function getCookieValue(cookieHeader: string | undefined, name: string) {
   return decodeURIComponent(found.split("=").slice(1).join("="));
 }
 
+function normalizeAdConfig(ad?: Partial<AdConfig>) {
+  return {
+    enabled: Boolean(ad?.enabled),
+    label: String(ad?.label || ""),
+    imageUrl: String(ad?.imageUrl || ""),
+    href: String(ad?.href || ""),
+  };
+}
+
+function normalizePartnerLogos(partnerLogos?: PartnerLogo[]) {
+  if (!Array.isArray(partnerLogos)) return [];
+
+  return partnerLogos.map((item, index) => ({
+    _key: item.id || `partner-${index}`,
+    id: item.id || `partner-${index}`,
+    name: item.name || `Partner ${index + 1}`,
+    imageUrl: item.imageUrl || item.logoUrl || "",
+    logoUrl: item.logoUrl || item.imageUrl || "",
+    href: item.href || "",
+  }));
+}
+
+function normalizePhotoGalleries(photoGalleries?: PhotoGalleryEntry[]) {
+  if (!Array.isArray(photoGalleries)) return [];
+
+  return photoGalleries.map((gallery, index) => ({
+    _key: gallery.id || `gallery-${index}`,
+    id: gallery.id || `gallery-${index}`,
+    title: gallery.title || `Galería ${index + 1}`,
+    subtitle: gallery.subtitle || "",
+    coverImageUrl: gallery.coverImageUrl || "",
+    galleryUrls: Array.isArray(gallery.galleryUrls)
+      ? gallery.galleryUrls.filter(Boolean)
+      : [],
+    when: gallery.when || "",
+  }));
+}
+
+function getDocIdForPage(pageKey: string) {
+  const clean = String(pageKey || "home").trim().toLowerCase();
+
+  switch (clean) {
+    case "home":
+      return "homeSettings_main";
+    case "tuning":
+      return "tuningSettings_main";
+    case "deportes":
+      return "deportesSettings_main";
+    case "lifestyle":
+      return "lifestyleSettings_main";
+    case "comunidad":
+      return "comunidadSettings_main";
+    default:
+      return `${clean}Settings_main`;
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
-    console.log("HOME SAVE ENV CHECK", {
+    console.log("SETTINGS SAVE ENV CHECK", {
       hasProjectId: Boolean(process.env.SANITY_PROJECT_ID),
       hasDataset: Boolean(process.env.SANITY_DATASET),
       hasApiVersion: Boolean(process.env.SANITY_API_VERSION),
@@ -60,10 +145,9 @@ export default async function handler(
     const cookieRole = getCookieValue(req.headers.cookie, "mw_role");
     const headerRole = String(req.headers["x-mw-role"] || "");
     const bodyRole = String(req.body?.session?.role || "");
-
     const role = cookieRole || headerRole || bodyRole;
 
-    console.log("HOME SAVE AUTH DEBUG:", {
+    console.log("SAVE AUTH DEBUG:", {
       cookieRole,
       headerRole,
       bodyRole,
@@ -83,9 +167,10 @@ export default async function handler(
       });
     }
 
-    const settings = req.body?.settings as HomeSettingsPayload | undefined;
+    const pageKey = String(req.body?.pageKey || "home").trim().toLowerCase();
+    const settings = req.body?.settings;
 
-    if (!settings) {
+    if (!settings || typeof settings !== "object") {
       return res.status(400).json({
         ok: false,
         error: "Missing settings",
@@ -99,48 +184,75 @@ export default async function handler(
       });
     }
 
-    const doc = {
-      _id: "homeSettings_main",
+    const baseDoc = {
+      _id: getDocIdForPage(pageKey),
       _type: "homeSettings",
-      heroImageUrl: settings.heroImageUrl || "",
-      ads: {
-        leaderboard: {
-          enabled: Boolean(settings.ads?.leaderboard?.enabled),
-          label: settings.ads?.leaderboard?.label || "",
-          imageUrl: settings.ads?.leaderboard?.imageUrl || "",
-          href: settings.ads?.leaderboard?.href || "",
-        },
-        mpu: {
-          enabled: Boolean(settings.ads?.mpu?.enabled),
-          label: settings.ads?.mpu?.label || "",
-          imageUrl: settings.ads?.mpu?.imageUrl || "",
-          href: settings.ads?.mpu?.href || "",
-        },
-        billboard: {
-          enabled: Boolean(settings.ads?.billboard?.enabled),
-          label: settings.ads?.billboard?.label || "",
-          imageUrl: settings.ads?.billboard?.imageUrl || "",
-          href: settings.ads?.billboard?.href || "",
-        },
-      },
-      partnerLogos: Array.isArray(settings.partnerLogos)
-        ? settings.partnerLogos.map((item, index) => ({
-            _key: item.id || `partner-${index}`,
-            name: item.name || `Partner ${index + 1}`,
-            logoUrl: item.logoUrl || "",
-            href: item.href || "",
-          }))
-        : [],
+      pageKey,
+      heroImageUrl: String(settings.heroImageUrl || ""),
     };
+
+    let doc: Record<string, any>;
+
+    if (pageKey === "home") {
+      const home = settings as HomeSettingsPayload;
+
+      doc = {
+        ...baseDoc,
+        ads: {
+          leaderboard: normalizeAdConfig(home.ads?.leaderboard),
+          mpu: normalizeAdConfig(home.ads?.mpu),
+          billboard: normalizeAdConfig(home.ads?.billboard),
+        },
+        partnerLogos: normalizePartnerLogos(home.partnerLogos),
+      };
+    } else if (pageKey === "tuning") {
+      const tuning = settings as TuningSettingsPayload;
+
+      doc = {
+        ...baseDoc,
+        ads: {
+          leaderboard: normalizeAdConfig(tuning.ads?.leaderboard),
+          billboard: normalizeAdConfig(tuning.ads?.billboard),
+        },
+        photoGalleries: normalizePhotoGalleries(tuning.photoGalleries),
+      };
+    } else if (
+      pageKey === "deportes" ||
+      pageKey === "lifestyle" ||
+      pageKey === "comunidad"
+    ) {
+      const page = settings as StandardPageSettingsPayload;
+
+      doc = {
+        ...baseDoc,
+        ads: {
+          leaderboard: normalizeAdConfig(page.ads?.leaderboard),
+          billboard: normalizeAdConfig(page.ads?.billboard),
+        },
+        partnerLogos: normalizePartnerLogos(page.partnerLogos),
+      };
+    } else {
+      const generic = settings as StandardPageSettingsPayload;
+
+      doc = {
+        ...baseDoc,
+        ads: {
+          leaderboard: normalizeAdConfig(generic.ads?.leaderboard),
+          billboard: normalizeAdConfig(generic.ads?.billboard),
+        },
+        partnerLogos: normalizePartnerLogos(generic.partnerLogos),
+      };
+    }
 
     await sanity.createOrReplace(doc);
 
     return res.status(200).json({
       ok: true,
+      pageKey,
       settings: doc,
     });
   } catch (error: any) {
-    console.error("HOME SAVE ERROR:", error);
+    console.error("SAVE ERROR:", error);
 
     return res.status(500).json({
       ok: false,
