@@ -1,4 +1,3 @@
-// pages/admin/contenido.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -70,12 +69,7 @@ type SectionSlug =
   | "comunidad"
   | "tuning";
 
-type ContentType =
-  | "noticia"
-  | "cronica"
-  | "opinion"
-  | "review"
-  | "entrevista";
+type ContentType = "noticia" | "review" | "entrevista";
 
 type ContentStatus = "borrador" | "revision" | "publicado";
 
@@ -150,8 +144,45 @@ function publicPathFromSection(section?: SectionSlug, slug?: string) {
 
   if (section === "noticias_autos") return `/noticias/autos/${slug}`;
   if (section === "noticias_motos") return `/noticias/motos/${slug}`;
+  if (section === "deportes") return `/deportes/${slug}`;
+  if (section === "lifestyle") return `/lifestyle/${slug}`;
+  if (section === "comunidad") return `/comunidad/${slug}`;
   if (section === "tuning") return `/tuning/${slug}`;
   return null;
+}
+
+function normalizeGalleryUrls(input: string): string[] {
+  return Array.from(
+    new Set(
+      (input || "")
+        .split(/\n|,/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+function isoToDatetimeLocal(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function datetimeLocalToIso(value?: string) {
+  if (!value?.trim()) return undefined;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
 }
 
 /* ---------- Tipos para listado y carga ---------- */
@@ -239,9 +270,14 @@ const AdminContentEditorPage: React.FC = () => {
   const [section, setSection] = useState<SectionSlug>("noticias_autos");
   const [contentType, setContentType] = useState<ContentType>("noticia");
   const [status, setStatus] = useState<ContentStatus>("borrador");
+  const [publishedAtInput, setPublishedAtInput] = useState("");
 
   // Contenido principal
   const [body, setBody] = useState("");
+  const bodyValueRef = useRef("");
+  useEffect(() => {
+    bodyValueRef.current = body;
+  }, [body]);
 
   // Medios
   const [mainImage, setMainImage] = useState("");
@@ -270,6 +306,8 @@ const AdminContentEditorPage: React.FC = () => {
 
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
   const inlineImagesInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryImagesInputRef = useRef<HTMLInputElement | null>(null);
+  const mainImageInputRef = useRef<HTMLInputElement | null>(null);
 
   async function uploadImageToSanity(file: File) {
     const fd = new FormData();
@@ -280,7 +318,13 @@ const AdminContentEditorPage: React.FC = () => {
       body: fd,
     });
 
-    const data = await res.json();
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Respuesta inválida del upload de imagen.");
+    }
+
     if (!res.ok || !data?.ok) {
       throw new Error(data?.error || "Upload failed");
     }
@@ -302,16 +346,18 @@ const AdminContentEditorPage: React.FC = () => {
 
   const insertAtCursor = (text: string) => {
     const el = bodyRef.current;
+    const currentBody = bodyValueRef.current;
+
     if (!el) {
       setBody((prev) => (prev ? prev + "\n" + text : text));
       return;
     }
 
-    const start = el.selectionStart ?? body.length;
-    const end = el.selectionEnd ?? body.length;
+    const start = el.selectionStart ?? currentBody.length;
+    const end = el.selectionEnd ?? currentBody.length;
 
-    const before = body.slice(0, start);
-    const after = body.slice(end);
+    const before = currentBody.slice(0, start);
+    const after = currentBody.slice(end);
 
     const next = `${before}${text}${after}`;
     setBody(next);
@@ -327,9 +373,11 @@ const AdminContentEditorPage: React.FC = () => {
 
   const ensureLineBreakBefore = () => {
     const el = bodyRef.current;
-    if (!el) return "\n";
+    const currentBody = bodyValueRef.current;
+
+    if (!el) return currentBody ? "\n" : "";
     const start = el.selectionStart ?? 0;
-    const before = body.slice(0, start);
+    const before = currentBody.slice(0, start);
     if (!before) return "";
     return before.endsWith("\n") ? "" : "\n";
   };
@@ -383,15 +431,16 @@ const AdminContentEditorPage: React.FC = () => {
       const urls = uploaded.map((u) => u.url);
 
       setGallery((prev) => {
-        const prevTrim = (prev || "").trim();
-        const nextChunk = urls.join("\n");
-        if (!prevTrim) return nextChunk;
-        return `${prevTrim}\n${nextChunk}`;
+        const merged = Array.from(
+          new Set([...normalizeGalleryUrls(prev), ...urls])
+        );
+        return merged.join("\n");
       });
     } catch (err: any) {
       setGalleryUploadError(err?.message || "No se pudieron subir las imágenes.");
     } finally {
       setUploadingGalleryImages(false);
+      if (galleryImagesInputRef.current) galleryImagesInputRef.current.value = "";
     }
   };
 
@@ -446,6 +495,7 @@ const AdminContentEditorPage: React.FC = () => {
     setSection("noticias_autos");
     setContentType("noticia");
     setStatus("borrador");
+    setPublishedAtInput("");
     setBody("");
 
     setMainImage("");
@@ -469,6 +519,10 @@ const AdminContentEditorPage: React.FC = () => {
     setSocialCopies(null);
     setSocialError(null);
     setSavingState("idle");
+
+    if (inlineImagesInputRef.current) inlineImagesInputRef.current.value = "";
+    if (galleryImagesInputRef.current) galleryImagesInputRef.current.value = "";
+    if (mainImageInputRef.current) mainImageInputRef.current.value = "";
   };
 
   const fetchMyNotes = async () => {
@@ -528,6 +582,7 @@ const AdminContentEditorPage: React.FC = () => {
       setSection((doc.section as SectionSlug) || "noticias_autos");
       setContentType((doc.contentType as ContentType) || "noticia");
       setStatus((doc.status as ContentStatus) || "borrador");
+      setPublishedAtInput(isoToDatetimeLocal(doc.publishedAt || ""));
       setBody(doc.body || "");
 
       setTags(Array.isArray(doc.tags) ? doc.tags.join(", ") : "");
@@ -554,7 +609,7 @@ const AdminContentEditorPage: React.FC = () => {
       }
 
       if (Array.isArray(doc.galleryUrls) && doc.galleryUrls.length > 0) {
-        setGallery(doc.galleryUrls.join("\n"));
+        setGallery(Array.from(new Set(doc.galleryUrls.filter(Boolean))).join("\n"));
       } else {
         setGallery("");
       }
@@ -566,6 +621,10 @@ const AdminContentEditorPage: React.FC = () => {
       setUploadError(null);
       setInlineUploadError(null);
       setGalleryUploadError(null);
+
+      if (inlineImagesInputRef.current) inlineImagesInputRef.current.value = "";
+      if (galleryImagesInputRef.current) galleryImagesInputRef.current.value = "";
+      if (mainImageInputRef.current) mainImageInputRef.current.value = "";
     } catch (err: any) {
       setAiError(err?.message || "No se pudo cargar la nota.");
     } finally {
@@ -730,12 +789,10 @@ const AdminContentEditorPage: React.FC = () => {
         authorEmail: currentUser?.email || undefined,
 
         updatedAt: new Date().toISOString(),
+        publishedAt: datetimeLocalToIso(publishedAtInput),
 
         mainImageUrl: mainImage || undefined,
-        galleryUrls: gallery
-          .split(/\n|,/)
-          .map((s) => s.trim())
-          .filter(Boolean),
+        galleryUrls: normalizeGalleryUrls(gallery),
 
         mainImageAsset: mainImageAsset || undefined,
       };
@@ -807,6 +864,9 @@ const AdminContentEditorPage: React.FC = () => {
       setDocId(result.id);
       if (result.slug) setDocSlug(result.slug);
       setStatus(result.status);
+      if (result.publishedAt) {
+        setPublishedAtInput(isoToDatetimeLocal(result.publishedAt));
+      }
       setSavingState("saved");
       setTimeout(() => setSavingState("idle"), 1500);
 
@@ -1345,8 +1405,8 @@ const AdminContentEditorPage: React.FC = () => {
                         }
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       >
-                        <option value="noticias_autos">Noticias Autos</option>
-                        <option value="noticias_motos">Noticias Motos</option>
+                        <option value="noticias_autos">Autos</option>
+                        <option value="noticias_motos">Motos</option>
                         <option value="deportes">Deportes</option>
                         <option value="lifestyle">Lifestyle</option>
                         <option value="comunidad">Comunidad</option>
@@ -1358,7 +1418,7 @@ const AdminContentEditorPage: React.FC = () => {
                         htmlFor="content-type"
                         className="text-xs text-gray-300"
                       >
-                        Tipo de pieza
+                        Tipo de nota
                       </label>
                       <select
                         id="content-type"
@@ -1369,8 +1429,6 @@ const AdminContentEditorPage: React.FC = () => {
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       >
                         <option value="noticia">Noticia</option>
-                        <option value="cronica">Crónica</option>
-                        <option value="opinion">Opinión</option>
                         <option value="review">Review / Prueba</option>
                         <option value="entrevista">Entrevista</option>
                       </select>
@@ -1393,6 +1451,25 @@ const AdminContentEditorPage: React.FC = () => {
                         Separa con comas. Ej: BMW, M2, MotoGP, Lifestyle.
                       </p>
                     </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="content-published-at"
+                      className="text-xs text-gray-300"
+                    >
+                      Fecha de publicación
+                    </label>
+                    <input
+                      id="content-published-at"
+                      type="datetime-local"
+                      value={publishedAtInput}
+                      onChange={(e) => setPublishedAtInput(e.target.value)}
+                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                    />
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      Si la dejas vacía, la fecha seguirá automática al publicar.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1737,6 +1814,7 @@ const AdminContentEditorPage: React.FC = () => {
                     </label>
 
                     <input
+                      ref={mainImageInputRef}
                       type="file"
                       accept="image/*"
                       onChange={async (e) => {
@@ -1758,6 +1836,9 @@ const AdminContentEditorPage: React.FC = () => {
                           );
                         } finally {
                           setUploadingMainImage(false);
+                          if (mainImageInputRef.current) {
+                            mainImageInputRef.current.value = "";
+                          }
                         }
                       }}
                       className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100"
@@ -1824,6 +1905,7 @@ const AdminContentEditorPage: React.FC = () => {
 
                     <div className="flex flex-col gap-2">
                       <input
+                        ref={galleryImagesInputRef}
                         type="file"
                         accept="image/*"
                         multiple

@@ -422,7 +422,7 @@ function AdSlot({
   const isSidebarTall = layout === "sidebarTall";
 
   const boxClass = isLeaderboard
-    ? "max-w-[1100px] aspect-[970/120] min-h-[72px] md:min-h-0"
+    ? "w-full min-h-[84px] aspect-[970/120] md:max-w-[1100px] md:min-h-0"
     : isSidebarTall
     ? "w-full min-h-[210px] lg:min-h-[250px]"
     : "max-w-[1100px] aspect-[970/250]";
@@ -473,7 +473,7 @@ function AdSlot({
       )}
 
       {editable && (
-        <div className="absolute left-1/2 top-3 z-20 flex w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2">
+        <div className="absolute left-1/2 top-3 z-20 hidden w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 md:flex">
           <button
             type="button"
             onClick={onToggle}
@@ -1326,32 +1326,34 @@ export default function TuningDetailPage({
                         </h2>
                       </div>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {gallery.map((url, index) => (
-                          <button
-                            key={`${url}-${index}`}
-                            type="button"
-                            onClick={() => {
-                              setStandaloneImage(null);
-                              setActiveGalleryIndex(index);
-                            }}
-                            className={`group overflow-hidden rounded-[24px] border border-white/10 bg-black text-left ${
-                              index === 0 ? "sm:col-span-2" : ""
-                            }`}
-                          >
-                            <div
-                              className={`relative w-full ${
-                                index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"
+                      <div className="no-scrollbar overflow-x-auto sm:overflow-visible">
+                        <div className="flex gap-4 pb-2 sm:grid sm:grid-cols-2 sm:pb-0">
+                          {gallery.map((url, index) => (
+                            <button
+                              key={`${url}-${index}`}
+                              type="button"
+                              onClick={() => {
+                                setStandaloneImage(null);
+                                setActiveGalleryIndex(index);
+                              }}
+                              className={`group w-[82vw] max-w-[380px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-black text-left sm:w-auto sm:max-w-none sm:shrink sm:min-w-0 ${
+                                index === 0 ? "sm:col-span-2" : ""
                               }`}
                             >
-                              <img
-                                src={url}
-                                alt={`${article.title} ${index + 1}`}
-                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                              />
-                            </div>
-                          </button>
-                        ))}
+                              <div
+                                className={`relative w-full ${
+                                  index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"
+                                }`}
+                              >
+                                <img
+                                  src={url}
+                                  alt={`${article.title} ${index + 1}`}
+                                  className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                                />
+                              </div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ) : null}
