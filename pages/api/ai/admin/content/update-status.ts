@@ -1,4 +1,3 @@
-// pages/api/ai/admin/content/update-status.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { sanityAdminClient, assertWriteToken } from "@/lib/sanityClient";
 
@@ -11,6 +10,7 @@ type Data =
       status: ContentStatus;
       publishedAt?: string | null;
       updatedAt: string;
+      slug?: string;
     }
   | { ok: false; error: string };
 
@@ -34,7 +34,11 @@ async function makeUniqueSlug(base: string, excludeId: string): Promise<string> 
   const fallback = cleanBase || `nota-${Date.now()}`;
 
   const existsQuery = `
-    *[_type == "article" && slug.current == $slug && _id != $excludeId][0]{ _id }
+    *[
+      _type in ["article", "post"] &&
+      slug.current == $slug &&
+      _id != $excludeId
+    ][0]{ _id }
   `;
 
   let candidate = fallback;
@@ -81,27 +85,48 @@ export default async function handler(
 
     const now = new Date().toISOString();
 
-    // 1) Traer doc por slug
     const doc = await sanityAdminClient.fetch(
-      `*[_type=="article" && _id==$id][0]{ title, slug }`,
+      `*[_id == $id][0]{
+        _id,
+        _type,
+        title,
+        "slug": slug.current,
+        publishedAt
+      }`,
       { id }
     );
 
-    const title: string = doc?.title || "";
-    const hasSlug = !!doc?.slug?.current;
+    if (!doc?._id) {
+      return res.status(404).json({
+        ok: false,
+        error: "No se encontró el documento a actualizar.",
+      });
+    }
 
-    let slugPatch: any = {};
-    if (!hasSlug) {
-      const uniqueSlug = await makeUniqueSlug(title || `nota-${id}`, id);
-      slugPatch = { slug: { _type: "slug", current: uniqueSlug } };
+    const title: string = doc?.title || "";
+    const currentSlug: string = doc?.slug || "";
+    const currentPublishedAt: string | null = doc?.publishedAt || null;
+
+    let slugPatch: Record<string, any> = {};
+    let finalSlug = currentSlug;
+
+    if (!currentSlug) {
+      finalSlug = await makeUniqueSlug(title || `nota-${id}`, id);
+      slugPatch = {
+        slug: { _type: "slug", current: finalSlug },
+      };
     }
 
     const setObj: Record<string, any> = {
       status,
       updatedAt: now,
-      ...(status === "publicado" ? { publishedAt: now } : {}),
       ...slugPatch,
     };
+
+    // 🔥 FIX REAL: solo asignar publishedAt si NO existe
+    if (status === "publicado" && !currentPublishedAt) {
+      setObj.publishedAt = now;
+    }
 
     const patched = await sanityAdminClient
       .patch(id)
@@ -114,6 +139,7 @@ export default async function handler(
       status: patched.status as ContentStatus,
       publishedAt: (patched.publishedAt as string | null) ?? null,
       updatedAt: patched.updatedAt as string,
+      slug: patched?.slug?.current || finalSlug || undefined,
     });
   } catch (error: any) {
     console.error("SANITY UPDATE STATUS ERROR:", error?.message || error);

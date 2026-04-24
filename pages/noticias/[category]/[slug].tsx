@@ -682,10 +682,11 @@ export default function NewsDetailPage({
     )
   );
 
-  const bodyBlocks = useMemo(() => parseBody(article.body || ""), [article.body]);
-  const heroVideoEmbed = getYoutubeEmbedUrl(article.videoUrl || "");
-  const hasVideo = Boolean(heroVideoEmbed);
-  const hasGallery = gallery.length > 1;
+const bodyBlocks = useMemo(() => parseBody(article.body || ""), [article.body]);
+const heroVideoEmbed = getYoutubeEmbedUrl(article.videoUrl || "");
+const hasVideo = Boolean(heroVideoEmbed);
+const hasGallery = gallery.length > 1;
+const headerDate = article.publishedAt || article.updatedAt;
 
   const isImageModalOpen =
     activeGalleryIndex !== null || Boolean(standaloneImage);
@@ -1215,12 +1216,12 @@ export default function NewsDetailPage({
                       Por <span className="font-semibold text-white">{article.authorName}</span>
                     </span>
                   ) : null}
-                  {article.authorName && article.updatedAt ? (
-                    <span className="text-gray-500">•</span>
-                  ) : null}
-                  {article.updatedAt ? (
-                    <span>Actualizado {formatDate(article.updatedAt)}</span>
-                  ) : null}
+                 {article.authorName && headerDate ? (
+  <span className="text-gray-500">•</span>
+) : null}
+{headerDate ? (
+  <span>Actualizado {formatDate(headerDate)}</span>
+) : null}
                 </div>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -1393,35 +1394,35 @@ export default function NewsDetailPage({
                         </h2>
                       </div>
 
-                      <div className="no-scrollbar overflow-x-auto sm:overflow-visible">
-                        <div className="flex gap-4 pb-2 sm:grid sm:grid-cols-2 sm:pb-0">
-                          {gallery.map((url, index) => (
-                            <button
-                              key={`${url}-${index}`}
-                              type="button"
-                              onClick={() => {
-                                setStandaloneImage(null);
-                                setActiveGalleryIndex(index);
-                              }}
-                              className={`group w-[82vw] max-w-[380px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-black text-left sm:w-auto sm:max-w-none sm:shrink sm:min-w-0 ${
-                                index === 0 ? "sm:col-span-2" : ""
-                              }`}
-                            >
-                              <div
-                                className={`relative w-full ${
-                                  index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"
-                                }`}
-                              >
-                                <img
-                                  src={url}
-                                  alt={`${article.title} ${index + 1}`}
-                                  className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                                />
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                   <div className="no-scrollbar overflow-x-auto sm:max-h-[760px] sm:overflow-y-auto sm:overflow-x-hidden sm:pr-2 sidebar-scroll">
+  <div className="flex gap-4 pb-2 sm:grid sm:grid-cols-2 sm:pb-0">
+    {gallery.map((url, index) => (
+      <button
+        key={`${url}-${index}`}
+        type="button"
+        onClick={() => {
+          setStandaloneImage(null);
+          setActiveGalleryIndex(index);
+        }}
+        className={`group w-[82vw] max-w-[380px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-black text-left sm:w-auto sm:max-w-none sm:shrink sm:min-w-0 ${
+          index === 0 ? "sm:col-span-2" : ""
+        }`}
+      >
+        <div
+          className={`relative w-full ${
+            index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"
+          }`}
+        >
+          <img
+            src={url}
+            alt={`${article.title} ${index + 1}`}
+            className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+          />
+        </div>
+      </button>
+    ))}
+  </div>
+</div>
                     </div>
                   ) : null}
                 </article>

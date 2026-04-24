@@ -755,82 +755,94 @@ const AdminContentEditorPage: React.FC = () => {
     return text.length > 180 ? text.slice(0, 177) + "…" : text;
   };
 
-  const saveDraftReal = async (): Promise<string> => {
-    setSavingState("saving");
-    setAiError(null);
+const saveDraftReal = async (): Promise<string> => {
+  setSavingState("saving");
+  setAiError(null);
 
-    try {
-      const payload = {
-        id: docId || undefined,
+  try {
+    const payload = {
+      id: docId || undefined,
 
-        title,
-        subtitle: subtitle || undefined,
-        excerpt: buildExcerpt() || undefined,
+      title,
+      subtitle: subtitle || undefined,
+      excerpt: buildExcerpt() || undefined,
 
-        section,
-        contentType,
-        status: "borrador" as ContentStatus,
+      section,
+      contentType,
+      status: "borrador" as ContentStatus,
 
-        body,
+      body,
 
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+      tags: tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
 
-        videoUrl: videoUrl || undefined,
-        reelUrl: reelUrl || undefined,
-        useVideoAsHero,
+      videoUrl: videoUrl || undefined,
+      reelUrl: reelUrl || undefined,
+      useVideoAsHero,
 
-        seoTitle: (seoTitle || title) || undefined,
-        seoDescription: seoDescription || undefined,
+      seoTitle: (seoTitle || title) || undefined,
+      seoDescription: seoDescription || undefined,
 
-        authorName: currentUser?.name || "MotorWelt",
-        authorEmail: currentUser?.email || undefined,
+      authorName: currentUser?.name || "MotorWelt",
+      authorEmail: currentUser?.email || undefined,
 
-        updatedAt: new Date().toISOString(),
-        publishedAt: datetimeLocalToIso(publishedAtInput),
+      updatedAt: new Date().toISOString(),
+      publishedAt: datetimeLocalToIso(publishedAtInput),
 
-        mainImageUrl: mainImage || undefined,
-        galleryUrls: normalizeGalleryUrls(gallery),
+      mainImageUrl: mainImage || undefined,
+      galleryUrls: normalizeGalleryUrls(gallery),
 
-        mainImageAsset: mainImageAsset || undefined,
-      };
+      mainImageAsset: mainImageAsset || undefined,
+    };
 
-      const res = await fetch("/api/ai/admin/content/save-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    console.log("[MW] payload save-draft", payload);
 
-      const data = (await res.json()) as SaveDraftResponse & {
-        error?: string;
-      };
+    const res = await fetch("/api/ai/admin/content/save-draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.error || "Error desconocido guardando borrador");
-      }
+    console.log("[MW] response status save-draft", res.status);
 
-      setDocId(data.id);
-      if (data.slug) setDocSlug(data.slug);
-      setStatus("borrador");
-      setSavingState("saved");
-      setTimeout(() => setSavingState("idle"), 2000);
+    const data = (await res.json()) as SaveDraftResponse & {
+      error?: string;
+    };
 
-      fetchMyNotes().catch(() => {});
+    console.log("[MW] response json save-draft", data);
 
-      return data.id as string;
-    } catch (err: any) {
-      console.error(err);
-      setSavingState("idle");
-      setAiError(err?.message || "No se pudo guardar el borrador.");
-      throw err;
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Error desconocido guardando borrador");
     }
-  };
 
-  const handleSaveDraft = () => {
-    saveDraftReal().catch(() => {});
-  };
+    setDocId(data.id);
+    if (data.slug) setDocSlug(data.slug);
+    setStatus("borrador");
+    setSavingState("saved");
+    setTimeout(() => setSavingState("idle"), 2000);
+
+    fetchMyNotes().catch(() => {});
+
+    return data.id as string;
+  } catch (err: any) {
+    console.error("[MW] saveDraftReal catch", err);
+    setSavingState("idle");
+    setAiError(err?.message || "No se pudo guardar el borrador.");
+    throw err;
+  }
+};
+
+  const handleSaveDraft = async () => {
+  console.log("[MW] click Guardar borrador");
+  try {
+    const id = await saveDraftReal();
+    console.log("[MW] saveDraftReal OK", { id });
+  } catch (err) {
+    console.error("[MW] saveDraftReal ERROR", err);
+  }
+};
 
   /* ---------- ✅ Status REAL (PATCH) ---------- */
 

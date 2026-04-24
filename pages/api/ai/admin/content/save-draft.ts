@@ -1,4 +1,3 @@
-// pages/api/ai/admin/content/save-draft.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { sanityAdminClient, assertWriteToken } from "@/lib/sanityClient";
 
@@ -24,7 +23,6 @@ type SaveDraftRequest = {
   authorEmail?: string;
 
   mainImageUrl?: string;
-  // Compatibilidad con la UI actual
   mainImageAsset?: { assetId: string; url: string } | null;
 
   galleryUrls?: string[] | string;
@@ -34,10 +32,23 @@ type SaveDraftRequest = {
   useVideoAsHero?: boolean;
 
   slug?: string;
+  publishedAt?: string | null;
 };
 
 type Data =
-  | { ok: true; id: string; created?: boolean; slug?: string }
+  | {
+      ok: true;
+      id: string;
+      created?: boolean;
+      slug?: string;
+      debug?: {
+        buildMarker: string;
+        incomingPublishedAt: string | null;
+        existingPublishedAt: string | null;
+        resolvedPublishedAt: string | null;
+        resolvedType: string;
+      };
+    }
   | { ok: false; error: string };
 
 function normalizeStringArray(input: unknown): string[] {
@@ -73,7 +84,11 @@ async function makeUniqueSlug(base: string, excludeId?: string): Promise<string>
   const fallback = cleanBase || `nota-${Date.now()}`;
 
   const existsQuery = `
-    *[_type == "article" && slug.current == $slug && _id != $excludeId][0]{ _id }
+    *[
+      _type in ["article", "post"] &&
+      slug.current == $slug &&
+      _id != $excludeId
+    ][0]{ _id }
   `;
 
   let candidate = fallback;
@@ -94,10 +109,21 @@ async function makeUniqueSlug(base: string, excludeId?: string): Promise<string>
   return `${fallback}-${Date.now()}`;
 }
 
-async function getExistingSlug(id: string): Promise<string | null> {
-  const q = `*[_type=="article" && _id==$id][0]{ "slug": slug.current }`;
-  const data = await sanityAdminClient.fetch(q, { id });
-  return data?.slug ?? null;
+async function getExistingDoc(id: string): Promise<{
+  _id: string;
+  _type: string;
+  slug?: string | null;
+  publishedAt?: string | null;
+} | null> {
+  const q = `
+    *[_id == $id][0]{
+      _id,
+      _type,
+      "slug": slug.current,
+      publishedAt
+    }
+  `;
+  return await sanityAdminClient.fetch(q, { id });
 }
 
 export default async function handler(
@@ -111,7 +137,7 @@ export default async function handler(
   try {
     assertWriteToken();
 
-    const body = (req.body || {}) as Partial<SaveDraftRequest>;
+    const payload = (req.body || {}) as Partial<SaveDraftRequest>;
 
     const {
       id,
@@ -133,7 +159,8 @@ export default async function handler(
       reelUrl,
       useVideoAsHero,
       slug,
-    } = body;
+      publishedAt,
+    } = payload;
 
     if (!title || !section) {
       return res.status(400).json({
@@ -148,85 +175,112 @@ export default async function handler(
 
     const normalizedTags = normalizeStringArray(tags);
     const normalizedGallery = normalizeStringArray(galleryUrls);
-
-    // Si la UI manda mainImageAsset, usamos su URL
     const resolvedMainImageUrl = mainImageAsset?.url || mainImageUrl || "";
+
+    const existingDoc = id ? await getExistingDoc(id) : null;
+    const resolvedType = existingDoc?._type || "article";
 
     let finalSlug: string | null = null;
 
     if (typeof slug === "string" && slug.trim()) {
       finalSlug = await makeUniqueSlug(slug.trim(), id);
-    } else if (id) {
-      const existing = await getExistingSlug(id);
-      if (existing && existing.trim()) {
-        finalSlug = existing.trim();
-      } else {
-        finalSlug = await makeUniqueSlug(title, id);
-      }
+    } else if (existingDoc?.slug && existingDoc.slug.trim()) {
+      finalSlug = existingDoc.slug.trim();
     } else {
-      finalSlug = await makeUniqueSlug(title);
+      finalSlug = await makeUniqueSlug(title, id);
     }
 
+    const incomingPublishedAt =
+      typeof publishedAt === "string" && publishedAt.trim()
+        ? publishedAt.trim()
+        : null;
+
+    const existingPublishedAt =
+      typeof existingDoc?.publishedAt === "string" && existingDoc.publishedAt.trim()
+        ? existingDoc.publishedAt.trim()
+        : null;
+
+    const resolvedPublishedAt =
+      incomingPublishedAt !== null
+        ? incomingPublishedAt
+        : existingPublishedAt !== null
+        ? existingPublishedAt
+        : normalizedStatus === "publicado"
+        ? now
+        : null;
+
     const docBase: Record<string, any> = {
-      _type: "article",
+      _type: resolvedType,
       title,
       subtitle: subtitle || "",
       excerpt: "",
-
       section,
       contentType: contentType || "noticia",
       status: normalizedStatus,
-
       body: articleBody || "",
-
       tags: normalizedTags,
-
       seoTitle: seoTitle || "",
       seoDescription: seoDescription || "",
-
       authorName: authorName || "",
       authorEmail: authorEmail || "",
-
       slug: { _type: "slug", current: finalSlug },
-
-      // Campos de medios
       mainImageUrl: resolvedMainImageUrl,
       galleryUrls: normalizedGallery,
       videoUrl: videoUrl || "",
       reelUrl: reelUrl || "",
       useVideoAsHero: !!useVideoAsHero,
-
       updatedAt: now,
+      ...(resolvedPublishedAt ? { publishedAt: resolvedPublishedAt } : {}),
+      ...(mainImageAsset?.assetId
+        ? {
+            coverImage: {
+              _type: "image",
+              asset: {
+                _type: "reference",
+                _ref: mainImageAsset.assetId,
+              },
+            },
+          }
+        : {}),
     };
 
-    const shouldSetPublishedAt = normalizedStatus === "publicado";
+    const buildMarker = "save-draft-debug-v1";
 
     if (id) {
-      const patch = sanityAdminClient.patch(id).set({
-        ...docBase,
-        ...(shouldSetPublishedAt ? { publishedAt: now } : {}),
-      });
-
-      const updated = await patch.commit();
+      const updated = await sanityAdminClient
+        .patch(id)
+        .set(docBase)
+        .commit({ autoGenerateArrayKeys: true });
 
       return res.status(200).json({
         ok: true,
         id: updated._id,
         created: false,
         slug: finalSlug || undefined,
+        debug: {
+          buildMarker,
+          incomingPublishedAt,
+          existingPublishedAt,
+          resolvedPublishedAt,
+          resolvedType,
+        },
       });
     }
 
-    const createdDoc = await sanityAdminClient.create({
-      ...docBase,
-      ...(shouldSetPublishedAt ? { publishedAt: now } : {}),
-    });
+    const createdDoc = await sanityAdminClient.create(docBase);
 
     return res.status(200).json({
       ok: true,
       id: createdDoc._id,
       created: true,
       slug: finalSlug || undefined,
+      debug: {
+        buildMarker,
+        incomingPublishedAt,
+        existingPublishedAt,
+        resolvedPublishedAt,
+        resolvedType,
+      },
     });
   } catch (error: any) {
     console.error("SANITY SAVE ERROR:", error?.message || error);

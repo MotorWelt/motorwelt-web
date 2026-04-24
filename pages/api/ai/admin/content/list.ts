@@ -1,15 +1,18 @@
-// pages/api/ai/admin/content/list.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { sanityReadClient } from "@/lib/sanityClient";
+import { sanityAdminClient, assertWriteToken } from "@/lib/sanityClient";
 
 type ContentStatus = "borrador" | "revision" | "publicado";
 
 type ListBody = {
   authorEmail?: string;
-  status?: ContentStatus;
+  status?: ContentStatus | "all";
   q?: string;
   limit?: number;
 };
+
+function isValidStatus(v: any): v is ContentStatus {
+  return v === "borrador" || v === "revision" || v === "publicado";
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,6 +27,8 @@ export default async function handler(
   }
 
   try {
+    assertWriteToken();
+
     const payload: ListBody = isPost
       ? req.body || {}
       : {
@@ -33,7 +38,7 @@ export default async function handler(
               : undefined,
           status:
             typeof req.query.status === "string"
-              ? (req.query.status as ContentStatus)
+              ? (req.query.status as ContentStatus | "all")
               : undefined,
           q: typeof req.query.q === "string" ? req.query.q : undefined,
           limit:
@@ -44,7 +49,8 @@ export default async function handler(
         };
 
     const authorEmail = (payload.authorEmail || "").trim() || undefined;
-    const status = payload.status;
+    const rawStatus = payload.status;
+    const status = isValidStatus(rawStatus) ? rawStatus : undefined;
     const q = (payload.q || "").trim() || undefined;
     const limit = Math.min(Math.max(Number(payload.limit || 30), 1), 50);
 
@@ -67,7 +73,9 @@ export default async function handler(
     }
 
     if (q) {
-      filters.push(`(title match $q || subtitle match $q || excerpt match $q)`);
+      filters.push(
+        `(title match $q || subtitle match $q || excerpt match $q || body match $q)`
+      );
       params.q = `*${q}*`;
     }
 
@@ -75,9 +83,9 @@ export default async function handler(
 
     const query = /* groq */ `
       *[${filterStr}]
-      | order(coalesce(publishedAt, updatedAt, _createdAt) desc)
-      [0...$limit]{
+      | order(coalesce(publishedAt, updatedAt, _createdAt) desc)[0...$limit]{
         "id": _id,
+        "_type": _type,
         title,
         "slug": slug.current,
         "section": coalesce(
@@ -85,9 +93,15 @@ export default async function handler(
           select(
             lower(category) == "autos" => "noticias_autos",
             lower(category) == "motos" => "noticias_motos",
+            lower(category) == "deportes" => "deportes",
+            lower(category) == "lifestyle" => "lifestyle",
+            lower(category) == "comunidad" => "comunidad",
             lower(category) == "tuning" => "tuning",
             "autos" in categories[] => "noticias_autos",
             "motos" in categories[] => "noticias_motos",
+            "deportes" in categories[] => "deportes",
+            "lifestyle" in categories[] => "lifestyle",
+            "comunidad" in categories[] => "comunidad",
             "tuning" in categories[] => "tuning",
             "builds" in categories[] => "tuning",
             "mods" in categories[] => "tuning",
@@ -96,16 +110,24 @@ export default async function handler(
         ),
         "contentType": coalesce(contentType, "noticia"),
         "status": coalesce(status, "publicado"),
-        updatedAt,
-        publishedAt,
+        "updatedAt": coalesce(updatedAt, _updatedAt, _createdAt),
+        "publishedAt": coalesce(publishedAt, null),
         authorName,
         authorEmail
       }
     `;
 
-    const items = await sanityReadClient.fetch(query, params);
+    const items = await sanityAdminClient.fetch(query, params);
 
-    return res.status(200).json({ ok: true, items });
+    return res.status(200).json({
+      ok: true,
+      items,
+      debug: {
+        buildMarker: "content-list-debug-v1",
+        requestedStatus: status || "all",
+        count: Array.isArray(items) ? items.length : 0,
+      },
+    });
   } catch (err: any) {
     console.error("list error:", err);
     return res.status(500).json({

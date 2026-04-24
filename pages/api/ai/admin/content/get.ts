@@ -1,10 +1,5 @@
-// pages/api/ai/admin/content/get.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-
-/**
- * ✅ Usa el mismo sanity client de tu proyecto
- */
-import { sanityReadClient } from "@/lib/sanityClient";
+import { sanityAdminClient, assertWriteToken } from "@/lib/sanityClient";
 
 type GetBody = { id?: string };
 
@@ -21,6 +16,8 @@ export default async function handler(
   }
 
   try {
+    assertWriteToken();
+
     const id = isPost
       ? String(((req.body || {}) as GetBody).id || "").trim()
       : String(req.query.id || "").trim();
@@ -32,6 +29,7 @@ export default async function handler(
     const query = /* groq */ `
       *[_id == $id][0]{
         "id": _id,
+        "_type": _type,
 
         title,
         subtitle,
@@ -62,21 +60,26 @@ export default async function handler(
         galleryUrls,
 
         "slug": slug.current,
-
-        coverImageAssetId,
-
-        // ✅ Soporta el caso donde tengas un campo tipo image: coverImage
+        "coverImageAssetId": coverImage.asset->_id,
         "coverImageAssetUrl": coverImage.asset->url
       }
     `;
 
-    const doc = await sanityReadClient.fetch(query, { id });
+    const doc = await sanityAdminClient.fetch(query, { id });
 
     if (!doc) {
       return res.status(404).json({ ok: false, error: "No encontrado" });
     }
 
-    return res.status(200).json({ ok: true, doc });
+    return res.status(200).json({
+      ok: true,
+      doc,
+      debug: {
+        buildMarker: "content-get-debug-v1",
+        readPublishedAt: doc?.publishedAt || null,
+        readType: doc?._type || null,
+      },
+    });
   } catch (err: any) {
     console.error("get error:", err);
     return res.status(500).json({
