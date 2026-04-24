@@ -354,13 +354,7 @@ function parseBody(body: string): BodyBlock[] {
   return blocks;
 }
 
-function InlineEmbed({
-  url,
-  title,
-}: {
-  url: string;
-  title?: string;
-}) {
+function InlineEmbed({ url, title }: { url: string; title?: string }) {
   const embedUrl = getEmbedUrl(url);
   const platform = detectPlatform(url);
 
@@ -645,6 +639,7 @@ export default function TuningDetailPage({
   const heroVideoEmbed = getYoutubeEmbedUrl(article.videoUrl || "");
   const hasVideo = Boolean(heroVideoEmbed);
   const hasGallery = gallery.length > 1;
+  const headerDate = article.publishedAt || article.updatedAt;
 
   const isImageModalOpen =
     activeGalleryIndex !== null || Boolean(standaloneImage);
@@ -1048,13 +1043,7 @@ export default function TuningDetailPage({
                     aria-label="Imagen anterior"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M15 6l-6 6 6 6"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                      <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
 
@@ -1065,13 +1054,7 @@ export default function TuningDetailPage({
                     aria-label="Imagen siguiente"
                   >
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M9 6l6 6-6 6"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
 
@@ -1116,13 +1099,7 @@ export default function TuningDetailPage({
                     aria-label="Volver a Tuning"
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M15 6l-6 6 6 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                      <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </Link>
 
@@ -1148,11 +1125,11 @@ export default function TuningDetailPage({
                       Por <span className="font-semibold text-white">{article.authorName}</span>
                     </span>
                   ) : null}
-                  {article.authorName && article.updatedAt ? (
+                  {article.authorName && headerDate ? (
                     <span className="text-gray-500">•</span>
                   ) : null}
-                  {article.updatedAt ? (
-                    <span>Actualizado {formatDate(article.updatedAt)}</span>
+                  {headerDate ? (
+                    <span>Actualizado {formatDate(headerDate)}</span>
                   ) : null}
                 </div>
 
@@ -1200,10 +1177,7 @@ export default function TuningDetailPage({
                         bodyBlocks.map((block, index) => {
                           if (block.type === "p") {
                             return (
-                              <p
-                                key={index}
-                                className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]"
-                              >
+                              <p key={index} className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]">
                                 {block.text}
                               </p>
                             );
@@ -1211,10 +1185,7 @@ export default function TuningDetailPage({
 
                           if (block.type === "h2") {
                             return (
-                              <h2
-                                key={index}
-                                className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
-                              >
+                              <h2 key={index} className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
                                 {block.text}
                               </h2>
                             );
@@ -1222,10 +1193,7 @@ export default function TuningDetailPage({
 
                           if (block.type === "h3") {
                             return (
-                              <h3
-                                key={index}
-                                className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl"
-                              >
+                              <h3 key={index} className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl">
                                 {block.text}
                               </h3>
                             );
@@ -1233,10 +1201,7 @@ export default function TuningDetailPage({
 
                           if (block.type === "h4") {
                             return (
-                              <h4
-                                key={index}
-                                className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl"
-                              >
+                              <h4 key={index} className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl">
                                 {block.text}
                               </h4>
                             );
@@ -1244,10 +1209,7 @@ export default function TuningDetailPage({
 
                           if (block.type === "h5") {
                             return (
-                              <h5
-                                key={index}
-                                className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]"
-                              >
+                              <h5 key={index} className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]">
                                 {block.text}
                               </h5>
                             );
@@ -1255,10 +1217,7 @@ export default function TuningDetailPage({
 
                           if (block.type === "quote") {
                             return (
-                              <blockquote
-                                key={index}
-                                className="my-8 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-lg italic leading-8 text-white"
-                              >
+                              <blockquote key={index} className="my-8 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-lg italic leading-8 text-white">
                                 {block.text}
                               </blockquote>
                             );
@@ -1326,7 +1285,7 @@ export default function TuningDetailPage({
                         </h2>
                       </div>
 
-                      <div className="no-scrollbar overflow-x-auto sm:overflow-visible">
+                      <div className="no-scrollbar overflow-x-auto sm:max-h-[760px] sm:overflow-y-auto sm:overflow-x-hidden sm:pr-2 sidebar-scroll">
                         <div className="flex gap-4 pb-2 sm:grid sm:grid-cols-2 sm:pb-0">
                           {gallery.map((url, index) => (
                             <button
@@ -1340,11 +1299,7 @@ export default function TuningDetailPage({
                                 index === 0 ? "sm:col-span-2" : ""
                               }`}
                             >
-                              <div
-                                className={`relative w-full ${
-                                  index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"
-                                }`}
-                              >
+                              <div className={`relative w-full ${index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
                                 <img
                                   src={url}
                                   alt={`${article.title} ${index + 1}`}
@@ -1783,7 +1738,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       "seoTitle": coalesce(seoTitle, title, ""),
       "seoDescription": coalesce(seoDescription, excerpt, subtitle, ""),
       "updatedAt": updatedAt,
-      "publishedAt": publishedAt,
+      "publishedAt": coalesce(publishedAt, _createdAt),
       "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "galleryUrls": coalesce(galleryUrls, []),
       "videoUrl": coalesce(videoUrl, ""),
@@ -1872,6 +1827,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       defined(slug.current) &&
       (
         section == "autos" ||
+        section == "noticias_autos" ||
         lower(category) == "autos" ||
         "autos" in categories[]
       )
@@ -1888,6 +1844,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       defined(slug.current) &&
       (
         section == "motos" ||
+        section == "noticias_motos" ||
         lower(category) == "motos" ||
         "motos" in categories[]
       )

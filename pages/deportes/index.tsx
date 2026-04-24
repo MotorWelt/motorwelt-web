@@ -33,6 +33,15 @@ type PartnerLogo = {
   href: string;
 };
 
+type SectionHeroImages = {
+  tuning: string;
+  autos: string;
+  motos: string;
+  deportes: string;
+  lifestyle: string;
+  comunidad: string;
+};
+
 type DeportesPageSettings = {
   heroImageUrl: string;
   ads: {
@@ -66,6 +75,15 @@ type RawPost = {
 };
 
 const SPORTS: SportKey[] = ["F1", "Nascar", "MotoGP", "WRC", "Drift"];
+
+const DEFAULT_SECTION_HERO_IMAGES: SectionHeroImages = {
+  tuning: "/images/noticia-2.jpg",
+  autos: "/images/noticia-1.jpg",
+  motos: "/images/noticia-3.jpg",
+  deportes: "/images/noticia-3.jpg",
+  lifestyle: "/images/noticia-1.jpg",
+  comunidad: "/images/comunidad.jpg",
+};
 
 const DEFAULT_SETTINGS: DeportesPageSettings = {
   heroImageUrl: "/images/noticia-3.jpg",
@@ -104,9 +122,9 @@ const getButtonClasses = (
 
   const styles: Record<ButtonVariant, string> = {
     cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus:ring-2 focus:ring-[#0CE0B2]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.28),inset_0_0_0_1px_rgba(12,224,178,.10)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.42),inset_0_0_0_1px_rgba(12,224,178,.14)] focus:ring-2 focus:ring-[#0CE0B2]/40 disabled:opacity-60 disabled:cursor-not-allowed",
     pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.26),inset_0_0_0_1px_rgba(255,122,26,.10)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.42),inset_0_0_0_1px_rgba(255,122,26,.14)] focus:ring-2 focus:ring-[#FF7A1A]/40 disabled:opacity-60 disabled:cursor-not-allowed",
     link:
       "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
   };
@@ -152,6 +170,53 @@ function normalizeText(value: unknown) {
 }
 
 function detectSport(post: RawPost): SportKey | null {
+  const controlledFields = [
+    post.category,
+    post.subcategory,
+    post.categories,
+    post.tags,
+  ]
+    .map(normalizeText)
+    .join(" ");
+
+  const controlledExact = controlledFields
+    .split(/\s|,|;|\||\/|-/g)
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  if (
+    controlledExact.includes("f1") ||
+    controlledFields.includes("formula 1") ||
+    controlledFields.includes("formula uno") ||
+    controlledFields.includes("fórmula 1")
+  ) {
+    return "F1";
+  }
+
+  if (controlledFields.includes("nascar")) return "Nascar";
+
+  if (
+    controlledFields.includes("motogp") ||
+    controlledFields.includes("moto gp")
+  ) {
+    return "MotoGP";
+  }
+
+  if (
+    controlledExact.includes("wrc") ||
+    controlledFields.includes("world rally") ||
+    controlledFields.includes("rally")
+  ) {
+    return "WRC";
+  }
+
+  if (
+    controlledFields.includes("drift") ||
+    controlledFields.includes("drifting")
+  ) {
+    return "Drift";
+  }
+
   const blob = [
     post.title,
     post.excerpt,
@@ -166,11 +231,19 @@ function detectSport(post: RawPost): SportKey | null {
     .map(normalizeText)
     .join(" ");
 
-  if (blob.includes("formula 1") || blob.includes(" f1") || blob.startsWith("f1")) return "F1";
+  if (
+    blob.includes("formula 1") ||
+    blob.includes("fórmula 1") ||
+    blob.includes("formula uno") ||
+    /\bf1\b/.test(blob)
+  ) {
+    return "F1";
+  }
+
   if (blob.includes("nascar")) return "Nascar";
   if (blob.includes("motogp") || blob.includes("moto gp")) return "MotoGP";
-  if (blob.includes("wrc") || blob.includes("world rally") || blob.includes("rally")) return "WRC";
-  if (blob.includes("drift")) return "Drift";
+  if (/\bwrc\b/.test(blob) || blob.includes("world rally") || blob.includes("rally")) return "WRC";
+  if (blob.includes("drift") || blob.includes("drifting")) return "Drift";
 
   return null;
 }
@@ -179,6 +252,22 @@ function getSlugValue(slug?: string | { current?: string }) {
   if (!slug) return "";
   if (typeof slug === "string") return slug;
   return String(slug.current || "");
+}
+
+function sanitizeSectionHeroImages(
+  raw?: Partial<SectionHeroImages>
+): SectionHeroImages {
+  return {
+    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
+    motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
+    deportes:
+      String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+    lifestyle:
+      String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+    comunidad:
+      String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+  };
 }
 
 function sanitizePageSettings(
@@ -270,35 +359,55 @@ const SectionHeader: React.FC<{
 function ArticleCard({
   item,
   compact = false,
+  small = false,
 }: {
   item: ArticleCardData;
   compact?: boolean;
+  small?: boolean;
 }) {
   return (
-    <article className="group overflow-hidden rounded-[24px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/50">
+    <article className="group overflow-hidden rounded-[22px] border border-white/[0.07] bg-mw-surface/75 backdrop-blur-md transition hover:border-[#0CE0B2]/35 hover:bg-white/[0.045]">
       <Link href={item.href} className="block">
-        <div className={`relative w-full ${compact ? "h-48" : "h-64"} overflow-hidden`}>
+        <div
+          className={`relative w-full overflow-hidden ${
+            small ? "h-40" : compact ? "h-44" : "h-64"
+          }`}
+        >
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes={compact ? "(max-width: 1024px) 80vw, 320px" : "(max-width: 1024px) 100vw, 33vw"}
+            sizes={
+              small
+                ? "(max-width: 1024px) 78vw, 260px"
+                : compact
+                ? "(max-width: 1024px) 84vw, 360px"
+                : "(max-width: 1024px) 100vw, 33vw"
+            }
             style={{ objectFit: "cover" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/82 via-black/22 to-transparent" />
 
-          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
+          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
             {item.sport}
           </div>
         </div>
 
-        <div className="p-5">
+        <div className={small ? "p-4" : "p-5"}>
           <div className="text-xs text-gray-400">{item.when}</div>
-          <h3 className="mt-2 text-xl font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+          <h3
+            className={`mt-2 font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2] ${
+              small ? "text-base" : "text-xl"
+            }`}
+          >
             {item.title}
           </h3>
-          <p className="mt-3 text-sm leading-relaxed text-gray-300 line-clamp-3">
+          <p
+            className={`mt-3 text-sm leading-relaxed text-gray-300 ${
+              small ? "line-clamp-2" : "line-clamp-3"
+            }`}
+          >
             {item.excerpt}
           </p>
 
@@ -311,13 +420,42 @@ function ArticleCard({
   );
 }
 
-function FeaturedStory({
-  item,
-}: {
-  item: ArticleCardData;
-}) {
+function CategorySideItem({ item }: { item: ArticleCardData }) {
   return (
-    <article className="overflow-hidden rounded-[28px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md">
+    <Link
+      href={item.href}
+      className="group grid grid-cols-[112px_1fr] gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.035] p-3 transition hover:border-[#0CE0B2]/30 hover:bg-white/[0.055]"
+    >
+      <div className="relative h-24 overflow-hidden rounded-xl">
+        <Image
+          src={item.img}
+          alt={item.title}
+          fill
+          sizes="140px"
+          style={{ objectFit: "cover" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[#0CE0B2]">
+          {item.sport}
+        </p>
+        <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-white transition group-hover:text-[#0CE0B2]">
+          {item.title}
+        </h4>
+        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-400">
+          {item.excerpt}
+        </p>
+        <p className="mt-2 text-[11px] text-gray-500">{item.when}</p>
+      </div>
+    </Link>
+  );
+}
+
+function FeaturedStory({ item }: { item: ArticleCardData }) {
+  return (
+    <article className="overflow-hidden rounded-[28px] border border-white/[0.07] bg-mw-surface/80 backdrop-blur-md">
       <Link href={item.href} className="block">
         <div className="grid gap-0 lg:grid-cols-[1.1fr_.9fr]">
           <div className="relative min-h-[280px] lg:min-h-[380px]">
@@ -332,7 +470,7 @@ function FeaturedStory({
           </div>
 
           <div className="flex flex-col justify-center p-6 sm:p-8">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/[0.08] bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white">
               <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
               Destacada · {item.sport}
             </div>
@@ -359,8 +497,8 @@ function FeaturedStory({
 
 function EmptySportCard({ sport }: { sport: SportKey }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
+    <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/[0.08] bg-white/5">
         <span className="h-2.5 w-2.5 rounded-full bg-[#FF7A1A]" />
       </div>
       <h3 className="mt-5 text-xl font-semibold text-white">{sport}</h3>
@@ -372,29 +510,47 @@ function EmptySportCard({ sport }: { sport: SportKey }) {
 }
 
 function ExploreCard({
-  href,
   title,
-  label,
+  subtitle,
+  href,
   image,
-  description,
 }: {
-  href: string;
   title: string;
-  label: string;
+  subtitle: string;
+  href: string;
   image: string;
-  description: string;
 }) {
   return (
-    <Link href={href} className="relative w-[82%] min-w-[82%] sm:w-[420px] sm:min-w-[420px] snap-start">
-      <div className="relative h-[240px] w-full overflow-hidden rounded-2xl border border-mw-line/70">
-        <Image src={image} alt={title} fill style={{ objectFit: "cover" }} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+    <Link
+      href={href}
+      className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]"
+    >
+      <div className="absolute inset-0">
+        <img
+          src={image}
+          alt={title}
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
+          style={{ filter: "brightness(.42) saturate(1.08)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/32 to-black/75" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.09),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.08),transparent_28%)]" />
+      </div>
 
-        <div className="absolute bottom-0 p-5">
-          <p className="text-[11px] uppercase tracking-wide text-[#0CE0B2]">{label}</p>
-          <h3 className="text-2xl font-bold text-white">{title}</h3>
-          <p className="mt-2 text-sm text-gray-300 line-clamp-2">{description}</p>
+      <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            Explora
+          </span>
         </div>
+
+        <h3 className="max-w-[85%] text-[2.1rem] font-extrabold leading-[0.92] tracking-tight text-white drop-shadow-[0_6px_20px_rgba(0,0,0,.5)] sm:text-[2.45rem]">
+          {title}
+        </h3>
+
+        <p className="mt-3 max-w-[88%] text-sm leading-relaxed text-white/88 drop-shadow-[0_4px_14px_rgba(0,0,0,.42)] sm:text-[0.98rem]">
+          {subtitle}
+        </p>
       </div>
     </Link>
   );
@@ -405,7 +561,7 @@ function PartnersRow({ partners }: { partners: PartnerLogo[] }) {
 
   return (
     <section className="py-14 sm:py-16">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
         <SectionHeader
           eyebrow="Partners"
           title="Aliados de MotorWelt"
@@ -416,7 +572,7 @@ function PartnersRow({ partners }: { partners: PartnerLogo[] }) {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {partners.map((partner) => {
             const content = (
-              <div className="relative h-24 overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70">
+              <div className="relative h-24 overflow-hidden rounded-2xl border border-white/[0.07] bg-mw-surface/70">
                 <Image
                   src={partner.imageUrl}
                   alt={partner.name}
@@ -456,8 +612,8 @@ function Header({
 }) {
   return (
     <>
-      <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-        <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
+      <header className="fixed left-0 top-0 z-50 w-full border-b border-white/[0.07] bg-mw-surface/70 backdrop-blur-md">
+        <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] xl:px-10 2xl:max-w-[1560px]">
           <div className="flex items-center">
             <Link
               href="/"
@@ -475,8 +631,8 @@ function Header({
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center justify-center">
-            <nav className="flex items-center gap-6 text-sm font-medium">
+          <div className="hidden items-center justify-center md:flex md:pl-10 lg:pl-16">
+            <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
               <Link
                 href="/tuning"
                 className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
@@ -484,52 +640,23 @@ function Header({
                 Tuning
               </Link>
 
-              <div className="group relative">
-                <button
-                  type="button"
-                  aria-haspopup="menu"
-                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
-                >
-                  Noticias
-                  <svg
-                    className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M6 9l6 6 6-6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+              <Link
+                href="/noticias/autos"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
+                Autos
+              </Link>
 
-                <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
-                    <Link
-                      href="/noticias/autos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                    >
-                      Autos
-                    </Link>
-                    <Link
-                      href="/noticias/motos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                    >
-                      Motos
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <Link
+                href="/noticias/motos"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
+                Motos
+              </Link>
 
               <Link
                 href="/deportes"
-                className="inline-flex h-10 items-center leading-none border-b-2 border-[#0CE0B2] text-white"
+                className="inline-flex h-10 items-center border-b-2 border-[#0CE0B2] leading-none text-white"
               >
                 Deportes
               </Link>
@@ -550,7 +677,7 @@ function Header({
             </nav>
           </div>
 
-          <div className="hidden md:flex items-center justify-end">
+          <div className="hidden items-center justify-end md:flex">
             <ProfileButton />
           </div>
 
@@ -558,7 +685,7 @@ function Header({
             <ProfileButton />
             <button
               onClick={() => setMobileOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.07] bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
               aria-label="Abrir menú"
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
@@ -586,9 +713,9 @@ function Header({
 
           <aside
             id="mobile-menu"
-            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
+            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/[0.07] bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
           >
-            <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
+            <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-4">
               <Image
                 src="/brand/motorwelt-logo.png"
                 alt="MotorWelt logo"
@@ -613,56 +740,22 @@ function Header({
             </div>
 
             <nav className="px-4 py-3">
-              <Link
-                href="/tuning"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Tuning
               </Link>
-
-              <p className="px-3 pb-1 pt-2 text-xs uppercase tracking-wide text-gray-400">
-                Noticias
-              </p>
-
-              <div className="mt-1 space-y-1 pl-2">
-                <Link
-                  href="/noticias/autos"
-                  className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Autos
-                </Link>
-                <Link
-                  href="/noticias/motos"
-                  className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Motos
-                </Link>
-              </div>
-
-              <Link
-                href="/deportes"
-                className="block w-full rounded-xl px-3 py-3 text-base text-white"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/noticias/autos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                Autos
+              </Link>
+              <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                Motos
+              </Link>
+              <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-white" onClick={() => setMobileOpen(false)}>
                 Deportes
               </Link>
-
-              <Link
-                href="/lifestyle"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Lifestyle
               </Link>
-
-              <Link
-                href="/comunidad"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Comunidad
               </Link>
             </nav>
@@ -698,7 +791,7 @@ function AdSlot({
 
   return (
     <div
-      className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70 ${
+      className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-white/[0.07] bg-mw-surface/70 ${
         isLeaderboard
           ? "max-w-[970px] aspect-[970/120] min-h-[72px] md:min-h-0"
           : "max-w-[970px] aspect-[970/250]"
@@ -707,24 +800,11 @@ function AdSlot({
       {ad.enabled ? (
         ad.imageUrl ? (
           ad.href ? (
-            <a
-              href={ad.href}
-              target="_blank"
-              rel="noreferrer"
-              className="block h-full w-full"
-            >
-              <img
-                src={ad.imageUrl}
-                alt={ad.label}
-                className="h-full w-full object-cover object-center bg-black/20"
-              />
+            <a href={ad.href} target="_blank" rel="noreferrer" className="block h-full w-full">
+              <img src={ad.imageUrl} alt={ad.label} className="h-full w-full bg-black/20 object-cover object-center" />
             </a>
           ) : (
-            <img
-              src={ad.imageUrl}
-              alt={ad.label}
-              className="h-full w-full object-cover object-center bg-black/20"
-            />
+            <img src={ad.imageUrl} alt={ad.label} className="h-full w-full bg-black/20 object-cover object-center" />
           )
         ) : (
           <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
@@ -734,41 +814,23 @@ function AdSlot({
       ) : (
         editable && (
           <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
-            <span className="px-4 text-[11px] sm:text-xs md:text-sm">
-              {ad.label} · oculto
-            </span>
+            <span className="px-4 text-[11px] sm:text-xs md:text-sm">{ad.label} · oculto</span>
           </div>
         )
       )}
 
       {editable && (
         <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onToggle}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onToggle} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Imagen
           </button>
-          <button
-            type="button"
-            onClick={onEditLink}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onEditLink} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Link
           </button>
-          <button
-            type="button"
-            onClick={onClear}
-            className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onClear} className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
             Limpiar
           </button>
         </div>
@@ -792,10 +854,12 @@ export default function DeportesPage({
   year,
   deportesItems = [],
   initialSettings = DEFAULT_SETTINGS,
+  sectionHeroImages = DEFAULT_SECTION_HERO_IMAGES,
 }: {
   year: number;
   deportesItems?: ArticleCardData[];
   initialSettings?: DeportesPageSettings;
+  sectionHeroImages?: SectionHeroImages;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
@@ -811,7 +875,7 @@ export default function DeportesPage({
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
 
   const featured = deportesItems[0] || null;
-  const latest = featured ? deportesItems.slice(0, 6) : [];
+  const latest = deportesItems.slice(0, 10);
 
   const grouped = useMemo(() => {
     return SPORTS.reduce((acc, sport) => {
@@ -819,6 +883,8 @@ export default function DeportesPage({
       return acc;
     }, {} as Record<SportKey, ArticleCardData[]>);
   }, [deportesItems]);
+
+  const safeSectionHeroImages = sanitizeSectionHeroImages(sectionHeroImages);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -991,13 +1057,13 @@ export default function DeportesPage({
         <div className="mw-global-bg" aria-hidden>
           <div className="mw-global-base" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(12,224,178,.15),transparent_24%),radial-gradient(circle_at_84%_16%,rgba(255,122,26,.11),transparent_28%),radial-gradient(circle_at_52%_84%,rgba(163,255,18,.05),transparent_32%)]" />
-          <div className="absolute inset-0 opacity-[0.15] bg-[linear-gradient(115deg,transparent_0%,transparent_44%,rgba(255,255,255,.06)_45%,transparent_46%,transparent_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_0%,transparent_44%,rgba(255,255,255,.06)_45%,transparent_46%,transparent_100%)] opacity-[0.15]" />
         </div>
 
         {canEdit && (
           <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
+              <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-[#0CE0B2]" />
               <span>{spectatorMode ? "Vista espectador" : "Modo edición deportes"}</span>
               {saving && <span className="text-[#0CE0B2]">Guardando…</span>}
             </div>
@@ -1045,10 +1111,10 @@ export default function DeportesPage({
                 </div>
               )}
 
-              <div className="relative z-10 w-full px-4 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-12">
-                <div className="mx-auto w-full max-w-[1200px]">
+              <div className="relative z-10 w-full px-4 pb-10 pt-12 sm:px-6 xl:px-10 lg:pb-12">
+                <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
                       MotorWelt Deportes
                     </div>
@@ -1068,7 +1134,7 @@ export default function DeportesPage({
           </section>
 
           <section className="py-4 sm:py-6">
-            <div className="mx-auto w-full max-w-[1200px] px-2 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <AdSlot
                 kind="leaderboard"
                 ad={settings.ads.leaderboard}
@@ -1084,11 +1150,11 @@ export default function DeportesPage({
 
           {featured ? (
             <section className="py-12 sm:py-16">
-              <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
                 <SectionHeader
                   eyebrow="Destacada"
                   title="Lo más nuevo"
-                  description="Última publicación de Deportes"
+                  description="Última publicación de Deportes."
                   accent="warm"
                 />
                 <FeaturedStory item={featured} />
@@ -1097,22 +1163,28 @@ export default function DeportesPage({
           ) : null}
 
           <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
                 eyebrow="Últimas publicaciones"
                 title="Lo más reciente en Deportes"
-                description=""
                 accent="cool"
               />
 
               {latest.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  {latest.map((item) => (
-                    <ArticleCard key={item.id} item={item} />
-                  ))}
+                <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
+                  <div className="flex snap-x snap-mandatory gap-4">
+                    {latest.map((item) => (
+                      <div
+                        key={item.id}
+                        className="w-[78%] min-w-[78%] snap-start sm:w-[340px] sm:min-w-[340px] lg:w-[300px] lg:min-w-[300px]"
+                      >
+                        <ArticleCard item={item} small />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center text-gray-300">
+                <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center text-gray-300">
                   Próximamente habrá contenido disponible en Deportes.
                 </div>
               )}
@@ -1120,17 +1192,19 @@ export default function DeportesPage({
           </section>
 
           <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
                 eyebrow="Todo Deportes"
                 title="F1, Nascar, MotoGP, WRC y Drift"
-                description="Aquí podrás encontrar lo último en el deporte motor"
+                description="Aquí podrás encontrar lo último en el deporte motor."
                 accent="lime"
               />
 
-              <div className="space-y-14">
+              <div className="space-y-16">
                 {SPORTS.map((sport) => {
                   const items = grouped[sport] || [];
+                  const mainItem = items[0];
+                  const sideItems = items.slice(1, 7);
 
                   return (
                     <section key={sport} id={sport.toLowerCase()} className="scroll-mt-28">
@@ -1142,7 +1216,7 @@ export default function DeportesPage({
                           <h3 className="mt-1 text-3xl font-bold text-white">{sport}</h3>
                         </div>
 
-                        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-gray-300">
+                        <div className="rounded-full border border-white/[0.08] bg-white/5 px-4 py-2 text-xs text-gray-300">
                           {items.length > 0
                             ? `${items.length} publicación${items.length === 1 ? "" : "es"}`
                             : "Próximamente"}
@@ -1151,18 +1225,30 @@ export default function DeportesPage({
 
                       {items.length > 0 ? (
                         <>
-                          <div className="hidden gap-6 md:grid md:grid-cols-2 xl:grid-cols-4">
-                            {items.slice(0, 4).map((item) => (
-                              <ArticleCard key={item.id} item={item} compact />
-                            ))}
+                          <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,.88fr)]">
+                            <ArticleCard item={mainItem} compact />
+
+                            <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/[0.07] bg-mw-surface/45 p-3 no-scrollbar">
+                              <div className="space-y-3">
+                                {sideItems.length > 0 ? (
+                                  sideItems.map((item) => (
+                                    <CategorySideItem key={item.id} item={item} />
+                                  ))
+                                ) : (
+                                  <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-gray-400">
+                                    Por ahora solo hay una nota en esta categoría.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                            <div className="flex gap-4 snap-x snap-mandatory">
-                              {items.slice(0, 6).map((item) => (
+                          <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:-mx-6 sm:px-6 lg:hidden">
+                            <div className="flex snap-x snap-mandatory gap-4">
+                              {items.slice(0, 8).map((item) => (
                                 <div
                                   key={item.id}
-                                  className="w-[84%] min-w-[84%] shrink-0 snap-start"
+                                  className="w-[84%] min-w-[84%] shrink-0 snap-start sm:w-[360px] sm:min-w-[360px]"
                                 >
                                   <ArticleCard item={item} compact />
                                 </div>
@@ -1181,7 +1267,7 @@ export default function DeportesPage({
           </section>
 
           <section className="py-8">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <AdSlot
                 kind="billboard"
                 ad={settings.ads.billboard}
@@ -1196,52 +1282,52 @@ export default function DeportesPage({
           </section>
 
           <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <div className="mb-8">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-gray-400">
-                  Explore MotorWelt
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+              <div className="mb-6 text-center">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
+                  Explora
                 </p>
 
-                <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
+                <h2 className="mt-2 font-display text-3xl font-bold text-white">
                   Seguir explorando MotorWelt
                 </h2>
-
-                <div className="mt-3 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
-
-                <p className="mt-4 max-w-2xl text-sm text-gray-300">
-                  Sigue navegando entre más historias, coberturas y cultura editorial dentro del universo MotorWelt.
-                </p>
               </div>
 
-              <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-                <div className="flex gap-4 snap-x snap-mandatory">
+              <div className="no-scrollbar overflow-x-auto pb-6">
+                <div className="flex items-start gap-5 pr-12">
                   <ExploreCard
-                    href="/tuning"
                     title="Tuning"
-                    label="Sección"
-                    image="/images/noticia-2.jpg"
-                    description="Builds, mods, street culture y lenguaje visual con identidad propia."
+                    subtitle="Builds, mods, aero, stance y cultura visual."
+                    href="/tuning"
+                    image={safeSectionHeroImages.tuning}
                   />
+
                   <ExploreCard
-                    href="/noticias/autos"
                     title="Autos"
-                    label="Noticias"
-                    image="/images/noticia-1.jpg"
-                    description="Lanzamientos, pruebas, industria y todo lo que mueve al universo automotriz."
+                    subtitle="Nuevos lanzamientos, pruebas y contexto editorial."
+                    href="/noticias/autos"
+                    image={safeSectionHeroImages.autos}
                   />
+
                   <ExploreCard
-                    href="/noticias/motos"
                     title="Motos"
-                    label="Noticias"
-                    image="/images/noticia-3.jpg"
-                    description="Pruebas, rutas y cultura de motociclismo con enfoque visual."
+                    subtitle="Pruebas, rutas y piezas con ADN de dos ruedas."
+                    href="/noticias/motos"
+                    image={safeSectionHeroImages.motos}
                   />
+
                   <ExploreCard
-                    href="/lifestyle"
                     title="Lifestyle"
-                    label="Sección"
-                    image="/images/noticia-1.jpg"
-                    description="Diseño, viajes, gadgets y cultura alrededor de MotorWelt."
+                    subtitle="La capa aspiracional y estética del universo MotorWelt."
+                    href="/lifestyle"
+                    image={safeSectionHeroImages.lifestyle}
+                  />
+
+                  <ExploreCard
+                    title="Comunidad"
+                    subtitle="Eventos, meets, rutas y cultura desde la calle."
+                    href="/comunidad"
+                    image={safeSectionHeroImages.comunidad}
                   />
                 </div>
               </div>
@@ -1253,9 +1339,9 @@ export default function DeportesPage({
 
         <footer
           aria-hidden={mobileOpen}
-          className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
+          className="relative z-10 mt-12 border-t border-white/[0.07] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
-          <div className="mx-auto grid w-full max-w-[1200px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
+          <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 xl:px-10 2xl:max-w-[1560px]">
             <div>
               <Image
                 src="/brand/motorwelt-logo.png"
@@ -1274,23 +1360,43 @@ export default function DeportesPage({
               <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
                 <li>
-                  <Link href="/about" className="hover:text-white">
-                    About
+                  <Link href="/" className="hover:text-white">
+                    Inicio
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tuning" className="hover:text-white">
+                    Tuning
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/noticias/autos" className="hover:text-white">
+                    Autos
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/noticias/motos" className="hover:text-white">
+                    Motos
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/deportes" className="hover:text-white">
+                    Deportes
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/lifestyle" className="hover:text-white">
+                    Lifestyle
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/comunidad" className="hover:text-white">
+                    Comunidad
                   </Link>
                 </li>
                 <li>
                   <Link href="/contact" className="hover:text-white">
                     Contacto
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terminos" className="hover:text-white">
-                    Términos y condiciones
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacidad" className="hover:text-white">
-                    Política de privacidad
                   </Link>
                 </li>
               </ul>
@@ -1299,36 +1405,16 @@ export default function DeportesPage({
             <div>
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
-                <a
-                  href="https://instagram.com/motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
+                <a href="https://instagram.com/motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">
                   IG
                 </a>
-                <a
-                  href="https://facebook.com/motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
+                <a href="https://facebook.com/motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">
                   FB
                 </a>
-                <a
-                  href="https://tiktok.com/@motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
+                <a href="https://tiktok.com/@motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">
                   TikTok
                 </a>
-                <a
-                  href="https://youtube.com/@motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
+                <a href="https://youtube.com/@motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">
                   YouTube
                 </a>
               </div>
@@ -1441,9 +1527,62 @@ export async function getServerSideProps() {
     }
   `;
 
-  const [deportesRaw, deportesSettingsRaw] = await Promise.all([
+  const sectionSettingsQuery = `
+    *[
+      _type in ["homeSettings", "sitePageSettings", "pageSettings"] &&
+      pageKey in ["tuning", "deportes", "lifestyle", "comunidad", "autos", "motos"]
+    ]{
+      pageKey,
+      "heroImageUrl": coalesce(heroImageUrl, "")
+    }
+  `;
+
+  const autosFallbackQuery = `
+    *[
+      _type in ["article", "post"] &&
+      coalesce(status, "publicado") == "publicado" &&
+      defined(slug.current) &&
+      (
+        section == "autos" ||
+        section == "noticias_autos" ||
+        lower(category) == "autos" ||
+        "autos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+      "image": coalesce(mainImageUrl, coverImage.asset->url, "")
+    }
+  `;
+
+  const motosFallbackQuery = `
+    *[
+      _type in ["article", "post"] &&
+      coalesce(status, "publicado") == "publicado" &&
+      defined(slug.current) &&
+      (
+        section == "motos" ||
+        section == "noticias_motos" ||
+        lower(category) == "motos" ||
+        "motos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+      "image": coalesce(mainImageUrl, coverImage.asset->url, "")
+    }
+  `;
+
+  const [
+    deportesRaw,
+    deportesSettingsRaw,
+    sectionSettingsRaw,
+    autosFallback,
+    motosFallback,
+  ] = await Promise.all([
     sanityReadClient.fetch(deportesQuery).catch(() => []),
     sanityReadClient.fetch(deportesSettingsQuery).catch(() => null),
+    sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
+    sanityReadClient.fetch(autosFallbackQuery).catch(() => null),
+    sanityReadClient.fetch(motosFallbackQuery).catch(() => null),
   ]);
 
   const deportesItems: ArticleCardData[] = (deportesRaw || [])
@@ -1470,12 +1609,31 @@ export async function getServerSideProps() {
             "Lee la nota completa en MotorWelt."
         ),
         img: mainImage,
-        href: `/noticias/deportes/${slug}`,
+        href: `/deportes/${slug}`,
         when: formatWhen(it.publishedAt || it._createdAt),
         sport,
       };
     })
     .filter(Boolean) as ArticleCardData[];
+
+  const settingsMap = new Map<string, string>();
+
+  if (Array.isArray(sectionSettingsRaw)) {
+    for (const item of sectionSettingsRaw) {
+      const key = String(item?.pageKey || "").trim();
+      const value = String(item?.heroImageUrl || "").trim();
+      if (key && value) settingsMap.set(key, value);
+    }
+  }
+
+  const sectionHeroImages = sanitizeSectionHeroImages({
+    tuning: settingsMap.get("tuning"),
+    autos: settingsMap.get("autos") || String(autosFallback?.image || ""),
+    motos: settingsMap.get("motos") || String(motosFallback?.image || ""),
+    deportes: settingsMap.get("deportes"),
+    lifestyle: settingsMap.get("lifestyle"),
+    comunidad: settingsMap.get("comunidad"),
+  });
 
   const fallbackHero = deportesItems[0]?.img || DEFAULT_SETTINGS.heroImageUrl;
 
@@ -1484,6 +1642,7 @@ export async function getServerSideProps() {
       year: new Date().getFullYear(),
       deportesItems: Array.isArray(deportesItems) ? deportesItems : [],
       initialSettings: sanitizePageSettings(deportesSettingsRaw, fallbackHero),
+      sectionHeroImages,
     },
   };
 }

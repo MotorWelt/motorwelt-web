@@ -56,7 +56,7 @@ type Streak = {
   h?: string;
 };
 
-type SportsArticle = {
+type DeportesArticle = {
   id: string;
   slug: string;
   title: string;
@@ -64,6 +64,8 @@ type SportsArticle = {
   excerpt: string;
   body: string;
   section: string;
+  category: string;
+  subcategory: string;
   contentType: string;
   status: string;
   tags: string[];
@@ -89,17 +91,17 @@ type SidebarArticle = {
   mainImageUrl: string;
 };
 
-type SportsAdConfig = {
+type DeportesAdConfig = {
   enabled: boolean;
   label: string;
   imageUrl: string;
   href: string;
 };
 
-type SportsSettings = {
+type DeportesSettings = {
   ads: {
-    leaderboard: SportsAdConfig;
-    billboard: SportsAdConfig;
+    leaderboard: DeportesAdConfig;
+    billboard: DeportesAdConfig;
   };
 };
 
@@ -122,7 +124,7 @@ type BodyBlock =
   | { type: "image"; url: string; alt: string }
   | { type: "video"; url: string };
 
-const DEFAULT_SPORTS_SETTINGS: SportsSettings = {
+const DEFAULT_DEPORTES_SETTINGS: DeportesSettings = {
   ads: {
     leaderboard: {
       enabled: true,
@@ -157,14 +159,14 @@ function readCookie(name: string) {
   return match ? decodeURIComponent(match[2]) : "";
 }
 
-function sanitizeSportsSettings(raw?: any): SportsSettings {
+function sanitizeDeportesSettings(raw?: any): DeportesSettings {
   return {
     ads: {
       leaderboard: {
         enabled: Boolean(raw?.ads?.leaderboard?.enabled ?? true),
         label:
           String(raw?.ads?.leaderboard?.label || "").trim() ||
-          DEFAULT_SPORTS_SETTINGS.ads.leaderboard.label,
+          DEFAULT_DEPORTES_SETTINGS.ads.leaderboard.label,
         imageUrl: String(raw?.ads?.leaderboard?.imageUrl || "").trim(),
         href: String(raw?.ads?.leaderboard?.href || "").trim(),
       },
@@ -172,7 +174,7 @@ function sanitizeSportsSettings(raw?: any): SportsSettings {
         enabled: Boolean(raw?.ads?.billboard?.enabled ?? true),
         label:
           String(raw?.ads?.billboard?.label || "").trim() ||
-          DEFAULT_SPORTS_SETTINGS.ads.billboard.label,
+          DEFAULT_DEPORTES_SETTINGS.ads.billboard.label,
         imageUrl: String(raw?.ads?.billboard?.imageUrl || "").trim(),
         href: String(raw?.ads?.billboard?.href || "").trim(),
       },
@@ -228,6 +230,48 @@ function formatDate(iso?: string | null) {
 
 function normalizeUrl(url?: string | null) {
   return (url || "").trim();
+}
+
+function normalizeText(value: unknown) {
+  if (!value) return "";
+  if (Array.isArray(value)) return value.map(normalizeText).join(" ").toLowerCase();
+  if (typeof value === "object") {
+    const item = value as Record<string, unknown>;
+    return String(item.title || item.name || item.label || item.value || "")
+      .trim()
+      .toLowerCase();
+  }
+  return String(value).trim().toLowerCase();
+}
+
+function detectSportLabel(article: DeportesArticle) {
+  const blob = [
+    article.title,
+    article.subtitle,
+    article.excerpt,
+    article.section,
+    article.category,
+    article.subcategory,
+    article.tags,
+  ]
+    .map(normalizeText)
+    .join(" ");
+
+  if (
+    blob.includes("formula 1") ||
+    blob.includes("fórmula 1") ||
+    blob.includes("formula uno") ||
+    /\bf1\b/.test(blob)
+  ) {
+    return "F1";
+  }
+
+  if (blob.includes("nascar")) return "Nascar";
+  if (blob.includes("motogp") || blob.includes("moto gp")) return "MotoGP";
+  if (/\bwrc\b/.test(blob) || blob.includes("world rally") || blob.includes("rally")) return "WRC";
+  if (blob.includes("drift") || blob.includes("drifting")) return "Drift";
+
+  return "Deportes";
 }
 
 function getYoutubeEmbedUrl(url: string) {
@@ -354,13 +398,7 @@ function parseBody(body: string): BodyBlock[] {
   return blocks;
 }
 
-function InlineEmbed({
-  url,
-  title,
-}: {
-  url: string;
-  title?: string;
-}) {
+function InlineEmbed({ url, title }: { url: string; title?: string }) {
   const embedUrl = getEmbedUrl(url);
   const platform = detectPlatform(url);
 
@@ -406,7 +444,7 @@ function AdSlot({
   onClear,
   inputRef,
 }: {
-  ad: SportsAdConfig;
+  ad: DeportesAdConfig;
   editable: boolean;
   kind: AdKind;
   layout?: "default" | "sidebarTall";
@@ -434,12 +472,7 @@ function AdSlot({
       {ad.enabled ? (
         ad.imageUrl ? (
           ad.href ? (
-            <a
-              href={ad.href}
-              target="_blank"
-              rel="noreferrer"
-              className="block h-full w-full"
-            >
+            <a href={ad.href} target="_blank" rel="noreferrer" className="block h-full w-full">
               <img
                 src={ad.imageUrl}
                 alt={ad.label}
@@ -474,32 +507,16 @@ function AdSlot({
 
       {editable && (
         <div className="absolute left-1/2 top-3 z-20 hidden w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 md:flex">
-          <button
-            type="button"
-            onClick={onToggle}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onToggle} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Imagen
           </button>
-          <button
-            type="button"
-            onClick={onEditLink}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onEditLink} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Link
           </button>
-          <button
-            type="button"
-            onClick={onClear}
-            className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onClear} className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
             Limpiar
           </button>
         </div>
@@ -605,13 +622,13 @@ function ExploreCard({
 export default function DeportesDetailPage({
   article,
   latestArticles,
-  sportsSettings,
+  deportesSettings,
   sectionHeroImages,
   year,
 }: {
-  article: SportsArticle;
+  article: DeportesArticle;
   latestArticles: SidebarArticle[];
-  sportsSettings: SportsSettings;
+  deportesSettings: DeportesSettings;
   sectionHeroImages: SectionHeroImages;
   year: number;
 }) {
@@ -623,8 +640,8 @@ export default function DeportesDetailPage({
   const [spectatorMode, setSpectatorMode] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [settings, setSettings] = useState<SportsSettings>(
-    sanitizeSportsSettings(sportsSettings)
+  const [settings, setSettings] = useState<DeportesSettings>(
+    sanitizeDeportesSettings(deportesSettings)
   );
 
   const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
@@ -645,6 +662,8 @@ export default function DeportesDetailPage({
   const heroVideoEmbed = getYoutubeEmbedUrl(article.videoUrl || "");
   const hasVideo = Boolean(heroVideoEmbed);
   const hasGallery = gallery.length > 1;
+  const headerDate = article.publishedAt || article.updatedAt;
+  const sportLabel = detectSportLabel(article);
 
   const isImageModalOpen =
     activeGalleryIndex !== null || Boolean(standaloneImage);
@@ -658,16 +677,16 @@ export default function DeportesDetailPage({
 
   const streaks: Streak[] = useMemo(
     () => [
-      { top: "7%", left: "-35%", v: "warm", dir: "fwd", delay: "0s", dur: "12s", op: 0.82 },
-      { top: "14%", left: "-28%", v: "cool", dir: "rev", delay: ".7s", dur: "10.6s", op: 0.72 },
+      { top: "7%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.82 },
+      { top: "14%", left: "-28%", v: "warm", dir: "rev", delay: ".7s", dur: "10.6s", op: 0.72 },
       { top: "23%", left: "-34%", v: "lime", dir: "fwd", delay: "1.2s", dur: "13.5s", op: 0.72 },
-      { top: "31%", left: "-25%", v: "warm", dir: "rev", delay: "1.8s", dur: "11.4s", op: 0.8 },
-      { top: "43%", left: "-38%", v: "cool", dir: "fwd", delay: "2.6s", dur: "12.8s", op: 0.78 },
-      { top: "57%", left: "-27%", v: "warm", dir: "rev", delay: "3.2s", dur: "10.3s", op: 0.8 },
-      { top: "69%", left: "-32%", v: "cool", dir: "fwd", delay: "4.1s", dur: "12.2s", op: 0.84 },
-      { top: "81%", left: "-24%", v: "lime", dir: "rev", delay: "5.1s", dur: "13.4s", op: 0.7 },
-      { top: "10%", left: "-37%", v: "warm", dir: "fwd", delay: ".2s", dur: "11.8s", op: 0.55, h: "1px" },
-      { top: "36%", left: "-31%", v: "cool", dir: "rev", delay: "2.1s", dur: "13.2s", op: 0.5, h: "1px" },
+      { top: "31%", left: "-25%", v: "cool", dir: "rev", delay: "1.8s", dur: "11.4s", op: 0.8 },
+      { top: "43%", left: "-38%", v: "warm", dir: "fwd", delay: "2.6s", dur: "12.8s", op: 0.78 },
+      { top: "57%", left: "-27%", v: "cool", dir: "rev", delay: "3.2s", dur: "10.3s", op: 0.8 },
+      { top: "69%", left: "-32%", v: "lime", dir: "fwd", delay: "4.1s", dur: "12.2s", op: 0.84 },
+      { top: "81%", left: "-24%", v: "warm", dir: "rev", delay: "5.1s", dur: "13.4s", op: 0.7 },
+      { top: "10%", left: "-37%", v: "cool", dir: "fwd", delay: ".2s", dur: "11.8s", op: 0.55, h: "1px" },
+      { top: "36%", left: "-31%", v: "warm", dir: "rev", delay: "2.1s", dur: "13.2s", op: 0.5, h: "1px" },
       { top: "76%", left: "-20%", v: "lime", dir: "fwd", delay: "4.9s", dur: "12.6s", op: 0.48, h: "1px" },
     ],
     []
@@ -750,7 +769,7 @@ export default function DeportesDetailPage({
 
   const adEditVisible = canEdit && !spectatorMode;
 
-  async function persistSettings(nextSettings: SportsSettings) {
+  async function persistSettings(nextSettings: DeportesSettings) {
     setSavingSettings(true);
     setSettingsError(null);
 
@@ -766,7 +785,7 @@ export default function DeportesDetailPage({
           settings: {
             heroImageUrl: "",
             ads: nextSettings.ads,
-            photoGalleries: [],
+            partnerLogos: [],
           },
         }),
       });
@@ -929,7 +948,7 @@ export default function DeportesDetailPage({
               </Link>
             </div>
 
-            <div className="hidden md:flex items-center justify-center">
+            <div className="hidden md:flex items-center justify-center md:pl-10 lg:pl-16">
               <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
                 <Link href="/tuning" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                   Tuning
@@ -940,7 +959,7 @@ export default function DeportesDetailPage({
                 <Link href="/noticias/motos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                   Motos
                 </Link>
-                <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-white">
+                <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-white border-b-2 border-[#0CE0B2]">
                   Deportes
                 </Link>
                 <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
@@ -976,6 +995,7 @@ export default function DeportesDetailPage({
         {mobileOpen && (
           <div className="fixed inset-0 z-[60] md:hidden">
             <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
+
             <aside
               id="mobile-menu"
               className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
@@ -1009,7 +1029,7 @@ export default function DeportesDetailPage({
                 <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                   Motos
                 </Link>
-                <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-white hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-white" onClick={() => setMobileOpen(false)}>
                   Deportes
                 </Link>
                 <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
@@ -1047,15 +1067,7 @@ export default function DeportesDetailPage({
                     className="absolute left-3 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white backdrop-blur-md hover:bg-black/65"
                     aria-label="Imagen anterior"
                   >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M15 6l-6 6 6 6"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    ‹
                   </button>
 
                   <button
@@ -1064,15 +1076,7 @@ export default function DeportesDetailPage({
                     className="absolute right-3 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white backdrop-blur-md hover:bg-black/65"
                     aria-label="Imagen siguiente"
                   >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M9 6l6 6-6 6"
-                        stroke="currentColor"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    ›
                   </button>
 
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/45 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
@@ -1087,9 +1091,7 @@ export default function DeportesDetailPage({
                 className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur-md hover:bg-black/60"
                 aria-label="Cerrar imagen"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+                ✕
               </button>
             </div>
           </div>
@@ -1115,20 +1117,12 @@ export default function DeportesDetailPage({
                     className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white/75 backdrop-blur transition hover:text-white"
                     aria-label="Volver a Deportes"
                   >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M15 6l-6 6 6 6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    ‹
                   </Link>
 
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-gray-200 backdrop-blur">
-                    <span className="h-2 w-2 rounded-full bg-[#A3FF12]" />
-                    Deportes
+                    <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                    Deportes · {sportLabel}
                   </div>
                 </div>
 
@@ -1148,11 +1142,11 @@ export default function DeportesDetailPage({
                       Por <span className="font-semibold text-white">{article.authorName}</span>
                     </span>
                   ) : null}
-                  {article.authorName && article.updatedAt ? (
+                  {article.authorName && headerDate ? (
                     <span className="text-gray-500">•</span>
                   ) : null}
-                  {article.updatedAt ? (
-                    <span>Actualizado {formatDate(article.updatedAt)}</span>
+                  {headerDate ? (
+                    <span>Actualizado {formatDate(headerDate)}</span>
                   ) : null}
                 </div>
 
@@ -1200,10 +1194,7 @@ export default function DeportesDetailPage({
                         bodyBlocks.map((block, index) => {
                           if (block.type === "p") {
                             return (
-                              <p
-                                key={index}
-                                className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]"
-                              >
+                              <p key={index} className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]">
                                 {block.text}
                               </p>
                             );
@@ -1211,10 +1202,7 @@ export default function DeportesDetailPage({
 
                           if (block.type === "h2") {
                             return (
-                              <h2
-                                key={index}
-                                className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
-                              >
+                              <h2 key={index} className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
                                 {block.text}
                               </h2>
                             );
@@ -1222,10 +1210,7 @@ export default function DeportesDetailPage({
 
                           if (block.type === "h3") {
                             return (
-                              <h3
-                                key={index}
-                                className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl"
-                              >
+                              <h3 key={index} className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl">
                                 {block.text}
                               </h3>
                             );
@@ -1233,10 +1218,7 @@ export default function DeportesDetailPage({
 
                           if (block.type === "h4") {
                             return (
-                              <h4
-                                key={index}
-                                className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl"
-                              >
+                              <h4 key={index} className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl">
                                 {block.text}
                               </h4>
                             );
@@ -1244,10 +1226,7 @@ export default function DeportesDetailPage({
 
                           if (block.type === "h5") {
                             return (
-                              <h5
-                                key={index}
-                                className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#A3FF12]"
-                              >
+                              <h5 key={index} className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]">
                                 {block.text}
                               </h5>
                             );
@@ -1255,10 +1234,7 @@ export default function DeportesDetailPage({
 
                           if (block.type === "quote") {
                             return (
-                              <blockquote
-                                key={index}
-                                className="my-8 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-lg italic leading-8 text-white"
-                              >
+                              <blockquote key={index} className="my-8 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-lg italic leading-8 text-white">
                                 {block.text}
                               </blockquote>
                             );
@@ -1322,11 +1298,11 @@ export default function DeportesDetailPage({
                           Gallery
                         </p>
                         <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                          Más frames del proyecto
+                          Más frames de la cobertura
                         </h2>
                       </div>
 
-                      <div className="no-scrollbar overflow-x-auto sm:overflow-visible">
+                      <div className="no-scrollbar overflow-x-auto sm:max-h-[760px] sm:overflow-y-auto sm:overflow-x-hidden sm:pr-2 sidebar-scroll">
                         <div className="flex gap-4 pb-2 sm:grid sm:grid-cols-2 sm:pb-0">
                           {gallery.map((url, index) => (
                             <button
@@ -1340,11 +1316,7 @@ export default function DeportesDetailPage({
                                 index === 0 ? "sm:col-span-2" : ""
                               }`}
                             >
-                              <div
-                                className={`relative w-full ${
-                                  index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"
-                                }`}
-                              >
+                              <div className={`relative w-full ${index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
                                 <img
                                   src={url}
                                   alt={`${article.title} ${index + 1}`}
@@ -1361,7 +1333,7 @@ export default function DeportesDetailPage({
 
                 <aside className="space-y-6">
                   <div className="rounded-[28px] border border-white/10 bg-black/25 p-5 backdrop-blur-md">
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#A3FF12]">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
                       Nota
                     </p>
                     <h3 className="mt-3 text-2xl font-semibold text-white">
@@ -1374,6 +1346,13 @@ export default function DeportesDetailPage({
                           Sección
                         </p>
                         <p className="mt-1 text-white">Deportes</p>
+                      </div>
+
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
+                          Categoría
+                        </p>
+                        <p className="mt-1 text-white">{sportLabel}</p>
                       </div>
 
                       {article.contentType ? (
@@ -1471,12 +1450,6 @@ export default function DeportesDetailPage({
                 <div className="no-scrollbar overflow-x-auto pb-6">
                   <div className="flex items-start gap-5 pr-12">
                     <ExploreCard
-                      title="Deportes"
-                      subtitle="Competencia, paddock y piezas con peso visual real."
-                      href="/deportes"
-                      image={sectionHeroImages.deportes}
-                    />
-                    <ExploreCard
                       title="Tuning"
                       subtitle="Builds, mods, aero, stance y cultura visual."
                       href="/tuning"
@@ -1493,6 +1466,12 @@ export default function DeportesDetailPage({
                       subtitle="Pruebas, rutas y piezas con ADN de dos ruedas."
                       href="/noticias/motos"
                       image={sectionHeroImages.motos}
+                    />
+                    <ExploreCard
+                      title="Deportes"
+                      subtitle="Competencia, paddock y piezas con peso visual real."
+                      href="/deportes"
+                      image={sectionHeroImages.deportes}
                     />
                     <ExploreCard
                       title="Lifestyle"
@@ -1535,74 +1514,24 @@ export default function DeportesDetailPage({
             <div>
               <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
-                <li>
-                  <Link href="/" className="hover:text-white">
-                    Inicio
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/tuning" className="hover:text-white">
-                    Tuning
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/deportes" className="hover:text-white">
-                    Deportes
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/lifestyle" className="hover:text-white">
-                    Lifestyle
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/comunidad" className="hover:text-white">
-                    Comunidad
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="hover:text-white">
-                    Contacto
-                  </Link>
-                </li>
+                <li><Link href="/" className="hover:text-white">Inicio</Link></li>
+                <li><Link href="/tuning" className="hover:text-white">Tuning</Link></li>
+                <li><Link href="/noticias/autos" className="hover:text-white">Autos</Link></li>
+                <li><Link href="/noticias/motos" className="hover:text-white">Motos</Link></li>
+                <li><Link href="/deportes" className="hover:text-white">Deportes</Link></li>
+                <li><Link href="/lifestyle" className="hover:text-white">Lifestyle</Link></li>
+                <li><Link href="/comunidad" className="hover:text-white">Comunidad</Link></li>
+                <li><Link href="/contact" className="hover:text-white">Contacto</Link></li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
-                <a
-                  href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  IG
-                </a>
-                <a
-                  href="https://www.facebook.com/share/18JRxV8AAu/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  FB
-                </a>
-                <a
-                  href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  TikTok
-                </a>
-                <a
-                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  YouTube
-                </a>
+                <a href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">IG</a>
+                <a href="https://www.facebook.com/share/18JRxV8AAu/" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">FB</a>
+                <a href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">TikTok</a>
+                <a href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">YouTube</a>
               </div>
             </div>
           </div>
@@ -1645,63 +1574,31 @@ export default function DeportesDetailPage({
           filter: blur(.5px);
         }
         @keyframes slide-fwd {
-          0% {
-            transform: translateX(-30%);
-            opacity: 0;
-          }
-          10% {
-            opacity: .9;
-          }
-          100% {
-            transform: translateX(130%);
-            opacity: 0;
-          }
+          0% { transform: translateX(-30%); opacity: 0; }
+          10% { opacity: .9; }
+          100% { transform: translateX(130%); opacity: 0; }
         }
         @keyframes slide-rev {
-          0% {
-            transform: translateX(130%);
-            opacity: 0;
-          }
-          10% {
-            opacity: .9;
-          }
-          100% {
-            transform: translateX(-30%);
-            opacity: 0;
-          }
+          0% { transform: translateX(130%); opacity: 0; }
+          10% { opacity: .9; }
+          100% { transform: translateX(-30%); opacity: 0; }
         }
-        .streak.dir-fwd {
-          animation: slide-fwd 11s linear infinite;
-        }
-        .streak.dir-rev {
-          animation: slide-rev 11s linear infinite;
-        }
+        .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
+        .streak.dir-rev { animation: slide-rev 11s linear infinite; }
         .streak-cool {
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(12, 224, 178, .95),
-            transparent
-          );
+          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
         }
         .streak-warm {
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 122, 26, .95),
-            transparent
-          );
+          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
         }
         .streak-lime {
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(163, 255, 18, .85),
-            transparent
-          );
+          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .85), transparent);
         }
         .prose-reset p:last-child {
           margin-bottom: 0;
+        }
+        .logo-glow {
+          filter: drop-shadow(0 0 18px rgba(12,224,178,.12));
         }
         .no-scrollbar {
           -ms-overflow-style: none;
@@ -1724,14 +1621,12 @@ export default function DeportesDetailPage({
           background: rgba(255,255,255,.18);
           border-radius: 999px;
         }
-
         @media (prefers-reduced-motion: reduce) {
           .streak {
             animation: none !important;
             opacity: .35;
           }
         }
-
         @supports (content-visibility: auto) {
           main > section {
             content-visibility: auto;
@@ -1762,13 +1657,21 @@ export const getServerSideProps: GetServerSideProps = async ({
       coalesce(status, "publicado") == "publicado" &&
       (
         section == "deportes" ||
+        section == "noticias_deportes" ||
         lower(category) == "deportes" ||
         "deportes" in categories[] ||
         "f1" in categories[] ||
+        "formula 1" in categories[] ||
         "nascar" in categories[] ||
         "motogp" in categories[] ||
         "wrc" in categories[] ||
-        "drift" in categories[]
+        "drift" in categories[] ||
+        "deportes" in tags[] ||
+        "f1" in tags[] ||
+        "nascar" in tags[] ||
+        "motogp" in tags[] ||
+        "wrc" in tags[] ||
+        "drift" in tags[]
       )
     ][0]{
       "id": _id,
@@ -1778,6 +1681,8 @@ export const getServerSideProps: GetServerSideProps = async ({
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "body": coalesce(body, ""),
       "section": coalesce(section, ""),
+      "category": coalesce(category, ""),
+      "subcategory": coalesce(subcategory, ""),
       "contentType": coalesce(contentType, "noticia"),
       "status": coalesce(status, "publicado"),
       "tags": coalesce(tags, []),
@@ -1786,16 +1691,16 @@ export const getServerSideProps: GetServerSideProps = async ({
       "seoTitle": coalesce(seoTitle, title, ""),
       "seoDescription": coalesce(seoDescription, excerpt, subtitle, ""),
       "updatedAt": updatedAt,
-      "publishedAt": publishedAt,
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "publishedAt": coalesce(publishedAt, _createdAt),
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
       "galleryUrls": coalesce(galleryUrls, []),
-      "videoUrl": coalesce(videoUrl, ""),
-      "reelUrl": coalesce(reelUrl, ""),
+      "videoUrl": coalesce(videoUrl, youtubeUrl, ""),
+      "reelUrl": coalesce(reelUrl, shortVideoUrl, socialUrl, ""),
       "useVideoAsHero": coalesce(useVideoAsHero, false)
     }
   `;
 
-  const relatedSportsQuery = /* groq */ `
+  const relatedDeportesQuery = /* groq */ `
     *[
       _type in ["article", "post"] &&
       coalesce(status, "publicado") == "publicado" &&
@@ -1803,13 +1708,21 @@ export const getServerSideProps: GetServerSideProps = async ({
       slug.current != $slug &&
       (
         section == "deportes" ||
+        section == "noticias_deportes" ||
         lower(category) == "deportes" ||
         "deportes" in categories[] ||
         "f1" in categories[] ||
+        "formula 1" in categories[] ||
         "nascar" in categories[] ||
         "motogp" in categories[] ||
         "wrc" in categories[] ||
-        "drift" in categories[]
+        "drift" in categories[] ||
+        "deportes" in tags[] ||
+        "f1" in tags[] ||
+        "nascar" in tags[] ||
+        "motogp" in tags[] ||
+        "wrc" in tags[] ||
+        "drift" in tags[]
       )
     ]
     | order(coalesce(publishedAt, _createdAt) desc)[0...12]{
@@ -1818,7 +1731,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "publishedAt": coalesce(publishedAt, _createdAt),
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, "")
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
     }
   `;
 
@@ -1835,11 +1748,11 @@ export const getServerSideProps: GetServerSideProps = async ({
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "publishedAt": coalesce(publishedAt, _createdAt),
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, "")
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
     }
   `;
 
-  const sportsSettingsQuery = /* groq */ `
+  const deportesSettingsQuery = /* groq */ `
     *[
       _type in ["homeSettings", "sitePageSettings", "pageSettings"] &&
       pageKey == "deportes"
@@ -1878,12 +1791,13 @@ export const getServerSideProps: GetServerSideProps = async ({
       defined(slug.current) &&
       (
         section == "autos" ||
+        section == "noticias_autos" ||
         lower(category) == "autos" ||
         "autos" in categories[]
       )
     ]
     | order(coalesce(publishedAt, _createdAt) desc)[0]{
-      "image": coalesce(mainImageUrl, coverImage.asset->url, "")
+      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
     }
   `;
 
@@ -1894,28 +1808,29 @@ export const getServerSideProps: GetServerSideProps = async ({
       defined(slug.current) &&
       (
         section == "motos" ||
+        section == "noticias_motos" ||
         lower(category) == "motos" ||
         "motos" in categories[]
       )
     ]
     | order(coalesce(publishedAt, _createdAt) desc)[0]{
-      "image": coalesce(mainImageUrl, coverImage.asset->url, "")
+      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
     }
   `;
 
   const [
     article,
-    relatedSportsArticles,
+    relatedDeportesArticles,
     recentSitewideArticles,
-    sportsSettingsRaw,
+    deportesSettingsRaw,
     sectionSettingsRaw,
     autosFallback,
     motosFallback,
   ] = await Promise.all([
     sanityReadClient.fetch(articleQuery, { slug }),
-    sanityReadClient.fetch(relatedSportsQuery, { slug }).catch(() => []),
+    sanityReadClient.fetch(relatedDeportesQuery, { slug }).catch(() => []),
     sanityReadClient.fetch(recentSitewideQuery, { slug }).catch(() => []),
-    sanityReadClient.fetch(sportsSettingsQuery).catch(() => null),
+    sanityReadClient.fetch(deportesSettingsQuery).catch(() => null),
     sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
     sanityReadClient.fetch(autosFallbackQuery).catch(() => null),
     sanityReadClient.fetch(motosFallbackQuery).catch(() => null),
@@ -1926,7 +1841,7 @@ export const getServerSideProps: GetServerSideProps = async ({
   }
 
   const mergedLatest = [
-    ...(Array.isArray(relatedSportsArticles) ? relatedSportsArticles : []),
+    ...(Array.isArray(relatedDeportesArticles) ? relatedDeportesArticles : []),
     ...(Array.isArray(recentSitewideArticles) ? recentSitewideArticles : []),
   ];
 
@@ -1967,7 +1882,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       year: new Date().getFullYear(),
       article,
       latestArticles,
-      sportsSettings: sanitizeSportsSettings(sportsSettingsRaw),
+      deportesSettings: sanitizeDeportesSettings(deportesSettingsRaw),
       sectionHeroImages,
     },
   };
