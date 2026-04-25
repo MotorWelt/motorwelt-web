@@ -554,50 +554,110 @@ const SectionHeader: React.FC<{
   );
 };
 
-function TuningFeatureCard({
-  item,
-  onPreview,
-}: {
-  item: TuningItem;
-  onPreview: () => void;
-}) {
+function TuningFeatureCard({ item }: { item: TuningItem }) {
   return (
-    <Card className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
-      <div className="relative h-44 w-full">
-        <Image
-          src={item.img}
-          alt={item.title}
-          fill
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          style={{ objectFit: "cover" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-      </div>
-
-      <CardContent className="p-4 sm:p-5">
-        <div className="text-xs text-gray-400">{item.when}</div>
-        <h3 className="mt-1 text-lg font-semibold text-white">{item.title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-gray-300 line-clamp-2">
-          {item.excerpt}
-        </p>
-
-        <div className="mt-4 mt-auto flex items-center justify-between gap-3">
-          <Link href={item.href}>
-            <span className={getButtonClasses("link")}>Leer más</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={onPreview}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-gray-300 transition hover:bg-white/5"
-          >
-            Preview
-          </button>
+    <Link href={item.href} className="block h-full">
+      <Card className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
+        <div className="relative h-36 w-full sm:h-40">
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            style={{ objectFit: "cover" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/58 via-black/12 to-transparent" />
         </div>
-      </CardContent>
-    </Card>
+
+        <CardContent className="p-4">
+          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+            Tuning · {item.typeLabel}
+          </div>
+          {item.when ? <div className="text-xs text-gray-500">{item.when}</div> : null}
+          <h3 className="mt-1 text-base font-semibold leading-tight text-white sm:text-lg">
+            {item.title}
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-gray-300 line-clamp-3">
+            {item.excerpt}
+          </p>
+
+          <div className="mt-4 mt-auto">
+            <span className={getButtonClasses("link")}>Leer más</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
+
+function EmptySectionNotice({
+  title,
+  message,
+}: {
+  title: string;
+  message: string;
+}) {
+  return (
+    <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#0CE0B2]" />
+      </div>
+      <h3 className="mt-5 text-xl font-semibold text-white">{title}</h3>
+      <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-300">
+        {message}
+      </p>
+    </div>
+  );
+}
+
+function ExploreCard({
+  title,
+  subtitle,
+  href,
+  image,
+}: {
+  title: string;
+  subtitle: string;
+  href: string;
+  image: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]"
+    >
+      <div className="absolute inset-0">
+        <img
+          src={image}
+          alt={title}
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
+          style={{ filter: "brightness(.42) saturate(1.08)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/32 to-black/75" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.09),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.08),transparent_28%)]" />
+      </div>
+
+      <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            Explora
+          </span>
+        </div>
+
+        <h3 className="max-w-[85%] text-[2.1rem] font-extrabold leading-[0.92] tracking-tight text-white drop-shadow-[0_6px_20px_rgba(0,0,0,.5)] sm:text-[2.45rem]">
+          {title}
+        </h3>
+
+        <p className="mt-3 max-w-[88%] text-sm leading-relaxed text-white/88 drop-shadow-[0_4px_14px_rgba(0,0,0,.42)] sm:text-[0.98rem]">
+          {subtitle}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
 
 function PhotoGalleryEditorModal({
   draft,
@@ -880,188 +940,80 @@ export default function TuningPage({
   const reelCoverInputRef = useRef<HTMLInputElement | null>(null);
   const reelFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const featured =
-    tuningItems[0] ??
-    fallbackItem(
-      "fallback-tuning-main",
-      "Builds con identidad propia",
-      "Proyectos donde el performance, la estética y la cultura visual se mezclan para crear algo que va mucho más allá de un simple coche modificado.",
-      "/images/noticia-2.jpg",
-      "/tuning",
-      "Destacada"
-    );
-
-  const secondary =
-    tuningItems.slice(1, 5).length > 0
-      ? tuningItems.slice(1, 5)
-      : [
-          fallbackItem(
-            "fallback-tuning-1",
-            "Street builds que sí tienen narrativa",
-            "No solo se trata de piezas. Se trata de intención, proporción, lenguaje visual y presencia.",
-            "/images/noticia-1.jpg",
-            "/tuning",
-            "Build"
-          ),
-          fallbackItem(
-            "fallback-tuning-2",
-            "Mods que cambian el carácter",
-            "Suspensión, ruedas, aero, interiores y detalle fino: cuando cada cambio suma al statement completo.",
-            "/images/noticia-2.jpg",
-            "/tuning",
-            "Mods"
-          ),
-          fallbackItem(
-            "fallback-tuning-3",
-            "Garage culture sin filtro",
-            "La parte más obsesiva, adictiva y visual del mundo automotriz vive aquí.",
-            "/images/noticia-3.jpg",
-            "/tuning",
-            "Cultura"
-          ),
-          fallbackItem(
-            "fallback-tuning-4",
-            "El tuning también es diseño",
-            "Hay builds que se leen como producto, otros como manifiesto, y otros como una declaración personal.",
-            "/images/noticia-1.jpg",
-            "/tuning",
-            "Editorial"
-          ),
-        ];
-
-  const videoSource = useMemo(() => {
-    const withVideos = tuningItems.filter((item) => !!item.videoUrl);
-    return withVideos.slice(0, 4);
-  }, [tuningItems]);
-
-  const reelSource = useMemo(() => {
-    const withReels = tuningItems.filter((item) => !!item.reelUrl);
-    return withReels.slice(0, 4);
-  }, [tuningItems]);
+  const featured = tuningItems[0] || null;
 
   const heroImage =
     tuningSettings?.heroImageUrl ||
-    featured.img ||
+    featured?.img ||
     DEFAULT_TUNING_SETTINGS.heroImageUrl;
-
-  const fallbackPhotoItems = useMemo<VisualMediaItem[]>(
-    () =>
-      buildVisualItems(
-        tuningItems
-          .filter(
-            (item) =>
-              !!item.img ||
-              (Array.isArray(item.galleryUrls) && item.galleryUrls.length > 0)
-          )
-          .slice(0, 6),
-        "photo",
-        [{ ...featured, img: heroImage }, ...secondary.slice(0, 2)]
-      ).map((item, index) => {
-        const original = tuningItems[index] || featured;
-        const galleryUrls = uniqueStrings([
-          item.img,
-          ...(Array.isArray(original.galleryUrls) ? original.galleryUrls : []),
-        ]);
-        return {
-          ...item,
-          galleryUrls: galleryUrls.length > 0 ? galleryUrls : [item.img],
-        };
-      }),
-    [featured, heroImage, secondary, tuningItems]
-  );
 
   const photoItems = useMemo<VisualMediaItem[]>(
     () =>
-      (tuningSettings.photoGalleries || []).length > 0
-        ? (tuningSettings.photoGalleries || []).map((gallery) => ({
-            id: gallery.id,
-            title: gallery.title,
-            subtitle: gallery.subtitle,
-            img:
-              gallery.coverImageUrl ||
-              gallery.galleryUrls?.[0] ||
-              "/images/noticia-2.jpg",
-            href: "/tuning",
-            when: gallery.when,
-            kind: "photo" as const,
-            galleryUrls: uniqueStrings([
-              gallery.coverImageUrl,
-              ...(gallery.galleryUrls || []),
-            ]),
-            editableGalleryId: gallery.id,
-          }))
-        : fallbackPhotoItems,
-    [fallbackPhotoItems, tuningSettings.photoGalleries]
-  );
-
-  const fallbackVideoItems = useMemo(
-    () =>
-      buildVisualItems(videoSource, "video", [
-        secondary[0] ?? featured,
-        secondary[1] ?? featured,
-      ]),
-    [featured, secondary, videoSource]
+      (tuningSettings.photoGalleries || []).map((gallery) => ({
+        id: gallery.id,
+        title: gallery.title,
+        subtitle: gallery.subtitle,
+        img:
+          gallery.coverImageUrl ||
+          gallery.galleryUrls?.[0] ||
+          "/images/noticia-2.jpg",
+        href: "/tuning",
+        when: gallery.when,
+        kind: "photo" as const,
+        galleryUrls: uniqueStrings([
+          gallery.coverImageUrl,
+          ...(gallery.galleryUrls || []),
+        ]),
+        editableGalleryId: gallery.id,
+      })),
+    [tuningSettings.photoGalleries]
   );
 
   const videoItems = useMemo<VisualMediaItem[]>(
     () =>
-      (tuningSettings.videoEntries || []).length > 0
-        ? tuningSettings.videoEntries.map((entry) => ({
-            id: entry.id,
-            title: entry.title,
-            subtitle: entry.subtitle,
-            img: entry.coverImageUrl || getMediaPreviewImage(entry.mediaUrl) || "/images/noticia-2.jpg",
-            href: "/tuning",
-            when: entry.when,
-            kind: "video" as const,
-            mediaUrl: entry.mediaUrl,
-            embedUrl: getEmbedUrl("video", entry.mediaUrl),
-            platform: detectMediaPlatform(entry.mediaUrl),
-          }))
-        : fallbackVideoItems,
-    [fallbackVideoItems, tuningSettings.videoEntries]
-  );
-
-  const fallbackReelItems = useMemo(
-    () =>
-      buildVisualItems(reelSource, "reel", [
-        featured,
-        secondary[0] ?? featured,
-        secondary[1] ?? featured,
-        secondary[2] ?? featured,
-      ]),
-    [featured, reelSource, secondary]
+      (tuningSettings.videoEntries || [])
+        .filter((entry) => String(entry.mediaUrl || "").trim())
+        .map((entry) => ({
+          id: entry.id,
+          title: entry.title,
+          subtitle: entry.subtitle,
+          img:
+            entry.coverImageUrl ||
+            getMediaPreviewImage(entry.mediaUrl) ||
+            "/images/noticia-2.jpg",
+          href: "/tuning",
+          when: entry.when,
+          kind: "video" as const,
+          mediaUrl: entry.mediaUrl,
+          embedUrl: getEmbedUrl("video", entry.mediaUrl),
+          platform: detectMediaPlatform(entry.mediaUrl),
+        })),
+    [tuningSettings.videoEntries]
   );
 
   const reelItems = useMemo<VisualMediaItem[]>(
     () =>
-      (tuningSettings.reelEntries || []).length > 0
-        ? tuningSettings.reelEntries.map((entry) => ({
-            id: entry.id,
-            title: entry.title,
-            subtitle: entry.subtitle,
-            img: entry.coverImageUrl || getMediaPreviewImage(entry.mediaUrl) || "/images/noticia-2.jpg",
-            href: "/tuning",
-            when: entry.when,
-            kind: "reel" as const,
-            mediaUrl: entry.mediaUrl,
-            embedUrl: getEmbedUrl("reel", entry.mediaUrl),
-            platform: detectMediaPlatform(entry.mediaUrl),
-          }))
-        : fallbackReelItems,
-    [fallbackReelItems, tuningSettings.reelEntries]
+      (tuningSettings.reelEntries || [])
+        .filter((entry) => String(entry.mediaUrl || "").trim())
+        .map((entry) => ({
+          id: entry.id,
+          title: entry.title,
+          subtitle: entry.subtitle,
+          img:
+            entry.coverImageUrl ||
+            getMediaPreviewImage(entry.mediaUrl) ||
+            "/images/noticia-2.jpg",
+          href: "/tuning",
+          when: entry.when,
+          kind: "reel" as const,
+          mediaUrl: entry.mediaUrl,
+          embedUrl: getEmbedUrl("reel", entry.mediaUrl),
+          platform: detectMediaPlatform(entry.mediaUrl),
+        })),
+    [tuningSettings.reelEntries]
   );
 
-  const mainTuningItems = useMemo(() => {
-    const source =
-      tuningItems.length >= 5
-        ? tuningItems.slice(0, 5)
-        : [featured, ...secondary].slice(0, 5);
-
-    if (source.length === 5) return source;
-
-    return [featured, ...secondary].slice(0, 5);
-  }, [featured, secondary, tuningItems]);
+  const mainTuningItems = useMemo(() => tuningItems.slice(0, 5), [tuningItems]);
 
   const tuningDesktopColumns = useMemo(
     () => splitFiveItemLayout(mainTuningItems),
@@ -1824,7 +1776,7 @@ export default function TuningPage({
         )}
 
         <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-          <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
+          <div className="mx-auto grid h-16 w-full max-w-[1440px] 2xl:max-w-[1560px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
             <div className="flex items-center">
               <Link
                 href="/"
@@ -2342,7 +2294,7 @@ export default function TuningPage({
               )}
 
               <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:px-8 lg:pb-16">
-                <div className="mx-auto w-full max-w-[1280px]">
+                <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
@@ -2365,13 +2317,13 @@ export default function TuningPage({
           </section>
 
           <section className="py-4 sm:py-6">
-            <div className="mx-auto w-full max-w-[1200px] px-2 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-2 sm:px-6 lg:px-8">
               {renderEditableAd("leaderboard")}
             </div>
           </section>
 
           <section className="py-10 sm:py-12">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
                   Tuning — Builds & Culture
@@ -2379,77 +2331,37 @@ export default function TuningPage({
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]" />
               </div>
 
-              <div className="hidden md:grid gap-6 md:grid-cols-2">
+              {mainTuningItems.length > 0 ? (
+                <>
+                  <div className="hidden md:grid gap-5 md:grid-cols-2">
                 <div className="grid gap-6">
                   {tuningDesktopColumns.left.map((item) => (
-                    <TuningFeatureCard
-                      key={item.id}
-                      item={item}
-                      onPreview={() =>
-                        openMediaPreview({
-                          id: `left-${item.id}`,
-                          title: item.title,
-                          subtitle: item.excerpt,
-                          img: item.img,
-                          href: item.href,
-                          when: item.when,
-                          kind: "photo",
-                          galleryUrls: item.galleryUrls,
-                        })
-                      }
-                    />
+                    <TuningFeatureCard key={item.id} item={item} />
                   ))}
                 </div>
 
                 <div className="grid gap-6">
                   {tuningDesktopColumns.right.map((item) => (
-                    <TuningFeatureCard
-                      key={item.id}
-                      item={item}
-                      onPreview={() =>
-                        openMediaPreview({
-                          id: `right-${item.id}`,
-                          title: item.title,
-                          subtitle: item.excerpt,
-                          img: item.img,
-                          href: item.href,
-                          when: item.when,
-                          kind: "photo",
-                          galleryUrls: item.galleryUrls,
-                        })
-                      }
-                    />
+                    <TuningFeatureCard key={item.id} item={item} />
                   ))}
                 </div>
               </div>
 
               <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                <div className="flex gap-4 snap-x snap-mandatory">
+                    <div className="flex gap-4 snap-x snap-mandatory">
                   {mainTuningItems.map((item) => (
-                    <button
+                    <Link
                       key={item.id}
-                      type="button"
-                      onClick={() =>
-                        openMediaPreview({
-                          id: `mobile-${item.id}`,
-                          title: item.title,
-                          subtitle: item.excerpt,
-                          img: item.img,
-                          href: item.href,
-                          when: item.when,
-                          kind: "photo",
-                          galleryUrls: item.galleryUrls,
-                        })
-                      }
-                      className="group block w-[84%] min-w-[84%] shrink-0 snap-start text-left"
+                      href={item.href}
+                      className="group block w-[78%] min-w-[78%] shrink-0 snap-start text-left sm:w-[58%] sm:min-w-[58%]"
                     >
                       <Card className="overflow-hidden">
-                        <div className="relative h-56 w-full">
+                        <div className="relative h-44 w-full">
                           <Image
                             src={item.img}
                             alt={item.title}
                             fill
-                            sizes="84vw"
+                            sizes="78vw"
                             style={{ objectFit: "cover" }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -2461,11 +2373,13 @@ export default function TuningPage({
                             Tuning · {item.typeLabel}
                           </div>
 
-                          <h3 className="text-[2rem] font-semibold leading-[1.05] text-white">
+                          {item.when ? <div className="text-xs text-gray-500">{item.when}</div> : null}
+
+                          <h3 className="mt-1 text-xl font-semibold leading-tight text-white">
                             {item.title}
                           </h3>
 
-                          <p className="mt-3 text-base leading-relaxed text-gray-300 line-clamp-3">
+                          <p className="mt-3 text-sm leading-relaxed text-gray-300 line-clamp-3">
                             {item.excerpt}
                           </p>
 
@@ -2476,15 +2390,22 @@ export default function TuningPage({
                           </div>
                         </CardContent>
                       </Card>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                    </Link>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <EmptySectionNotice
+                  title="Tuning listo para arrancar"
+                  message="Todavía no hay publicaciones de Tuning. En cuanto publiques desde el admin, aparecerán aquí sin demos ni contenido inventado."
+                />
+              )}
             </div>
           </section>
 
           <section id="tuning-visuals" className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               <SectionHeader
                 eyebrow="Visual Library"
                 title="Fotos, videos y formato corto con más presencia"
@@ -2514,11 +2435,11 @@ export default function TuningPage({
                     </h3>
                   </div>
 
-                  <div className="hidden gap-5 sm:grid sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
                     {photoItems.slice(0, 6).map((item) => (
                       <div
                         key={item.id}
-                        className={`group relative overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                        className={`group relative w-[260px] shrink-0 overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                           item.kind
                         )}`}
                       >
@@ -2587,7 +2508,7 @@ export default function TuningPage({
                       {photoItems.slice(0, 6).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative min-w-[84%] max-w-[84%] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative min-w-[72%] max-w-[72%] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )}`}
                         >
@@ -2667,7 +2588,7 @@ export default function TuningPage({
                     {videoItems.slice(0, 4).map((item) => (
                       <div
                         key={item.id}
-                        className={`group relative overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                        className={`group relative w-[260px] shrink-0 overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                           item.kind
                         )}`}
                       >
@@ -2740,7 +2661,7 @@ export default function TuningPage({
                       {videoItems.slice(0, 4).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative min-w-[84%] max-w-[84%] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative min-w-[72%] max-w-[72%] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )} sm:min-w-[62%] sm:max-w-[62%]`}
                         >
@@ -2831,11 +2752,12 @@ export default function TuningPage({
                     ) : null}
                   </div>
 
-                  <div className="hidden gap-5 sm:grid sm:grid-cols-2 xl:grid-cols-3">
-                    {reelItems.slice(0, 4).map((item) => (
+                  <div className="hidden overflow-x-auto pb-2 no-scrollbar sm:block">
+                    <div className="flex gap-4">
+                    {reelItems.slice(0, 8).map((item) => (
                       <div
                         key={item.id}
-                        className={`group relative overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                        className={`group relative w-[260px] shrink-0 overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                           item.kind
                         )}`}
                       >
@@ -2902,13 +2824,14 @@ export default function TuningPage({
                       </div>
                     ))}
                   </div>
+                  </div>
 
                   <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:hidden">
                     <div className="flex gap-4 snap-x snap-mandatory">
                       {reelItems.slice(0, 4).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative min-w-[72vw] max-w-[72vw] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative min-w-[42vw] max-w-[42vw] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )}`}
                         >
@@ -2982,13 +2905,13 @@ export default function TuningPage({
           </section>
 
           <section className="py-8">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               {renderEditableAd("billboard")}
             </div>
           </section>
 
           <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-gray-400">
                   Explore MotorWelt
@@ -3136,7 +3059,7 @@ export default function TuningPage({
           aria-hidden={mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel}
           className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
-          <div className="mx-auto grid w-full max-w-[1200px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
+          <div className="mx-auto grid w-full max-w-[1440px] 2xl:max-w-[1560px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
             <div>
               <Image
                 src="/brand/motorwelt-logo.png"

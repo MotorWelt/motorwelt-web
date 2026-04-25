@@ -13,6 +13,17 @@ type LifestyleKey =
   | "Cine automovilístico";
 type AdKind = "leaderboard" | "billboard";
 
+type Streak = {
+  top: string;
+  left: string;
+  v: "cool" | "warm" | "lime";
+  dir: "fwd" | "rev";
+  delay: string;
+  dur: string;
+  op: number;
+  h?: string;
+};
+
 type ArticleCardData = {
   id: string;
   title: string;
@@ -21,6 +32,16 @@ type ArticleCardData = {
   href: string;
   when: string;
   category: LifestyleKey;
+};
+
+type LatestArticleData = {
+  id: string;
+  title: string;
+  excerpt: string;
+  img: string;
+  href: string;
+  when: string;
+  sectionLabel: string;
 };
 
 type AdConfig = {
@@ -44,6 +65,15 @@ type LifestylePageSettings = {
     billboard: AdConfig;
   };
   partnerLogos: PartnerLogo[];
+};
+
+type SectionHeroImages = {
+  tuning: string;
+  autos: string;
+  motos: string;
+  deportes: string;
+  lifestyle: string;
+  comunidad: string;
 };
 
 type RawPost = {
@@ -90,6 +120,15 @@ const DEFAULT_SETTINGS: LifestylePageSettings = {
     },
   },
   partnerLogos: [],
+};
+
+const DEFAULT_SECTION_HERO_IMAGES: SectionHeroImages = {
+  tuning: "/images/noticia-3.jpg",
+  autos: "/images/noticia-1.jpg",
+  motos: "/images/noticia-2.jpg",
+  deportes: "/images/noticia-2.jpg",
+  lifestyle: "/images/comunidad.jpg",
+  comunidad: "/images/comunidad.jpg",
 };
 
 function readCookie(name: string) {
@@ -157,8 +196,33 @@ function normalizeText(value: unknown) {
   return String(value).trim().toLowerCase();
 }
 
+function getSlugValue(slug?: string | { current?: string }) {
+  if (!slug) return "";
+  if (typeof slug === "string") return slug;
+  return String(slug.current || "");
+}
+
+function getMainImage(it: RawPost, fallback = "/images/comunidad.jpg") {
+  return (
+    String(it.mainImageUrl || "").trim() ||
+    (Array.isArray(it.galleryUrls) && it.galleryUrls[0]
+      ? String(it.galleryUrls[0])
+      : fallback)
+  );
+}
+
 function detectLifestyleCategory(post: RawPost): LifestyleKey | null {
-  const blob = [
+  const controlledFields = [
+    post.section,
+    post.category,
+    post.subcategory,
+    post.categories,
+    post.tags,
+  ]
+    .map(normalizeText)
+    .join(" ");
+
+  const fullBlob = [
     post.title,
     post.excerpt,
     post.subtitle,
@@ -172,45 +236,80 @@ function detectLifestyleCategory(post: RawPost): LifestyleKey | null {
     .map(normalizeText)
     .join(" ");
 
+  const blockedSections = [
+    "autos",
+    "noticias_autos",
+    "motos",
+    "noticias_motos",
+    "tuning",
+    "deportes",
+    "f1",
+    "nascar",
+    "motogp",
+    "wrc",
+    "drift",
+  ];
+
+  const sectionCategoryText = [
+    post.section,
+    post.category,
+    post.subcategory,
+    post.categories,
+  ]
+    .map(normalizeText)
+    .join(" ");
+
+  const isClearlyOtherSection = blockedSections.some((word) =>
+    sectionCategoryText.includes(word)
+  );
+
+  if (isClearlyOtherSection) return null;
+
+  const blob = controlledFields.includes("lifestyle") ? fullBlob : controlledFields;
+
   if (
+    blob.includes("lifestyle_moda") ||
     blob.includes("moda") ||
     blob.includes("fashion") ||
-    blob.includes("ropa") ||
-    blob.includes("merch") ||
     blob.includes("sneakers") ||
-    blob.includes("estilo") ||
-    blob.includes("accesorio") ||
-    blob.includes("accesorios")
+    blob.includes("apparel")
   ) {
     return "Moda";
   }
 
   if (
+    blob.includes("lifestyle_relojeria") ||
+    blob.includes("lifestyle_relojería") ||
     blob.includes("relojeria") ||
     blob.includes("relojería") ||
+    blob.includes("relojes") ||
+    blob.includes("reloj") ||
     blob.includes("watch") ||
-    blob.includes("cronografo") ||
+    blob.includes("watches") ||
     blob.includes("cronógrafo") ||
-    blob.includes("reloj")
+    blob.includes("cronografo")
   ) {
     return "Relojería";
   }
 
   if (
+    blob.includes("lifestyle_fuera_del_volante") ||
     blob.includes("fuera del volante") ||
-    blob.includes("lifestyle piloto") ||
-    blob.includes("vida fuera") ||
     blob.includes("off track") ||
-    blob.includes("off the track")
+    blob.includes("off the track") ||
+    blob.includes("vida fuera") ||
+    blob.includes("lifestyle piloto")
   ) {
     return "Fuera del volante";
   }
 
   if (
-    blob.includes("cine automovilistico") ||
+    blob.includes("lifestyle_cine") ||
     blob.includes("cine automovilístico") ||
-    blob.includes("pelicula") ||
+    blob.includes("cine automovilistico") ||
+    blob.includes("cine") ||
     blob.includes("película") ||
+    blob.includes("pelicula") ||
     blob.includes("documental") ||
     blob.includes("serie") ||
     blob.includes("film")
@@ -218,15 +317,73 @@ function detectLifestyleCategory(post: RawPost): LifestyleKey | null {
     return "Cine automovilístico";
   }
 
-  if (blob.includes("lifestyle")) return "Moda";
-
   return null;
 }
 
-function getSlugValue(slug?: string | { current?: string }) {
-  if (!slug) return "";
-  if (typeof slug === "string") return slug;
-  return String(slug.current || "");
+function getLatestSectionData(post: RawPost): { label: string; hrefBase: string } | null {
+  const blob = [
+    post.section,
+    post.category,
+    post.subcategory,
+    post.categories,
+    post.tags,
+  ]
+    .map(normalizeText)
+    .join(" ");
+
+  if (
+    blob.includes("noticias_autos") ||
+    blob.includes("autos") ||
+    blob.includes("auto")
+  ) {
+    return { label: "Autos", hrefBase: "/noticias/autos" };
+  }
+
+  if (
+    blob.includes("noticias_motos") ||
+    blob.includes("motos") ||
+    blob.includes("moto")
+  ) {
+    return { label: "Motos", hrefBase: "/noticias/motos" };
+  }
+
+  if (
+    blob.includes("tuning") ||
+    blob.includes("builds") ||
+    blob.includes("mods")
+  ) {
+    return { label: "Tuning", hrefBase: "/tuning" };
+  }
+
+  if (
+    blob.includes("deportes") ||
+    blob.includes("f1") ||
+    blob.includes("nascar") ||
+    blob.includes("motogp") ||
+    blob.includes("wrc") ||
+    blob.includes("drift") ||
+    blob.includes("rally")
+  ) {
+    return { label: "Deportes", hrefBase: "/deportes" };
+  }
+
+  if (
+    blob.includes("lifestyle") ||
+    detectLifestyleCategory(post)
+  ) {
+    return { label: "Lifestyle", hrefBase: "/lifestyle" };
+  }
+
+  if (
+    blob.includes("comunidad") ||
+    blob.includes("eventos") ||
+    blob.includes("meets") ||
+    blob.includes("rutas")
+  ) {
+    return { label: "Comunidad", hrefBase: "/comunidad" };
+  }
+
+  return null;
 }
 
 function sanitizePageSettings(
@@ -267,6 +424,22 @@ function sanitizePageSettings(
   };
 }
 
+function sanitizeSectionHeroImages(
+  raw?: Partial<SectionHeroImages>
+): SectionHeroImages {
+  return {
+    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
+    motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
+    deportes:
+      String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+    lifestyle:
+      String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+    comunidad:
+      String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+  };
+}
+
 async function uploadAssetToSanity(file: File) {
   const fd = new FormData();
   fd.append("file", file);
@@ -295,7 +468,7 @@ const SectionHeader: React.FC<{
       ? "from-[#0CE0B2] via-[#43A1AD] to-[#E2A24C]"
       : accent === "lime"
       ? "from-[#A3FF12] via-[#0CE0B2] to-[#FF7A1A]"
-      : "from-[#FF7A1A] via-[#E2A24C] to-[#F3D18A]";
+      : "from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]";
 
   return (
     <div className="mb-8 sm:mb-10">
@@ -314,48 +487,6 @@ const SectionHeader: React.FC<{
     </div>
   );
 };
-
-function FeaturedStory({ item }: { item: ArticleCardData }) {
-  return (
-    <article className="overflow-hidden rounded-[28px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md">
-      <Link href={item.href} className="block">
-        <div className="grid gap-0 lg:grid-cols-[1.08fr_.92fr]">
-          <div className="relative min-h-[300px] lg:min-h-[390px]">
-            <Image
-              src={item.img}
-              alt={item.title}
-              fill
-              sizes="(max-width: 1024px) 100vw, 58vw"
-              style={{ objectFit: "cover" }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent lg:bg-gradient-to-r lg:from-black/15 lg:via-transparent lg:to-transparent" />
-          </div>
-
-          <div className="flex flex-col justify-center p-6 sm:p-8">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white">
-              <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-              Destacada · {item.category}
-            </div>
-
-            <div className="mt-4 text-sm text-gray-400">{item.when}</div>
-
-            <h3 className="mt-3 text-3xl font-black leading-[0.98] text-white sm:text-4xl">
-              {item.title}
-            </h3>
-
-            <p className="mt-4 text-sm leading-relaxed text-gray-300 sm:text-base">
-              {item.excerpt}
-            </p>
-
-            <div className="mt-6">
-              <span className={getButtonClasses("pink")}>Leer artículo</span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    </article>
-  );
-}
 
 function ArticleCard({
   item,
@@ -401,6 +532,67 @@ function ArticleCard({
   );
 }
 
+function LatestArticleCard({ item }: { item: LatestArticleData }) {
+  return (
+    <article className="group h-full overflow-hidden rounded-[22px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/40">
+      <Link href={item.href} className="block h-full">
+        <div className="relative h-36 w-full overflow-hidden">
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="(max-width: 1024px) 78vw, 260px"
+            style={{ objectFit: "cover" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
+
+          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel}
+          </div>
+        </div>
+
+        <div className="p-4">
+          <div className="text-[11px] text-gray-400">{item.when}</div>
+          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+            {item.title}
+          </h3>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+            {item.excerpt}
+          </p>
+        </div>
+      </Link>
+    </article>
+  );
+}
+
+function CompactSideItem({ item }: { item: ArticleCardData }) {
+  return (
+    <Link
+      href={item.href}
+      className="group grid grid-cols-[112px_1fr] gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition hover:border-[#FF7A1A]/35 hover:bg-white/[0.055]"
+    >
+      <div className="relative h-24 overflow-hidden rounded-xl">
+        <Image src={item.img} alt={item.title} fill sizes="140px" style={{ objectFit: "cover" }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-[0.16em] text-[#FFB36B]">
+          {item.category}
+        </p>
+        <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-white transition group-hover:text-[#FFB36B]">
+          {item.title}
+        </h4>
+        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-400">
+          {item.excerpt}
+        </p>
+        <p className="mt-2 text-[11px] text-gray-500">{item.when}</p>
+      </div>
+    </Link>
+  );
+}
+
 function EmptyCategoryCard({ title }: { title: LifestyleKey }) {
   return (
     <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center backdrop-blur-md">
@@ -415,30 +607,153 @@ function EmptyCategoryCard({ title }: { title: LifestyleKey }) {
   );
 }
 
-function ExploreCard({
-  href,
-  title,
-  label,
-  image,
-  description,
+function LifestyleCategoryLayout({
+  category,
+  items,
 }: {
-  href: string;
+  category: LifestyleKey;
+  items: ArticleCardData[];
+}) {
+  if (!items.length) return <EmptyCategoryCard title={category} />;
+
+  if (category === "Fuera del volante") {
+    return (
+      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:-mx-6 sm:px-6">
+        <div className="flex snap-x snap-mandatory gap-4">
+          {items.slice(0, 8).map((item) => (
+            <div
+              key={item.id}
+              className="w-[78%] min-w-[78%] shrink-0 snap-start sm:w-[320px] sm:min-w-[320px]"
+            >
+              <ArticleCard item={item} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (category === "Relojería") {
+    const mainItem = items[0];
+    const sideItems = items.slice(1, 7);
+
+    return (
+      <>
+        <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,.72fr)]">
+          <ArticleCard item={mainItem} />
+
+          <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/10 bg-mw-surface/45 p-3 no-scrollbar">
+            <div className="space-y-3">
+              {sideItems.length > 0 ? (
+                sideItems.map((item) => <CompactSideItem key={item.id} item={item} />)
+              ) : (
+                <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-gray-400">
+                  Por ahora solo hay una nota en esta categoría.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar lg:hidden">
+          <div className="flex snap-x snap-mandatory gap-4">
+            {items.slice(0, 8).map((item) => (
+              <div
+                key={item.id}
+                className="w-[84%] min-w-[84%] shrink-0 snap-start sm:w-[360px] sm:min-w-[360px]"
+              >
+                <ArticleCard item={item} compact />
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const mainItems = items.slice(0, 2);
+  const sideItems = items.slice(2, 8);
+
+  return (
+    <>
+      <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,.78fr)]">
+        <div className="grid gap-6 md:grid-cols-2">
+          {mainItems.map((item) => (
+            <ArticleCard key={item.id} item={item} compact />
+          ))}
+        </div>
+
+        <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/10 bg-mw-surface/45 p-3 no-scrollbar">
+          <div className="space-y-3">
+            {sideItems.length > 0 ? (
+              sideItems.map((item) => <CompactSideItem key={item.id} item={item} />)
+            ) : (
+              <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-gray-400">
+                Por ahora solo hay pocas notas en esta categoría.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar lg:hidden">
+        <div className="flex snap-x snap-mandatory gap-4">
+          {items.slice(0, 8).map((item) => (
+            <div
+              key={item.id}
+              className="w-[84%] min-w-[84%] shrink-0 snap-start sm:w-[360px] sm:min-w-[360px]"
+            >
+              <ArticleCard item={item} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ExploreCard({
+  title,
+  subtitle,
+  href,
+  image,
+}: {
   title: string;
-  label: string;
+  subtitle: string;
+  href: string;
   image: string;
-  description: string;
 }) {
   return (
-    <Link href={href} className="relative w-[82%] min-w-[82%] sm:w-[420px] sm:min-w-[420px] snap-start">
-      <div className="relative h-[240px] w-full overflow-hidden rounded-2xl border border-mw-line/70">
-        <Image src={image} alt={title} fill style={{ objectFit: "cover" }} />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+    <Link
+      href={href}
+      className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]"
+    >
+      <div className="absolute inset-0">
+        <img
+          src={image}
+          alt={title}
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
+          style={{ filter: "brightness(.42) saturate(1.08)" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/32 to-black/75" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.09),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.08),transparent_28%)]" />
+      </div>
 
-        <div className="absolute bottom-0 p-5">
-          <p className="text-[11px] uppercase tracking-wide text-[#FFB36B]">{label}</p>
-          <h3 className="text-2xl font-bold text-white">{title}</h3>
-          <p className="mt-2 text-sm text-gray-300 line-clamp-2">{description}</p>
+      <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            Explora
+          </span>
         </div>
+
+        <h3 className="max-w-[85%] text-[2.1rem] font-extrabold leading-[0.92] tracking-tight text-white drop-shadow-[0_6px_20px_rgba(0,0,0,.5)] sm:text-[2.45rem]">
+          {title}
+        </h3>
+
+        <p className="mt-3 max-w-[88%] text-sm leading-relaxed text-white/88 drop-shadow-[0_4px_14px_rgba(0,0,0,.42)] sm:text-[0.98rem]">
+          {subtitle}
+        </p>
       </div>
     </Link>
   );
@@ -449,7 +764,7 @@ function PartnersRow({ partners }: { partners: PartnerLogo[] }) {
 
   return (
     <section className="py-14 sm:py-16">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
         <SectionHeader
           eyebrow="Partners"
           title="Aliados de MotorWelt"
@@ -501,7 +816,7 @@ function Header({
   return (
     <>
       <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-        <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
+        <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
           <div className="flex items-center">
             <Link
               href="/"
@@ -520,11 +835,8 @@ function Header({
           </div>
 
           <div className="hidden md:flex items-center justify-center">
-            <nav className="flex items-center gap-6 text-sm font-medium">
-              <Link
-                href="/tuning"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
+            <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
+              <Link href="/tuning" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Tuning
               </Link>
 
@@ -535,60 +847,32 @@ function Header({
                   className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
                 >
                   Noticias
-                  <svg
-                    className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M6 9l6 6 6-6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                  <svg className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
 
                 <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
                   <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
-                    <Link
-                      href="/noticias/autos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                    >
+                    <Link href="/noticias/autos" className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5">
                       Autos
                     </Link>
-                    <Link
-                      href="/noticias/motos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                    >
+                    <Link href="/noticias/motos" className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5">
                       Motos
                     </Link>
                   </div>
                 </div>
               </div>
 
-              <Link
-                href="/deportes"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
+              <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Deportes
               </Link>
 
-              <Link
-                href="/lifestyle"
-                className="inline-flex h-10 items-center leading-none border-b-2 border-[#FF7A1A] text-white"
-              >
+              <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none border-b-2 border-[#FF7A1A] text-white">
                 Lifestyle
               </Link>
 
-              <Link
-                href="/comunidad"
-                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
-              >
+              <Link href="/comunidad" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Comunidad
               </Link>
             </nav>
@@ -608,12 +892,7 @@ function Header({
               aria-controls="mobile-menu"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M4 6h16M4 12h16M4 18h16"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -622,46 +901,23 @@ function Header({
 
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] md:hidden">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden
-          />
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
 
           <aside
             id="mobile-menu"
             className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
           >
             <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
-              <Image
-                src="/brand/motorwelt-logo.png"
-                alt="MotorWelt logo"
-                width={140}
-                height={32}
-                className="h-8 w-auto"
-              />
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
-                aria-label="Cerrar menú"
-              >
+              <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={140} height={32} className="h-8 w-auto" />
+              <button onClick={() => setMobileOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5" aria-label="Cerrar menú">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path
-                    d="M6 6l12 12M18 6l-12 12"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
 
             <nav className="px-4 py-3">
-              <Link
-                href="/tuning"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Tuning
               </Link>
 
@@ -670,43 +926,23 @@ function Header({
               </p>
 
               <div className="mt-1 space-y-1 pl-2">
-                <Link
-                  href="/noticias/autos"
-                  className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
+                <Link href="/noticias/autos" className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                   Autos
                 </Link>
-                <Link
-                  href="/noticias/motos"
-                  className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
+                <Link href="/noticias/motos" className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                   Motos
                 </Link>
               </div>
 
-              <Link
-                href="/deportes"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Deportes
               </Link>
 
-              <Link
-                href="/lifestyle"
-                className="block w-full rounded-xl px-3 py-3 text-base text-white"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-white" onClick={() => setMobileOpen(false)}>
                 Lifestyle
               </Link>
 
-              <Link
-                href="/comunidad"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Comunidad
               </Link>
             </nav>
@@ -744,31 +980,18 @@ function AdSlot({
     <div
       className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70 ${
         isLeaderboard
-          ? "max-w-[970px] aspect-[970/120] min-h-[72px] md:min-h-0"
-          : "max-w-[970px] aspect-[970/250]"
+          ? "w-full min-h-[84px] aspect-[970/120] md:max-w-[1100px] md:min-h-0"
+          : "max-w-[1100px] aspect-[970/250]"
       }`}
     >
       {ad.enabled ? (
         ad.imageUrl ? (
           ad.href ? (
-            <a
-              href={ad.href}
-              target="_blank"
-              rel="noreferrer"
-              className="block h-full w-full"
-            >
-              <img
-                src={ad.imageUrl}
-                alt={ad.label}
-                className="h-full w-full object-cover object-center bg-black/20"
-              />
+            <a href={ad.href} target="_blank" rel="noreferrer" className="block h-full w-full">
+              <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
             </a>
           ) : (
-            <img
-              src={ad.imageUrl}
-              alt={ad.label}
-              className="h-full w-full object-cover object-center bg-black/20"
-            />
+            <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
           )
         ) : (
           <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
@@ -786,33 +1009,17 @@ function AdSlot({
       )}
 
       {editable && (
-        <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onToggle}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+        <div className="absolute right-2 top-2 z-20 hidden flex-wrap items-center justify-end gap-2 md:flex">
+          <button type="button" onClick={onToggle} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Imagen
           </button>
-          <button
-            type="button"
-            onClick={onEditLink}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onEditLink} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Link
           </button>
-          <button
-            type="button"
-            onClick={onClear}
-            className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onClear} className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
             Limpiar
           </button>
         </div>
@@ -835,11 +1042,15 @@ function AdSlot({
 export default function LifestylePage({
   year,
   lifestyleItems = [],
+  latestItems = [],
   initialSettings = DEFAULT_SETTINGS,
+  sectionHeroImages = DEFAULT_SECTION_HERO_IMAGES,
 }: {
   year: number;
   lifestyleItems?: ArticleCardData[];
+  latestItems?: LatestArticleData[];
   initialSettings?: LifestylePageSettings;
+  sectionHeroImages?: SectionHeroImages;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
@@ -854,15 +1065,35 @@ export default function LifestylePage({
   const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
 
-  const featured = lifestyleItems[0] || null;
-  const latest = featured ? lifestyleItems.slice(0, 6) : [];
-
   const grouped = useMemo(() => {
     return LIFESTYLE_SECTIONS.reduce((acc, category) => {
       acc[category] = lifestyleItems.filter((item) => item.category === category);
       return acc;
     }, {} as Record<LifestyleKey, ArticleCardData[]>);
   }, [lifestyleItems]);
+
+  const streaks: Streak[] = useMemo(
+    () => [
+      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
+      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
+      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
+      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
+      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
+      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
+      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
+      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
+      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
+      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
+      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
+      { top: "6%", left: "-38%", v: "cool", dir: "rev", delay: "0.6s", dur: "14s", op: 0.55, h: "1px" },
+      { top: "18%", left: "-33%", v: "warm", dir: "fwd", delay: "1.2s", dur: "12.8s", op: 0.55, h: "1px" },
+      { top: "34%", left: "-31%", v: "cool", dir: "fwd", delay: "2.4s", dur: "13.6s", op: 0.58, h: "1px" },
+      { top: "42%", left: "-36%", v: "warm", dir: "rev", delay: "3.0s", dur: "12.2s", op: 0.52, h: "1px" },
+      { top: "66%", left: "-29%", v: "cool", dir: "rev", delay: "4.2s", dur: "14.4s", op: 0.55, h: "1px" },
+      { top: "82%", left: "-28%", v: "lime", dir: "fwd", delay: "5.3s", dur: "12.4s", op: 0.86, h: "3px" },
+    ],
+    []
+  );
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -881,9 +1112,7 @@ export default function LifestylePage({
           const parsed = JSON.parse(raw);
           role = parsed?.role || "";
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
     setCanEdit(role === "admin" || role === "editor");
@@ -899,9 +1128,7 @@ export default function LifestylePage({
       const res = await fetch("/api/ai/admin/home/save", {
         method: "POST",
         credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pageKey: "lifestyle",
           settings: nextSettings,
@@ -927,11 +1154,7 @@ export default function LifestylePage({
 
     try {
       const uploaded = await uploadAssetToSanity(file);
-      const next = {
-        ...settings,
-        heroImageUrl: uploaded.url,
-      };
-      await persistSettings(next);
+      await persistSettings({ ...settings, heroImageUrl: uploaded.url });
     } catch (err: any) {
       setError(err?.message || "No se pudo subir la portada.");
     }
@@ -943,7 +1166,7 @@ export default function LifestylePage({
 
     try {
       const uploaded = await uploadAssetToSanity(file);
-      const next = {
+      await persistSettings({
         ...settings,
         ads: {
           ...settings.ads,
@@ -952,15 +1175,14 @@ export default function LifestylePage({
             imageUrl: uploaded.url,
           },
         },
-      };
-      await persistSettings(next);
+      });
     } catch (err: any) {
       setError(err?.message || "No se pudo subir el anuncio.");
     }
   }
 
   async function toggleAd(kind: AdKind) {
-    const next = {
+    await persistSettings({
       ...settings,
       ads: {
         ...settings.ads,
@@ -969,9 +1191,7 @@ export default function LifestylePage({
           enabled: !settings.ads[kind].enabled,
         },
       },
-    };
-
-    await persistSettings(next);
+    });
   }
 
   async function editAdLink(kind: AdKind) {
@@ -980,7 +1200,7 @@ export default function LifestylePage({
     const href = window.prompt("Pega el link del anuncio:", current);
     if (href === null) return;
 
-    const next = {
+    await persistSettings({
       ...settings,
       ads: {
         ...settings.ads,
@@ -989,13 +1209,11 @@ export default function LifestylePage({
           href: href.trim(),
         },
       },
-    };
-
-    await persistSettings(next);
+    });
   }
 
   async function clearAdImage(kind: AdKind) {
-    const next = {
+    await persistSettings({
       ...settings,
       ads: {
         ...settings.ads,
@@ -1004,13 +1222,11 @@ export default function LifestylePage({
           imageUrl: "",
         },
       },
-    };
-
-    await persistSettings(next);
+    });
   }
 
   const heroImage =
-    settings.heroImageUrl || featured?.img || DEFAULT_SETTINGS.heroImageUrl;
+    settings.heroImageUrl || lifestyleItems[0]?.img || DEFAULT_SETTINGS.heroImageUrl;
 
   return (
     <>
@@ -1034,8 +1250,28 @@ export default function LifestylePage({
       <div className="relative min-h-screen overflow-x-hidden text-gray-100">
         <div className="mw-global-bg" aria-hidden>
           <div className="mw-global-base" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_22%,rgba(255,122,26,.16),transparent_22%),radial-gradient(circle_at_84%_18%,rgba(243,177,90,.10),transparent_28%),radial-gradient(circle_at_50%_80%,rgba(12,224,178,.05),transparent_30%)]" />
-          <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(115deg,transparent_0%,transparent_46%,rgba(255,255,255,.05)_47%,transparent_48%,transparent_100%)]" />
+          {streaks.map((s, i) => (
+            <div
+              key={i}
+              className="streak-wrap"
+              style={{
+                top: s.top as any,
+                left: s.left as any,
+                height: s.h ?? undefined,
+              }}
+            >
+              <div
+                className={`streak streak-${s.v} ${
+                  s.dir === "rev" ? "dir-rev" : "dir-fwd"
+                }`}
+                style={{
+                  opacity: s.op as any,
+                  animationDelay: s.delay as any,
+                  animationDuration: s.dur as any,
+                }}
+              />
+            </div>
+          ))}
         </div>
 
         {canEdit && (
@@ -1060,22 +1296,19 @@ export default function LifestylePage({
 
         <main aria-hidden={mobileOpen} className="relative z-10">
           <section className="relative isolate overflow-hidden pt-16 lg:pt-[72px]">
-            <div className="relative flex min-h-[50svh] flex-col justify-end overflow-hidden sm:min-h-[58svh] lg:min-h-[64vh]">
+            <div className="relative flex min-h-[48svh] flex-col justify-end overflow-hidden sm:min-h-[54svh] lg:min-h-[60vh]">
               <Image
                 src={heroImage}
                 alt="Lifestyle | MotorWelt"
                 fill
                 sizes="100vw"
-                style={{
-                  objectFit: "cover",
-                  filter: "brightness(.36) saturate(1.05)",
-                }}
+                style={{ objectFit: "cover", filter: "brightness(.38) saturate(1.14)" }}
                 priority
               />
 
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(255,122,26,.18),transparent_26%),radial-gradient(circle_at_84%_20%,rgba(243,177,90,.16),transparent_28%),linear-gradient(180deg,rgba(0,0,0,.18)_0%,rgba(0,0,0,.42)_42%,rgba(2,10,10,.92)_100%)]" />
-              <div className="absolute inset-y-0 left-0 hidden w-[56%] bg-gradient-to-r from-black/80 via-black/46 to-transparent lg:block" />
-              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(12,224,178,.10),transparent_26%),radial-gradient(circle_at_84%_18%,rgba(255,122,26,.12),transparent_30%),linear-gradient(180deg,rgba(0,0,0,.24)_0%,rgba(0,0,0,.45)_38%,rgba(2,10,10,.88)_100%)]" />
+              <div className="absolute inset-y-0 left-0 hidden w-[58%] bg-gradient-to-r from-black/75 via-black/45 to-transparent lg:block" />
+              <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
 
               {editControlsVisible && (
                 <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
@@ -1089,19 +1322,20 @@ export default function LifestylePage({
                 </div>
               )}
 
-              <div className="relative z-10 w-full px-4 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-12">
-                <div className="mx-auto w-full max-w-[1200px]">
+              <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:pb-16 xl:px-10">
+                <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-                      MotorWelt Lifestyle
+                      Lifestyle • Style • Motor Culture
                     </div>
 
-                    <h1 className="mt-5 font-display text-[3.1rem] font-black leading-[0.9] tracking-[-0.05em] text-white sm:text-[4.2rem] md:text-[4.8rem] lg:text-[5.4rem]">
-                      Lifestyle
+                    <h1 className="mt-5 font-display text-[2.8rem] font-black leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.4rem]">
+                      <span className="glow-warm block">Lifestyle</span>
+                      <span className="block text-white/95">Beyond the Drive</span>
                     </h1>
 
-                    <p className="mt-5 max-w-3xl text-base leading-relaxed text-gray-200 sm:text-lg">
+                    <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
                       Moda, relojería, vida fuera de pista y cine automovilístico.
                       La capa más aspiracional, estética y humana del universo MotorWelt.
                     </p>
@@ -1112,7 +1346,7 @@ export default function LifestylePage({
           </section>
 
           <section className="py-4 sm:py-6">
-            <div className="mx-auto w-full max-w-[1200px] px-2 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <AdSlot
                 kind="leaderboard"
                 ad={settings.ads.leaderboard}
@@ -1126,22 +1360,8 @@ export default function LifestylePage({
             </div>
           </section>
 
-          {featured ? (
-            <section className="py-12 sm:py-16">
-              <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-                <SectionHeader
-                  eyebrow="Destacada"
-                  title="La historia que abre Lifestyle"
-                  description="Una pieza principal con una lectura más premium y más editorial para la sección."
-                  accent="warm"
-                />
-                <FeaturedStory item={featured} />
-              </div>
-            </section>
-          ) : null}
-
           <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
                 eyebrow="Todo Lifestyle"
                 title="Moda, Relojería, Fuera del volante y Cine automovilístico"
@@ -1178,30 +1398,7 @@ export default function LifestylePage({
                         </div>
                       </div>
 
-                      {items.length > 0 ? (
-                        <>
-                          <div className="hidden gap-6 md:grid md:grid-cols-2 xl:grid-cols-4">
-                            {items.slice(0, 4).map((item) => (
-                              <ArticleCard key={item.id} item={item} compact />
-                            ))}
-                          </div>
-
-                          <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                            <div className="flex gap-4 snap-x snap-mandatory">
-                              {items.slice(0, 6).map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="w-[84%] min-w-[84%] shrink-0 snap-start"
-                                >
-                                  <ArticleCard item={item} compact />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <EmptyCategoryCard title={category} />
-                      )}
+                      <LifestyleCategoryLayout category={category} items={items} />
                     </section>
                   );
                 })}
@@ -1210,7 +1407,7 @@ export default function LifestylePage({
           </section>
 
           <section className="py-8">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <AdSlot
                 kind="billboard"
                 ad={settings.ads.billboard}
@@ -1225,76 +1422,55 @@ export default function LifestylePage({
           </section>
 
           <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
-                eyebrow="Lo más reciente"
+                eyebrow="Vistazo general"
                 title="Últimas publicaciones"
-                description="Contenido real conectado a Sanity, sin relleno ni piezas inventadas."
+                description="Lo más reciente publicado en MotorWelt, mezclando todas las secciones conforme se actualiza el sitio."
                 accent="cool"
               />
 
-              {latest.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  {latest.map((item) => (
-                    <ArticleCard key={item.id} item={item} />
-                  ))}
+              {latestItems.length > 0 ? (
+                <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
+                  <div className="flex snap-x snap-mandatory gap-4">
+                    {latestItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="w-[78%] min-w-[78%] snap-start sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
+                      >
+                        <LatestArticleCard item={item} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center text-gray-300">
-                  Próximamente habrá contenido disponible en Lifestyle.
+                  Próximamente habrá contenido disponible en MotorWelt.
                 </div>
               )}
             </div>
           </section>
 
           <section className="py-12 sm:py-16">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <div className="mb-8">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-gray-400">
-                  Explore MotorWelt
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+              <div className="mb-8 text-center">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
+                  Explora
                 </p>
 
-                <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
+                <h2 className="mt-2 font-display text-3xl font-bold text-white">
                   Seguir explorando MotorWelt
                 </h2>
-
-                <div className="mt-3 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#E2A24C]" />
-
-                <p className="mt-4 max-w-2xl text-sm text-gray-300">
-                  Sigue navegando entre más historias, coberturas y cultura editorial dentro del universo MotorWelt.
-                </p>
               </div>
 
-              <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-                <div className="flex gap-4 snap-x snap-mandatory">
-                  <ExploreCard
-                    href="/deportes"
-                    title="Deportes"
-                    label="Sección"
-                    image="/images/noticia-3.jpg"
-                    description="Motorsport, competencia y adrenalina con una lectura editorial."
-                  />
-                  <ExploreCard
-                    href="/tuning"
-                    title="Tuning"
-                    label="Sección"
-                    image="/images/noticia-2.jpg"
-                    description="Builds, mods, street culture y lenguaje visual con identidad propia."
-                  />
-                  <ExploreCard
-                    href="/noticias/autos"
-                    title="Autos"
-                    label="Noticias"
-                    image="/images/noticia-1.jpg"
-                    description="Lanzamientos, pruebas, industria y todo lo que mueve al universo automotriz."
-                  />
-                  <ExploreCard
-                    href="/noticias/motos"
-                    title="Motos"
-                    label="Noticias"
-                    image="/images/comunidad.jpg"
-                    description="Pruebas, rutas y cultura de motociclismo con enfoque visual."
-                  />
+              <div className="no-scrollbar overflow-x-auto pb-6">
+                <div className="flex items-start gap-5 pr-12">
+                  <ExploreCard title="Tuning" subtitle="Builds, mods, aero, stance y cultura visual." href="/tuning" image={sectionHeroImages.tuning} />
+                  <ExploreCard title="Autos" subtitle="Nuevos lanzamientos, pruebas y contexto editorial." href="/noticias/autos" image={sectionHeroImages.autos} />
+                  <ExploreCard title="Motos" subtitle="Pruebas, rutas y piezas con ADN de dos ruedas." href="/noticias/motos" image={sectionHeroImages.motos} />
+                  <ExploreCard title="Deportes" subtitle="Competencia, paddock y piezas con peso visual real." href="/deportes" image={sectionHeroImages.deportes} />
+                  <ExploreCard title="Lifestyle" subtitle="La capa aspiracional y estética del universo MotorWelt." href="/lifestyle" image={sectionHeroImages.lifestyle} />
+                  <ExploreCard title="Comunidad" subtitle="Eventos, meets, rutas y cultura desde la calle." href="/comunidad" image={sectionHeroImages.comunidad} />
                 </div>
               </div>
             </div>
@@ -1307,15 +1483,9 @@ export default function LifestylePage({
           aria-hidden={mobileOpen}
           className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
-          <div className="mx-auto grid w-full max-w-[1200px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
+          <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 xl:px-10 2xl:max-w-[1560px]">
             <div>
-              <Image
-                src="/brand/motorwelt-logo.png"
-                alt="MotorWelt logo"
-                width={160}
-                height={36}
-                className="logo-glow h-9 w-auto"
-              />
+              <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={160} height={36} className="logo-glow h-9 w-auto" />
               <p className="mt-2 text-sm">
                 Cultura automotriz, motociclismo, tuning y comunidad con enfoque
                 visual, editorial y aspiracional.
@@ -1325,64 +1495,20 @@ export default function LifestylePage({
             <div>
               <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
-                <li>
-                  <Link href="/about" className="hover:text-white">
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="hover:text-white">
-                    Contacto
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/terminos" className="hover:text-white">
-                    Términos y condiciones
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/privacidad" className="hover:text-white">
-                    Política de privacidad
-                  </Link>
-                </li>
+                <li><Link href="/about" className="hover:text-white">About</Link></li>
+                <li><Link href="/contact" className="hover:text-white">Contacto</Link></li>
+                <li><Link href="/terminos" className="hover:text-white">Términos y condiciones</Link></li>
+                <li><Link href="/privacidad" className="hover:text-white">Política de privacidad</Link></li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
-                <a
-                  href="https://instagram.com/motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  IG
-                </a>
-                <a
-                  href="https://facebook.com/motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  FB
-                </a>
-                <a
-                  href="https://tiktok.com/@motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  TikTok
-                </a>
-                <a
-                  href="https://youtube.com/@motorwelt"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#43A1AD] hover:text-white"
-                >
-                  YouTube
-                </a>
+                <a href="https://instagram.com/motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">IG</a>
+                <a href="https://facebook.com/motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">FB</a>
+                <a href="https://tiktok.com/@motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">TikTok</a>
+                <a href="https://youtube.com/@motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">YouTube</a>
               </div>
             </div>
           </div>
@@ -1407,7 +1533,46 @@ export default function LifestylePage({
           background:
             radial-gradient(120% 80% at 20% 10%, rgba(0, 0, 0, 0.15) 0%, transparent 60%),
             radial-gradient(120% 80% at 80% 90%, rgba(0, 0, 0, 0.18) 0%, transparent 60%),
-            linear-gradient(180deg, rgba(4, 18, 16, 0.85), rgba(4, 18, 16, 0.92));
+            linear-gradient(180deg, rgba(4, 18, 16, 0.85), rgba(4, 18, 16, 0.85));
+        }
+        .streak-wrap {
+          position: absolute;
+          width: 220%;
+          height: 2px;
+          transform: rotate(-12deg);
+        }
+        .streak {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 220%;
+          height: 100%;
+          will-change: transform, opacity;
+          filter: blur(.5px);
+        }
+        @keyframes slide-fwd {
+          0% { transform: translateX(-30%); opacity: 0; }
+          10% { opacity: .9; }
+          100% { transform: translateX(130%); opacity: 0; }
+        }
+        @keyframes slide-rev {
+          0% { transform: translateX(130%); opacity: 0; }
+          10% { opacity: .9; }
+          100% { transform: translateX(-30%); opacity: 0; }
+        }
+        .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
+        .streak.dir-rev { animation: slide-rev 11s linear infinite; }
+        .streak-cool {
+          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
+        }
+        .streak-warm {
+          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
+        }
+        .streak-lime {
+          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .9), transparent);
+        }
+        .glow-warm {
+          text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
         }
         .logo-glow {
           filter: drop-shadow(0 0 18px rgba(12,224,178,.12));
@@ -1419,6 +1584,14 @@ export default function LifestylePage({
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
+
+        @media (prefers-reduced-motion: reduce) {
+          .streak {
+            animation: none !important;
+            opacity: .35;
+          }
+        }
+
         @supports (content-visibility: auto) {
           main > section {
             content-visibility: auto;
@@ -1433,13 +1606,13 @@ export default function LifestylePage({
 export async function getServerSideProps() {
   const { sanityReadClient } = await import("../../lib/sanityClient");
 
-  const lifestyleQuery = `
+  const allPostsQuery = `
     *[
       _type in ["article", "post"] &&
       defined(slug.current) &&
       coalesce(status, "publicado") == "publicado"
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0...120]{
+    | order(coalesce(publishedAt, _createdAt) desc)[0...160]{
       _id,
       title,
       excerpt,
@@ -1493,24 +1666,73 @@ export async function getServerSideProps() {
     }
   `;
 
-  const [lifestyleRaw, lifestyleSettingsRaw] = await Promise.all([
-    sanityReadClient.fetch(lifestyleQuery).catch(() => []),
+  const sectionSettingsQuery = `
+    *[
+      _type in ["homeSettings", "sitePageSettings", "pageSettings"] &&
+      pageKey in ["tuning", "deportes", "lifestyle", "comunidad", "autos", "motos"]
+    ]{
+      pageKey,
+      "heroImageUrl": coalesce(heroImageUrl, "")
+    }
+  `;
+
+  const autosFallbackQuery = `
+    *[
+      _type in ["article", "post"] &&
+      coalesce(status, "publicado") == "publicado" &&
+      defined(slug.current) &&
+      (
+        section == "autos" ||
+        section == "noticias_autos" ||
+        lower(category) == "autos" ||
+        "autos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+    }
+  `;
+
+  const motosFallbackQuery = `
+    *[
+      _type in ["article", "post"] &&
+      coalesce(status, "publicado") == "publicado" &&
+      defined(slug.current) &&
+      (
+        section == "motos" ||
+        section == "noticias_motos" ||
+        lower(category) == "motos" ||
+        "motos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+    }
+  `;
+
+  const [
+    allPostsRaw,
+    lifestyleSettingsRaw,
+    sectionSettingsRaw,
+    autosFallback,
+    motosFallback,
+  ] = await Promise.all([
+    sanityReadClient.fetch(allPostsQuery).catch(() => []),
     sanityReadClient.fetch(lifestyleSettingsQuery).catch(() => null),
+    sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
+    sanityReadClient.fetch(autosFallbackQuery).catch(() => null),
+    sanityReadClient.fetch(motosFallbackQuery).catch(() => null),
   ]);
 
-  const lifestyleItems: ArticleCardData[] = (lifestyleRaw || [])
+  const rawPosts = Array.isArray(allPostsRaw) ? allPostsRaw : [];
+
+  const lifestyleItems: ArticleCardData[] = rawPosts
     .map((it: RawPost) => {
       const category = detectLifestyleCategory(it);
       if (!category) return null;
 
       const slug = getSlugValue(it.slug);
       if (!slug) return null;
-
-      const mainImage =
-        String(it.mainImageUrl || "").trim() ||
-        (Array.isArray(it.galleryUrls) && it.galleryUrls[0]
-          ? String(it.galleryUrls[0])
-          : "/images/comunidad.jpg");
 
       return {
         id: String(it._id || slug),
@@ -1521,7 +1743,7 @@ export async function getServerSideProps() {
             it.seoDescription ||
             "Lee el artículo completo en MotorWelt."
         ),
-        img: mainImage,
+        img: getMainImage(it, "/images/comunidad.jpg"),
         href: `/lifestyle/${slug}`,
         when: formatWhen(it.publishedAt || it._createdAt),
         category,
@@ -1529,13 +1751,59 @@ export async function getServerSideProps() {
     })
     .filter(Boolean) as ArticleCardData[];
 
+  const latestItems: LatestArticleData[] = rawPosts
+    .map((it: RawPost) => {
+      const slug = getSlugValue(it.slug);
+      if (!slug) return null;
+
+      const sectionData = getLatestSectionData(it);
+      if (!sectionData) return null;
+
+      return {
+        id: String(it._id || slug),
+        title: String(it.title || ""),
+        excerpt: String(
+          it.excerpt ||
+            it.subtitle ||
+            it.seoDescription ||
+            "Lee la publicación completa en MotorWelt."
+        ),
+        img: getMainImage(it, "/images/noticia-3.jpg"),
+        href: `${sectionData.hrefBase}/${slug}`,
+        when: formatWhen(it.publishedAt || it._createdAt),
+        sectionLabel: sectionData.label,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 18) as LatestArticleData[];
+
   const fallbackHero = lifestyleItems[0]?.img || DEFAULT_SETTINGS.heroImageUrl;
+
+  const settingsMap = new Map<string, string>();
+  if (Array.isArray(sectionSettingsRaw)) {
+    for (const item of sectionSettingsRaw) {
+      const key = String(item?.pageKey || "").trim();
+      const value = String(item?.heroImageUrl || "").trim();
+      if (key && value) settingsMap.set(key, value);
+    }
+  }
+
+  const sectionHeroImages = sanitizeSectionHeroImages({
+    tuning: settingsMap.get("tuning"),
+    autos: settingsMap.get("autos") || String(autosFallback?.image || ""),
+    motos: settingsMap.get("motos") || String(motosFallback?.image || ""),
+    deportes: settingsMap.get("deportes"),
+    lifestyle: settingsMap.get("lifestyle"),
+    comunidad: settingsMap.get("comunidad"),
+  });
 
   return {
     props: {
       year: new Date().getFullYear(),
-      lifestyleItems: Array.isArray(lifestyleItems) ? lifestyleItems : [],
+      lifestyleItems,
+      latestItems,
       initialSettings: sanitizePageSettings(lifestyleSettingsRaw, fallbackHero),
+      sectionHeroImages,
     },
   };
 }

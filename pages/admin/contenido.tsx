@@ -1,3 +1,4 @@
+// pages/admin/contenido.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -73,6 +74,44 @@ type ContentType = "noticia" | "review" | "entrevista";
 
 type ContentStatus = "borrador" | "revision" | "publicado";
 
+type NoteSubcategory =
+  | ""
+  | "autos_lanzamientos"
+  | "autos_pruebas"
+  | "autos_industria"
+  | "autos_electricos"
+  | "autos_clasicos"
+  | "motos_lanzamientos"
+  | "motos_pruebas"
+  | "motos_rutas"
+  | "motos_industria"
+  | "motos_cultura"
+  | "f1"
+  | "nascar"
+  | "motogp"
+  | "wrc"
+  | "drift"
+  | "lifestyle_moda"
+  | "lifestyle_relojeria"
+  | "lifestyle_fuera_del_volante"
+  | "lifestyle_cine"
+  | "comunidad_eventos"
+  | "comunidad_meets"
+  | "comunidad_rutas"
+  | "comunidad_clubes"
+  | "comunidad_garage"
+  | "tuning_builds"
+  | "tuning_mods"
+  | "tuning_stance"
+  | "tuning_performance"
+  | "tuning_cultura";
+
+type SubcategoryOption = {
+  value: NoteSubcategory;
+  label: string;
+  helper?: string;
+};
+
 type CurrentUser = {
   name?: string;
   email?: string;
@@ -106,6 +145,78 @@ type SocialCopyPack = {
   hashtags?: string[];
   cta?: string;
 };
+
+const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
+  noticias_autos: [
+    { value: "", label: "General Autos" },
+    { value: "autos_lanzamientos", label: "Lanzamientos" },
+    { value: "autos_pruebas", label: "Pruebas / Reviews" },
+    { value: "autos_industria", label: "Industria" },
+    { value: "autos_electricos", label: "Eléctricos / Híbridos" },
+    { value: "autos_clasicos", label: "Clásicos" },
+  ],
+  noticias_motos: [
+    { value: "", label: "General Motos" },
+    { value: "motos_lanzamientos", label: "Lanzamientos" },
+    { value: "motos_pruebas", label: "Pruebas / Reviews" },
+    { value: "motos_rutas", label: "Rutas" },
+    { value: "motos_industria", label: "Industria" },
+    { value: "motos_cultura", label: "Cultura moto" },
+  ],
+  deportes: [
+    { value: "f1", label: "F1" },
+    { value: "nascar", label: "Nascar" },
+    { value: "motogp", label: "MotoGP" },
+    { value: "wrc", label: "WRC" },
+    { value: "drift", label: "Drift" },
+  ],
+  lifestyle: [
+    { value: "lifestyle_moda", label: "Moda" },
+    { value: "lifestyle_relojeria", label: "Relojería" },
+    { value: "lifestyle_fuera_del_volante", label: "Fuera del volante" },
+    { value: "lifestyle_cine", label: "Cine automovilístico" },
+  ],
+  comunidad: [
+    { value: "", label: "General Comunidad" },
+    { value: "comunidad_eventos", label: "Eventos" },
+    { value: "comunidad_meets", label: "Meets" },
+    { value: "comunidad_rutas", label: "Rutas" },
+    { value: "comunidad_clubes", label: "Clubes" },
+    { value: "comunidad_garage", label: "Garage / Proyectos" },
+  ],
+  tuning: [
+    { value: "", label: "General Tuning" },
+    { value: "tuning_builds", label: "Builds" },
+    { value: "tuning_mods", label: "Mods" },
+    { value: "tuning_stance", label: "Stance" },
+    { value: "tuning_performance", label: "Performance" },
+    { value: "tuning_cultura", label: "Cultura tuning" },
+  ],
+};
+
+function getDefaultSubcategoryForSection(section: SectionSlug): NoteSubcategory {
+  return SECTION_NOTE_SUBCATEGORIES[section]?.[0]?.value || "";
+}
+
+function isSubcategoryValidForSection(
+  section: SectionSlug,
+  subcategory?: string
+) {
+  return SECTION_NOTE_SUBCATEGORIES[section].some(
+    (item) => item.value === subcategory
+  );
+}
+
+function normalizeSubcategoryForSection(
+  section: SectionSlug,
+  subcategory?: string
+): NoteSubcategory {
+  if (isSubcategoryValidForSection(section, subcategory)) {
+    return subcategory as NoteSubcategory;
+  }
+
+  return getDefaultSubcategoryForSection(section);
+}
 
 /* Helper para etiqueta bonita de la plataforma */
 function labelForPlatform(p: SocialPlatformId): string {
@@ -190,6 +301,7 @@ type ContentListItem = {
   id: string;
   title?: string;
   section?: SectionSlug;
+  subcategory?: NoteSubcategory;
   contentType?: ContentType;
   status?: ContentStatus;
   updatedAt?: string;
@@ -207,6 +319,7 @@ type ContentDocPayload = {
   excerpt?: string;
 
   section?: SectionSlug;
+  subcategory?: NoteSubcategory;
   contentType?: ContentType;
   status?: ContentStatus;
 
@@ -268,6 +381,9 @@ const AdminContentEditorPage: React.FC = () => {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [section, setSection] = useState<SectionSlug>("noticias_autos");
+  const [subcategory, setSubcategory] = useState<NoteSubcategory>(
+    getDefaultSubcategoryForSection("noticias_autos")
+  );
   const [contentType, setContentType] = useState<ContentType>("noticia");
   const [status, setStatus] = useState<ContentStatus>("borrador");
   const [publishedAtInput, setPublishedAtInput] = useState("");
@@ -487,12 +603,29 @@ const AdminContentEditorPage: React.FC = () => {
     return publicPathFromSection(section, docSlug || undefined);
   }, [section, docSlug]);
 
+  const activeSubcategoryOptions = useMemo(() => {
+    return SECTION_NOTE_SUBCATEGORIES[section] || [];
+  }, [section]);
+
+  const activeSubcategoryLabel = useMemo(() => {
+    return (
+      activeSubcategoryOptions.find((item) => item.value === subcategory)
+        ?.label || "General"
+    );
+  }, [activeSubcategoryOptions, subcategory]);
+
+  const handleSectionChange = (nextSection: SectionSlug) => {
+    setSection(nextSection);
+    setSubcategory(getDefaultSubcategoryForSection(nextSection));
+  };
+
   const resetEditorForNew = () => {
     setDocId(null);
     setDocSlug(null);
     setTitle("");
     setSubtitle("");
     setSection("noticias_autos");
+    setSubcategory(getDefaultSubcategoryForSection("noticias_autos"));
     setContentType("noticia");
     setStatus("borrador");
     setPublishedAtInput("");
@@ -575,11 +708,18 @@ const AdminContentEditorPage: React.FC = () => {
 
       const doc = data.doc as ContentDocPayload;
 
+      const nextSection = (doc.section as SectionSlug) || "noticias_autos";
+      const nextSubcategory = normalizeSubcategoryForSection(
+        nextSection,
+        doc.subcategory
+      );
+
       setDocId(doc.id);
       setDocSlug(doc.slug || null);
       setTitle(doc.title || "");
       setSubtitle(doc.subtitle || "");
-      setSection((doc.section as SectionSlug) || "noticias_autos");
+      setSection(nextSection);
+      setSubcategory(nextSubcategory);
       setContentType((doc.contentType as ContentType) || "noticia");
       setStatus((doc.status as ContentStatus) || "borrador");
       setPublishedAtInput(isoToDatetimeLocal(doc.publishedAt || ""));
@@ -755,94 +895,105 @@ const AdminContentEditorPage: React.FC = () => {
     return text.length > 180 ? text.slice(0, 177) + "…" : text;
   };
 
-const saveDraftReal = async (): Promise<string> => {
-  setSavingState("saving");
-  setAiError(null);
+  const saveDraftReal = async (): Promise<string> => {
+    setSavingState("saving");
+    setAiError(null);
 
-  try {
-    const payload = {
-      id: docId || undefined,
-
-      title,
-      subtitle: subtitle || undefined,
-      excerpt: buildExcerpt() || undefined,
-
-      section,
-      contentType,
-      status: "borrador" as ContentStatus,
-
-      body,
-
-      tags: tags
+    try {
+      const cleanTags = tags
         .split(",")
         .map((t) => t.trim())
-        .filter(Boolean),
+        .filter(Boolean);
 
-      videoUrl: videoUrl || undefined,
-      reelUrl: reelUrl || undefined,
-      useVideoAsHero,
+      const subcategoryLabel = activeSubcategoryLabel;
 
-      seoTitle: (seoTitle || title) || undefined,
-      seoDescription: seoDescription || undefined,
+      const payload = {
+        id: docId || undefined,
 
-      authorName: currentUser?.name || "MotorWelt",
-      authorEmail: currentUser?.email || undefined,
+        title,
+        subtitle: subtitle || undefined,
+        excerpt: buildExcerpt() || undefined,
 
-      updatedAt: new Date().toISOString(),
-      publishedAt: datetimeLocalToIso(publishedAtInput),
+        section,
+        subcategory: subcategory || undefined,
+        contentType,
+        status: "borrador" as ContentStatus,
 
-      mainImageUrl: mainImage || undefined,
-      galleryUrls: normalizeGalleryUrls(gallery),
+        body,
 
-      mainImageAsset: mainImageAsset || undefined,
-    };
+        tags: Array.from(
+          new Set([
+            ...cleanTags,
+            ...(subcategory ? [subcategory] : []),
+            ...(subcategoryLabel ? [subcategoryLabel] : []),
+          ])
+        ),
 
-    console.log("[MW] payload save-draft", payload);
+        videoUrl: videoUrl || undefined,
+        reelUrl: reelUrl || undefined,
+        useVideoAsHero,
 
-    const res = await fetch("/api/ai/admin/content/save-draft", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+        seoTitle: (seoTitle || title) || undefined,
+        seoDescription: seoDescription || undefined,
 
-    console.log("[MW] response status save-draft", res.status);
+        authorName: currentUser?.name || "MotorWelt",
+        authorEmail: currentUser?.email || undefined,
 
-    const data = (await res.json()) as SaveDraftResponse & {
-      error?: string;
-    };
+        updatedAt: new Date().toISOString(),
+        publishedAt: datetimeLocalToIso(publishedAtInput),
 
-    console.log("[MW] response json save-draft", data);
+        mainImageUrl: mainImage || undefined,
+        galleryUrls: normalizeGalleryUrls(gallery),
 
-    if (!res.ok || !data?.ok) {
-      throw new Error(data?.error || "Error desconocido guardando borrador");
+        mainImageAsset: mainImageAsset || undefined,
+      };
+
+      console.log("[MW] payload save-draft", payload);
+
+      const res = await fetch("/api/ai/admin/content/save-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      console.log("[MW] response status save-draft", res.status);
+
+      const data = (await res.json()) as SaveDraftResponse & {
+        error?: string;
+      };
+
+      console.log("[MW] response json save-draft", data);
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Error desconocido guardando borrador");
+      }
+
+      setDocId(data.id);
+      if (data.slug) setDocSlug(data.slug);
+      setStatus("borrador");
+      setSavingState("saved");
+      setTimeout(() => setSavingState("idle"), 2000);
+
+      fetchMyNotes().catch(() => {});
+
+      return data.id as string;
+    } catch (err: any) {
+      console.error("[MW] saveDraftReal catch", err);
+      setSavingState("idle");
+      setAiError(err?.message || "No se pudo guardar el borrador.");
+      throw err;
     }
-
-    setDocId(data.id);
-    if (data.slug) setDocSlug(data.slug);
-    setStatus("borrador");
-    setSavingState("saved");
-    setTimeout(() => setSavingState("idle"), 2000);
-
-    fetchMyNotes().catch(() => {});
-
-    return data.id as string;
-  } catch (err: any) {
-    console.error("[MW] saveDraftReal catch", err);
-    setSavingState("idle");
-    setAiError(err?.message || "No se pudo guardar el borrador.");
-    throw err;
-  }
-};
+  };
 
   const handleSaveDraft = async () => {
-  console.log("[MW] click Guardar borrador");
-  try {
-    const id = await saveDraftReal();
-    console.log("[MW] saveDraftReal OK", { id });
-  } catch (err) {
-    console.error("[MW] saveDraftReal ERROR", err);
-  }
-};
+    console.log("[MW] click Guardar borrador");
+    try {
+      const id = await saveDraftReal();
+      console.log("[MW] saveDraftReal OK", { id });
+    } catch (err) {
+      console.error("[MW] saveDraftReal ERROR", err);
+    }
+  };
 
   /* ---------- ✅ Status REAL (PATCH) ---------- */
 
@@ -929,6 +1080,7 @@ const saveDraftReal = async (): Promise<string> => {
         body: JSON.stringify({
           title,
           section,
+          subcategory,
           contentType,
           body,
         }),
@@ -972,6 +1124,7 @@ const saveDraftReal = async (): Promise<string> => {
           subtitle,
           body,
           section,
+          subcategory,
           contentType,
           tags,
         }),
@@ -1026,6 +1179,7 @@ const saveDraftReal = async (): Promise<string> => {
           subtitle,
           body,
           section,
+          subcategory,
           contentType,
           tags,
           mode: "title-only",
@@ -1066,6 +1220,7 @@ const saveDraftReal = async (): Promise<string> => {
           subtitle,
           body,
           section,
+          subcategory,
           contentType,
           tags,
           mode: "meta-only",
@@ -1110,6 +1265,7 @@ const saveDraftReal = async (): Promise<string> => {
           subtitle,
           body,
           section,
+          subcategory,
           contentType,
           tags,
           seoTitle,
@@ -1401,7 +1557,7 @@ const saveDraftReal = async (): Promise<string> => {
                     />
                   </div>
 
-                  <div className="grid gap-3 md:grid-cols-3">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <div className="space-y-1">
                       <label
                         htmlFor="content-section"
@@ -1413,7 +1569,7 @@ const saveDraftReal = async (): Promise<string> => {
                         id="content-section"
                         value={section}
                         onChange={(e) =>
-                          setSection(e.target.value as SectionSlug)
+                          handleSectionChange(e.target.value as SectionSlug)
                         }
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       >
@@ -1425,6 +1581,34 @@ const saveDraftReal = async (): Promise<string> => {
                         <option value="tuning">Tuning</option>
                       </select>
                     </div>
+
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="content-subcategory"
+                        className="text-xs text-gray-300"
+                      >
+                        Sección de nota
+                      </label>
+                      <select
+                        id="content-subcategory"
+                        value={subcategory}
+                        onChange={(e) =>
+                          setSubcategory(e.target.value as NoteSubcategory)
+                        }
+                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                      >
+                        {activeSubcategoryOptions.map((item) => (
+                          <option key={item.value || "general"} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-[10px] text-gray-500">
+                        Esta subcategoría conecta con las divisiones visibles de
+                        cada página.
+                      </p>
+                    </div>
+
                     <div className="space-y-1">
                       <label
                         htmlFor="content-type"
@@ -1445,6 +1629,7 @@ const saveDraftReal = async (): Promise<string> => {
                         <option value="entrevista">Entrevista</option>
                       </select>
                     </div>
+
                     <div className="space-y-1">
                       <label
                         htmlFor="content-tags"
@@ -1460,7 +1645,8 @@ const saveDraftReal = async (): Promise<string> => {
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       />
                       <p className="mt-1 text-[10px] text-gray-500">
-                        Separa con comas. Ej: BMW, M2, MotoGP, Lifestyle.
+                        Separa con comas. La subcategoría también se guarda para
+                        facilitar filtros.
                       </p>
                     </div>
                   </div>
@@ -1741,6 +1927,11 @@ const saveDraftReal = async (): Promise<string> => {
                                   <span className="rounded-full border border-white/10 bg-black/30 px-2 py-0.5">
                                     {it.section || "—"}
                                   </span>
+                                  {it.subcategory ? (
+                                    <span className="rounded-full border border-[#0CE0B2]/20 bg-[#0CE0B2]/10 px-2 py-0.5 text-[#7CFFE2]">
+                                      {it.subcategory}
+                                    </span>
+                                  ) : null}
                                   <span className="rounded-full border border-white/10 bg-black/30 px-2 py-0.5">
                                     {it.contentType || "—"}
                                   </span>
