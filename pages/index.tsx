@@ -23,18 +23,15 @@ type LinkButtonProps = {
 const getButtonClasses = (
   variant: ButtonVariant = "cyan",
   className = "",
-  _isLinkElement = false
+  _isLinkElement = false,
 ) => {
   const base =
     "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition will-change-transform focus:outline-none";
 
   const styles: Record<ButtonVariant, string> = {
-    cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus:ring-2 focus:ring-[#0CE0B2]/40",
-    pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40",
-    link:
-      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
+    cyan: "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus:ring-2 focus:ring-[#0CE0B2]/40",
+    pink: "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40",
+    link: "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
   };
 
   return `${base} ${styles[variant]} ${className}`.trim();
@@ -104,6 +101,7 @@ type HomeNewsItem = {
   sectionLabel: string;
   typeLabel: string;
   when: string;
+  authorName: string;
 };
 
 type PartnerLogo = {
@@ -195,14 +193,14 @@ function readCookie(name: string) {
   if (typeof document === "undefined") return "";
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const match = document.cookie.match(
-    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
+    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)"),
   );
   return match ? decodeURIComponent(match[2]) : "";
 }
 
 function detailHref(
   section: "tuning" | "deportes" | "lifestyle",
-  slug?: string | null
+  slug?: string | null,
 ) {
   const cleanSlug = String(slug || "").trim();
   if (!cleanSlug) return `/${section}`;
@@ -214,6 +212,11 @@ function splitFiveItemLayout(items: HomeNewsItem[]) {
     left: items.slice(0, 2),
     right: items.slice(2, 5),
   };
+}
+
+function getCardExcerpt(item: HomeNewsItem) {
+  const value = String(item.excerpt || "").trim();
+  return value || "Bajada pendiente por agregar desde el editor.";
 }
 
 export default function HomePage({
@@ -234,10 +237,11 @@ export default function HomePage({
   const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [canEditHome, setCanEditHome] = useState(false);
   const [spectatorMode, setSpectatorMode] = useState(false);
   const [homeSettings, setHomeSettings] = useState<HomeSettings>(
-    initialHomeSettings ?? DEFAULT_HOME_SETTINGS
+    initialHomeSettings ?? DEFAULT_HOME_SETTINGS,
   );
   const [savingHome, setSavingHome] = useState(false);
   const [homeError, setHomeError] = useState<string | null>(null);
@@ -305,18 +309,19 @@ export default function HomePage({
         subtitle: "Eventos, meets y la gente detrás de esto",
       },
     ],
-    []
+    [],
   );
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    document.body.style.overflow = mobileOpen || contactOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [mobileOpen]);
+  }, [mobileOpen, contactOpen]);
 
   useEffect(() => {
     setMobileOpen(false);
+    setContactOpen(false);
   }, [router.asPath]);
 
   useEffect(() => {
@@ -346,19 +351,107 @@ export default function HomePage({
 
   const streaks: Streak[] = useMemo(
     () => [
-      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
-      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
-      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
-      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
-      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
-      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
-      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
-      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
-      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
-      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
-      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
+      {
+        top: "8%",
+        left: "-35%",
+        v: "cool",
+        dir: "fwd",
+        delay: "0s",
+        dur: "12s",
+        op: 0.85,
+      },
+      {
+        top: "12%",
+        left: "-28%",
+        v: "warm",
+        dir: "rev",
+        delay: ".4s",
+        dur: "10.5s",
+        op: 0.75,
+      },
+      {
+        top: "20%",
+        left: "-36%",
+        v: "lime",
+        dir: "fwd",
+        delay: "1.0s",
+        dur: "13s",
+        op: 0.8,
+      },
+      {
+        top: "28%",
+        left: "-22%",
+        v: "cool",
+        dir: "rev",
+        delay: "1.6s",
+        dur: "9.5s",
+        op: 0.9,
+      },
+      {
+        top: "36%",
+        left: "-40%",
+        v: "warm",
+        dir: "fwd",
+        delay: "2.1s",
+        dur: "11.5s",
+        op: 0.7,
+      },
+      {
+        top: "44%",
+        left: "-30%",
+        v: "cool",
+        dir: "rev",
+        delay: "2.7s",
+        dur: "12.5s",
+        op: 0.85,
+      },
+      {
+        top: "52%",
+        left: "-26%",
+        v: "warm",
+        dir: "fwd",
+        delay: "3.2s",
+        dur: "10.2s",
+        op: 0.8,
+      },
+      {
+        top: "60%",
+        left: "-18%",
+        v: "lime",
+        dir: "rev",
+        delay: "3.8s",
+        dur: "12.2s",
+        op: 0.75,
+      },
+      {
+        top: "68%",
+        left: "-34%",
+        v: "cool",
+        dir: "fwd",
+        delay: "4.4s",
+        dur: "11.2s",
+        op: 0.85,
+      },
+      {
+        top: "76%",
+        left: "-24%",
+        v: "warm",
+        dir: "rev",
+        delay: "5.0s",
+        dur: "9.8s",
+        op: 0.72,
+      },
+      {
+        top: "84%",
+        left: "-20%",
+        v: "cool",
+        dir: "fwd",
+        delay: "5.6s",
+        dur: "13.2s",
+        op: 0.82,
+      },
     ],
-    []
+    [],
   );
 
   async function persistHomeSettings(nextSettings: HomeSettings) {
@@ -432,7 +525,8 @@ export default function HomePage({
       const uploaded = await uploadImageToSanity(file);
       const name =
         typeof window !== "undefined"
-          ? window.prompt("Nombre del partner:", "Nuevo partner") || "Nuevo partner"
+          ? window.prompt("Nombre del partner:", "Nuevo partner") ||
+            "Nuevo partner"
           : "Nuevo partner";
 
       const href =
@@ -512,7 +606,7 @@ export default function HomePage({
     await persistHomeSettings({
       ...homeSettings,
       partnerLogos: homeSettings.partnerLogos.map((p) =>
-        p.id === id ? { ...p, href: href.trim() } : p
+        p.id === id ? { ...p, href: href.trim() } : p,
       ),
     });
   }
@@ -539,7 +633,7 @@ export default function HomePage({
         query: nextQuery,
       },
       undefined,
-      { shallow: true }
+      { shallow: true },
     );
   }
 
@@ -552,8 +646,8 @@ export default function HomePage({
       kind === "leaderboard"
         ? leaderboardInputRef
         : kind === "mpu"
-        ? mpuInputRef
-        : billboardInputRef;
+          ? mpuInputRef
+          : billboardInputRef;
 
     const wrapClass = `
       relative w-full mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70
@@ -561,8 +655,8 @@ export default function HomePage({
         kind === "mpu"
           ? "max-w-[300px] aspect-[300/395]"
           : kind === "leaderboard"
-          ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
-          : "max-w-[970px] aspect-[970/250]"
+            ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
+            : "max-w-[970px] aspect-[970/250]"
       }
       ${className}
     `;
@@ -571,8 +665,8 @@ export default function HomePage({
       kind === "leaderboard"
         ? "h-full w-full object-cover object-center bg-black/20"
         : kind === "mpu"
-        ? "h-full w-full object-contain object-center bg-black/30"
-        : "h-full w-full object-cover object-center bg-black/20";
+          ? "h-full w-full object-contain object-center bg-black/30"
+          : "h-full w-full object-cover object-center bg-black/20";
 
     return (
       <div className={wrapClass}>
@@ -668,7 +762,7 @@ export default function HomePage({
     items: HomeNewsItem[],
     ctaHref: string,
     ctaLabel: string,
-    ctaVariant: ButtonVariant = "cyan"
+    ctaVariant: ButtonVariant = "cyan",
   ) {
     if (!items || items.length === 0) return null;
 
@@ -713,8 +807,18 @@ export default function HomePage({
                       </h3>
 
                       <p className="mt-3 line-clamp-3 text-base leading-relaxed text-gray-300">
-                        {item.excerpt}
+                        {getCardExcerpt(item)}
                       </p>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                        {item.authorName ? (
+                          <span>Por {item.authorName}</span>
+                        ) : null}
+                        {item.authorName && item.when ? (
+                          <span className="text-gray-600">•</span>
+                        ) : null}
+                        {item.when ? <span>{item.when}</span> : null}
+                      </div>
 
                       <div className="mt-5">
                         <span className="text-[#43A1AD] underline underline-offset-4">
@@ -771,13 +875,17 @@ export default function HomePage({
                   />
                   <div className="relative z-10">
                     <div className="mb-4 flex items-center justify-between">
-                      <span className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`} />
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`}
+                      />
                       <span className="text-[10px] uppercase tracking-[0.22em] text-gray-500 transition group-hover:text-gray-300">
                         Go
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      {item.title}
+                    </h3>
                     <p className="mt-2 text-sm leading-relaxed text-gray-300">
                       {item.subtitle}
                     </p>
@@ -799,13 +907,17 @@ export default function HomePage({
                     />
                     <div className="relative z-10">
                       <div className="mb-4 flex items-center justify-between">
-                        <span className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`} />
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`}
+                        />
                         <span className="text-[10px] uppercase tracking-[0.22em] text-gray-500">
                           Go
                         </span>
                       </div>
 
-                      <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        {item.title}
+                      </h3>
                       <p className="mt-2 text-sm leading-relaxed text-gray-300">
                         {item.subtitle}
                       </p>
@@ -838,11 +950,23 @@ export default function HomePage({
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
         </div>
         <CardContent className="p-4 sm:p-5">
-          <div className="text-xs text-gray-400">{item.when}</div>
-          <h3 className="mt-1 text-lg font-semibold text-white">{item.title}</h3>
-          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-300">
-            {item.excerpt}
+          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel} · {item.typeLabel}
+          </div>
+          <h3 className="mt-1 text-lg font-semibold text-white">
+            {item.title}
+          </h3>
+          <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-gray-300">
+            {getCardExcerpt(item)}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
           <div className="mt-4 mt-auto">
             <Link href={item.href}>
               <span className={getButtonClasses("link")}>Leer más</span>
@@ -927,7 +1051,9 @@ export default function HomePage({
           <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-[#0CE0B2]" />
-              <span>{spectatorMode ? "Vista espectador" : "Modo edición home"}</span>
+              <span>
+                {spectatorMode ? "Vista espectador" : "Modo edición home"}
+              </span>
               {savingHome && <span className="text-[#0CE0B2]">Guardando…</span>}
             </div>
             {homeError && <div className="mt-1 text-red-300">{homeError}</div>}
@@ -969,56 +1095,36 @@ export default function HomePage({
                   Tuning
                 </Link>
 
-                <div className="group relative">
-                  <button
-                    type="button"
-                    aria-haspopup="menu"
-                    className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
-                  >
-                    Noticias
-                    <svg
-                      className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden
-                    >
-                      <path
-                        d="M6 9l6 6 6-6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+                <Link
+                  href="/noticias/autos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Autos
+                </Link>
 
-                  <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                    <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
-                      <Link
-                        href="/noticias/autos"
-                        className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                      >
-                        Autos
-                      </Link>
-                      <Link
-                        href="/noticias/motos"
-                        className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                      >
-                        Motos
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <Link
+                  href="/noticias/motos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Motos
+                </Link>
 
-                <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/deportes"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Deportes
                 </Link>
-                <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/lifestyle"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Lifestyle
                 </Link>
-                <Link href="/comunidad" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/comunidad"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Comunidad
                 </Link>
               </nav>
@@ -1038,7 +1144,13 @@ export default function HomePage({
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
                   <path
                     d="M4 6h16M4 12h16M4 18h16"
                     stroke="currentColor"
@@ -1053,7 +1165,11 @@ export default function HomePage({
 
         {mobileOpen && (
           <div className="fixed inset-0 z-[60] md:hidden">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setMobileOpen(false)}
+              aria-hidden
+            />
             <aside
               id="mobile-menu"
               className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
@@ -1071,7 +1187,13 @@ export default function HomePage({
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
                   aria-label="Cerrar menú"
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
                     <path
                       d="M6 6l12 12M18 6l-12 12"
                       stroke="currentColor"
@@ -1083,30 +1205,49 @@ export default function HomePage({
               </div>
 
               <nav className="px-4 py-3">
-                <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/tuning"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Tuning
                 </Link>
 
-                <p className="px-3 pb-1 pt-2 text-xs uppercase tracking-wide text-gray-400">
-                  Noticias
-                </p>
+                <Link
+                  href="/noticias/autos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Autos
+                </Link>
 
-                <div className="mt-1 space-y-1 pl-2">
-                  <Link href="/noticias/autos" className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
-                    Autos
-                  </Link>
-                  <Link href="/noticias/motos" className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
-                    Motos
-                  </Link>
-                </div>
+                <Link
+                  href="/noticias/motos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Motos
+                </Link>
 
-                <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/deportes"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Deportes
                 </Link>
-                <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/lifestyle"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Lifestyle
                 </Link>
-                <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/comunidad"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Comunidad
                 </Link>
               </nav>
@@ -1114,14 +1255,106 @@ export default function HomePage({
           </div>
         )}
 
-        <main aria-hidden={mobileOpen} className="relative z-10">
+        {contactOpen && (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setContactOpen(false)}
+              aria-label="Cerrar contacto"
+            />
+
+            <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-white/10 bg-[#041210]/95 shadow-[0_24px_120px_rgba(0,0,0,.55)]">
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
+                    MotorWelt
+                  </p>
+                  <h3 className="mt-1 text-2xl font-semibold text-white">
+                    Contacto
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                    Déjanos tus datos y el asunto. El mensaje llegará directo al
+                    correo de MotorWelt.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setContactOpen(false)}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  aria-label="Cerrar contacto"
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M6 6l12 12M18 6l-12 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form
+                action="/api/contact"
+                method="POST"
+                className="space-y-4 p-5 sm:p-6"
+              >
+                <input type="hidden" name="to" value="gabriel@motorwelt.mx" />
+
+                <input
+                  name="name"
+                  required
+                  placeholder="Nombre"
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
+                />
+
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="Correo"
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
+                />
+
+                <input
+                  name="subject"
+                  required
+                  placeholder="Asunto"
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
+                />
+
+                <button
+                  type="submit"
+                  className="inline-flex w-full items-center justify-center rounded-2xl border-2 border-[#0CE0B2] px-5 py-3 text-sm font-semibold text-white shadow-[0_0_18px_rgba(12,224,178,.28)] transition hover:bg-white/5"
+                >
+                  Enviar
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        <main aria-hidden={mobileOpen || contactOpen} className="relative z-10">
           <section className="relative isolate overflow-hidden">
             <div className="relative flex min-h-[76svh] flex-col justify-end overflow-hidden sm:min-h-[82svh] lg:min-h-[90vh]">
               <img
-                src={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
+                src={
+                  homeSettings?.heroImageUrl ||
+                  DEFAULT_HOME_SETTINGS.heroImageUrl
+                }
                 alt="Hero MotorWelt"
                 className="absolute inset-0 h-full w-full object-cover"
-                style={{ filter: "brightness(.34) saturate(1.12) contrast(1.06)" }}
+                style={{
+                  filter: "brightness(.34) saturate(1.12) contrast(1.06)",
+                }}
               />
 
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(12,224,178,.14),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(255,122,26,.16),transparent_30%),linear-gradient(180deg,rgba(0,0,0,.22)_0%,rgba(0,0,0,.38)_24%,rgba(0,0,0,.64)_58%,rgba(2,10,10,.9)_100%)]" />
@@ -1152,12 +1385,17 @@ export default function HomePage({
 
                     <h1 className="mx-auto mt-5 max-w-[980px] font-display text-[2.75rem] font-black leading-[0.9] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.85rem] lg:text-[5.45rem] xl:text-[5.85rem]">
                       <span className="glow-cool block">MotorWelt</span>
-                      <span className="block text-white/95">Noticias, cultura y</span>
-                      <span className="block text-white/95">comunidad automotriz</span>
+                      <span className="block text-white/95">
+                        Noticias, cultura y
+                      </span>
+                      <span className="block text-white/95">
+                        comunidad automotriz
+                      </span>
                     </h1>
 
                     <p className="mx-auto mt-6 max-w-[760px] text-base leading-relaxed text-gray-200 sm:text-lg md:text-[1.08rem]">
-                      Autos, motos, tuning, motorsport y lifestyle en un solo lugar.
+                      Autos, motos, tuning, motorsport y lifestyle en un solo
+                      lugar.
                     </p>
                   </div>
                 </div>
@@ -1180,7 +1418,7 @@ export default function HomePage({
               tuningDesktopItems,
               "/tuning",
               "Ver más Tuning",
-              "pink"
+              "pink",
             )}
 
           {tuningDesktopItems.length > 0 && (
@@ -1196,18 +1434,22 @@ export default function HomePage({
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="grid gap-6">
                     {tuningDesktopColumns.left.map((item, index) =>
-                      renderStackedFeatureCard(item, index === 0)
+                      renderStackedFeatureCard(item, index === 0),
                     )}
                   </div>
                   <div className="grid gap-6">
                     {tuningDesktopColumns.right.map((item) =>
-                      renderStackedFeatureCard(item)
+                      renderStackedFeatureCard(item),
                     )}
                   </div>
                 </div>
 
                 <div className="mt-8 text-center">
-                  <LinkButton href="/tuning" variant="pink" className="px-6 py-3">
+                  <LinkButton
+                    href="/tuning"
+                    variant="pink"
+                    className="px-6 py-3"
+                  >
                     Ver más Tuning
                   </LinkButton>
                 </div>
@@ -1222,7 +1464,7 @@ export default function HomePage({
               mixedItems,
               "/noticias/autos",
               "Ver más de Autos",
-              "cyan"
+              "cyan",
             )}
 
           {heroMixed && (
@@ -1257,11 +1499,22 @@ export default function HomePage({
                         {heroMixed.title}
                       </h3>
                       <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">
-                        {heroMixed.excerpt}
+                        {getCardExcerpt(heroMixed)}
                       </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                        {heroMixed.authorName ? (
+                          <span>Por {heroMixed.authorName}</span>
+                        ) : null}
+                        {heroMixed.authorName && heroMixed.when ? (
+                          <span className="text-gray-600">•</span>
+                        ) : null}
+                        {heroMixed.when ? <span>{heroMixed.when}</span> : null}
+                      </div>
                       <div className="mt-4 mt-auto">
                         <Link href={heroMixed.href}>
-                          <span className={getButtonClasses("link")}>Leer la nota</span>
+                          <span className={getButtonClasses("link")}>
+                            Leer la nota
+                          </span>
                         </Link>
                       </div>
                     </CardContent>
@@ -1270,11 +1523,16 @@ export default function HomePage({
                   <aside className="lg:sticky lg:top-24">
                     <div className="rounded-2xl border border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
                       <div className="border-b border-mw-line/60 p-4">
-                        <h4 className="font-semibold text-white">Más para leer</h4>
+                        <h4 className="font-semibold text-white">
+                          Más para leer
+                        </h4>
                       </div>
                       <ul className="divide-y divide-mw-line/60">
                         {sidebarMixed.map((item) => (
-                          <li key={item.id} className="p-4 transition hover:bg-white/5">
+                          <li
+                            key={item.id}
+                            className="p-4 transition hover:bg-white/5"
+                          >
                             <Link href={item.href} className="flex gap-3">
                               <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-mw-line/70">
                                 <Image
@@ -1286,7 +1544,9 @@ export default function HomePage({
                                 />
                               </div>
                               <div className="min-w-0">
-                                <p className="truncate text-sm text-white">{item.title}</p>
+                                <p className="truncate text-sm text-white">
+                                  {item.title}
+                                </p>
                                 <span className="mt-1 block text-xs text-gray-400">
                                   {item.sectionLabel}
                                   {item.when ? ` • ${item.when}` : ""}
@@ -1301,11 +1561,19 @@ export default function HomePage({
                 </div>
 
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
-                  <LinkButton href="/noticias/autos" variant="cyan" className="w-full px-6 py-3 sm:w-auto">
+                  <LinkButton
+                    href="/noticias/autos"
+                    variant="cyan"
+                    className="w-full px-6 py-3 sm:w-auto"
+                  >
                     Ver más de Autos
                   </LinkButton>
                   <span className="hidden text-gray-500 sm:inline">/</span>
-                  <LinkButton href="/noticias/motos" variant="cyan" className="w-full px-6 py-3 sm:w-auto">
+                  <LinkButton
+                    href="/noticias/motos"
+                    variant="cyan"
+                    className="w-full px-6 py-3 sm:w-auto"
+                  >
                     Ver más de Motos
                   </LinkButton>
                 </div>
@@ -1324,49 +1592,52 @@ export default function HomePage({
 
               <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
                 <div className="flex snap-x snap-mandatory gap-4">
-                  {safeSports.length > 0 ? safeSports.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      className="block w-[84%] min-w-[84%] shrink-0 snap-start"
-                    >
-                      <Card className="overflow-hidden">
-                        <div className="relative h-56 w-full">
-                          <Image
-                            src={item.img}
-                            alt={item.title}
-                            fill
-                            sizes="84vw"
-                            style={{ objectFit: "cover" }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                        </div>
-
-                        <CardContent className="p-5">
-                          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
-                            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                            {item.sectionLabel} · {item.typeLabel}
+                  {safeSports.length > 0 ? (
+                    safeSports.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        className="block w-[84%] min-w-[84%] shrink-0 snap-start"
+                      >
+                        <Card className="overflow-hidden">
+                          <div className="relative h-56 w-full">
+                            <Image
+                              src={item.img}
+                              alt={item.title}
+                              fill
+                              sizes="84vw"
+                              style={{ objectFit: "cover" }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                           </div>
 
-                          <h3 className="text-[2rem] font-semibold leading-[1.05] text-white">
-                            {item.title}
-                          </h3>
+                          <CardContent className="p-5">
+                            <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                              <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                              {item.sectionLabel} · {item.typeLabel}
+                            </div>
 
-                          <p className="mt-3 line-clamp-3 text-base leading-relaxed text-gray-300">
-                            {item.excerpt}
-                          </p>
+                            <h3 className="text-[2rem] font-semibold leading-[1.05] text-white">
+                              {item.title}
+                            </h3>
 
-                          <div className="mt-5">
-                            <span className="text-[#43A1AD] underline underline-offset-4">
-                              Leer más
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  )) : (
+                            <p className="mt-3 line-clamp-3 text-base leading-relaxed text-gray-300">
+                              {item.excerpt}
+                            </p>
+
+                            <div className="mt-5">
+                              <span className="text-[#43A1AD] underline underline-offset-4">
+                                Leer más
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))
+                  ) : (
                     <div className="w-full rounded-2xl border border-dashed border-white/10 bg-mw-surface/35 p-6 text-center text-sm text-gray-300">
-                      Todavía no hay notas publicadas en Deportes, pero esta sección ya está lista para arrancar.
+                      Todavía no hay notas publicadas en Deportes, pero esta
+                      sección ya está lista para arrancar.
                     </div>
                   )}
                 </div>
@@ -1407,11 +1678,29 @@ export default function HomePage({
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                       </div>
                       <CardContent className="p-5">
-                        <div className="text-xs text-gray-400">{item.when}</div>
-                        <h3 className="mt-1 text-lg font-semibold text-white">{item.title}</h3>
-                        <p className="mt-2 line-clamp-2 text-sm text-gray-300">{item.excerpt}</p>
+                        <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                          <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+                          {item.sectionLabel} · {item.typeLabel}
+                        </div>
+                        <h3 className="mt-1 text-lg font-semibold text-white">
+                          {item.title}
+                        </h3>
+                        <p className="mt-2 line-clamp-3 text-sm text-gray-300">
+                          {item.excerpt}
+                        </p>
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                          {item.authorName ? (
+                            <span>Por {item.authorName}</span>
+                          ) : null}
+                          {item.authorName && item.when ? (
+                            <span className="text-gray-600">•</span>
+                          ) : null}
+                          {item.when ? <span>{item.when}</span> : null}
+                        </div>
                         <Link href={item.href} className="mt-auto inline-block">
-                          <span className={getButtonClasses("link", "mt-3")}>Leer más</span>
+                          <span className={getButtonClasses("link", "mt-3")}>
+                            Leer más
+                          </span>
                         </Link>
                       </CardContent>
                     </Card>
@@ -1420,42 +1709,47 @@ export default function HomePage({
               ) : (
                 renderEmptySectionNotice(
                   "Deportes listo para arrancar",
-                  "Todavía no hay notas publicadas en Deportes, pero la sección ya está preparada para recibir coberturas, motorsport y adrenalina en cuanto empieces a publicar."
+                  "Todavía no hay notas publicadas en Deportes, pero la sección ya está preparada para recibir coberturas, motorsport y adrenalina en cuanto empieces a publicar.",
                 )
               )}
 
               <div className="mt-8 text-center">
-                <LinkButton href="/deportes" variant="cyan" className="px-6 py-3">
+                <LinkButton
+                  href="/deportes"
+                  variant="cyan"
+                  className="px-6 py-3"
+                >
                   Ver todo Deportes
                 </LinkButton>
               </div>
             </div>
           </section>
 
-          {lifestyleDesktopItems.length > 0 ?
+          {lifestyleDesktopItems.length > 0 ? (
             renderMobileCardsRail(
               "Lifestyle",
               "bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]",
               lifestyleDesktopItems,
               "/lifestyle",
               "Ver más Lifestyle",
-              "cyan"
-            ) : (
-              <section className="py-10 sm:py-12 md:hidden">
-                <div className="mx-auto w-full max-w-[1440px] px-4 xl:px-10 2xl:max-w-[1560px]">
-                  <div className="mb-8">
-                    <h2 className="font-display text-2xl font-bold tracking-wide text-white">
-                      Lifestyle
-                    </h2>
-                    <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
-                  </div>
-                  {renderEmptySectionNotice(
-                    "Lifestyle en preparación",
-                    "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días."
-                  )}
+              "cyan",
+            )
+          ) : (
+            <section className="py-10 sm:py-12 md:hidden">
+              <div className="mx-auto w-full max-w-[1440px] px-4 xl:px-10 2xl:max-w-[1560px]">
+                <div className="mb-8">
+                  <h2 className="font-display text-2xl font-bold tracking-wide text-white">
+                    Lifestyle
+                  </h2>
+                  <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
                 </div>
-              </section>
-            )}
+                {renderEmptySectionNotice(
+                  "Lifestyle en preparación",
+                  "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días.",
+                )}
+              </div>
+            </section>
+          )}
 
           <section className="hidden py-10 sm:py-12 md:block">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
@@ -1470,24 +1764,28 @@ export default function HomePage({
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="grid gap-6">
                     {lifestyleDesktopColumns.left.map((item, index) =>
-                      renderStackedFeatureCard(item, index === 0)
+                      renderStackedFeatureCard(item, index === 0),
                     )}
                   </div>
                   <div className="grid gap-6">
                     {lifestyleDesktopColumns.right.map((item) =>
-                      renderStackedFeatureCard(item)
+                      renderStackedFeatureCard(item),
                     )}
                   </div>
                 </div>
               ) : (
                 renderEmptySectionNotice(
                   "Lifestyle en preparación",
-                  "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días."
+                  "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días.",
                 )
               )}
 
               <div className="mt-8 text-center">
-                <LinkButton href="/lifestyle" variant="cyan" className="px-6 py-3">
+                <LinkButton
+                  href="/lifestyle"
+                  variant="cyan"
+                  className="px-6 py-3"
+                >
                   Ver más Lifestyle
                 </LinkButton>
               </div>
@@ -1511,7 +1809,7 @@ export default function HomePage({
 
               {renderEmptySectionNotice(
                 "Próximas publicaciones",
-                "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt. La sección ya está lista para arrancar en cuanto empecemos a publicar."
+                "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt. La sección ya está lista para arrancar en cuanto empecemos a publicar.",
               )}
 
               <div className="mt-8 text-center">
@@ -1526,7 +1824,9 @@ export default function HomePage({
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex w-full items-center justify-between">
-                  <h3 className="font-semibold text-white/90">Partners & Patrocinios</h3>
+                  <h3 className="font-semibold text-white/90">
+                    Partners & Patrocinios
+                  </h3>
                   <div className="mx-4 h-px flex-1 bg-mw-line/50" />
                 </div>
 
@@ -1602,7 +1902,7 @@ export default function HomePage({
         </main>
 
         <footer
-          aria-hidden={mobileOpen}
+          aria-hidden={mobileOpen || contactOpen}
           className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
           <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 xl:px-10 2xl:max-w-[1560px]">
@@ -1614,7 +1914,24 @@ export default function HomePage({
                 height={36}
                 className="logo-glow h-9 w-auto"
               />
-              <p className="mt-2 text-sm">La plataforma donde vive la cultura automotriz.</p>
+              <p className="mt-2 text-sm">
+                La plataforma donde vive la cultura automotriz.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold text-white">Contacto</h4>
+              <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                ¿Quieres colaborar, pautar o proponer una historia? Escríbenos
+                directo desde aquí.
+              </p>
+              <button
+                type="button"
+                onClick={() => setContactOpen(true)}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-[#0CE0B2]/50 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/5 sm:w-auto"
+              >
+                Abrir formulario
+              </button>
             </div>
 
             <div>
@@ -1623,11 +1940,6 @@ export default function HomePage({
                 <li>
                   <Link href="/about" className="hover:text-white">
                     Nosotros
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/contact" className="hover:text-white">
-                    Contacto
                   </Link>
                 </li>
                 <li>
@@ -1641,13 +1953,11 @@ export default function HomePage({
                   </Link>
                 </li>
               </ul>
-            </div>
 
-            <div>
-              <h4 className="text-lg font-semibold text-white">Redes</h4>
-              <div className="mt-2 flex gap-4">
+              <h4 className="mt-6 text-lg font-semibold text-white">Redes</h4>
+              <div className="mt-2 flex flex-wrap gap-4">
                 <a
-                  href="https://instagram.com/motorwelt"
+                  href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1655,7 +1965,7 @@ export default function HomePage({
                   IG
                 </a>
                 <a
-                  href="https://facebook.com/motorwelt"
+                  href="https://www.facebook.com/share/18JRxV8AAu/"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1663,7 +1973,7 @@ export default function HomePage({
                   FB
                 </a>
                 <a
-                  href="https://tiktok.com/@motorwelt"
+                  href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1671,7 +1981,7 @@ export default function HomePage({
                   TikTok
                 </a>
                 <a
-                  href="https://youtube.com/@motorwelt"
+                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1700,9 +2010,21 @@ export default function HomePage({
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(120% 80% at 20% 10%, rgba(0, 0, 0, 0.15) 0%, transparent 60%),
-            radial-gradient(120% 80% at 80% 90%, rgba(0, 0, 0, 0.18) 0%, transparent 60%),
-            linear-gradient(180deg, rgba(4, 18, 16, 0.85), rgba(4, 18, 16, 0.85));
+            radial-gradient(
+              120% 80% at 20% 10%,
+              rgba(0, 0, 0, 0.15) 0%,
+              transparent 60%
+            ),
+            radial-gradient(
+              120% 80% at 80% 90%,
+              rgba(0, 0, 0, 0.18) 0%,
+              transparent 60%
+            ),
+            linear-gradient(
+              180deg,
+              rgba(4, 18, 16, 0.85),
+              rgba(4, 18, 16, 0.85)
+            );
         }
         .streak-wrap {
           position: absolute;
@@ -1717,7 +2039,7 @@ export default function HomePage({
           width: 220%;
           height: 100%;
           will-change: transform, opacity;
-          filter: blur(.5px);
+          filter: blur(0.5px);
         }
         @keyframes slide-fwd {
           0% {
@@ -1725,7 +2047,7 @@ export default function HomePage({
             opacity: 0;
           }
           10% {
-            opacity: .9;
+            opacity: 0.9;
           }
           100% {
             transform: translateX(130%);
@@ -1738,7 +2060,7 @@ export default function HomePage({
             opacity: 0;
           }
           10% {
-            opacity: .9;
+            opacity: 0.9;
           }
           100% {
             transform: translateX(-30%);
@@ -1752,13 +2074,28 @@ export default function HomePage({
           animation: slide-rev 11s linear infinite;
         }
         .streak-cool {
-          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(12, 224, 178, 0.95),
+            transparent
+          );
         }
         .streak-warm {
-          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 122, 26, 0.95),
+            transparent
+          );
         }
         .streak-lime {
-          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .9), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(163, 255, 18, 0.9),
+            transparent
+          );
         }
         .glow-warm {
           text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
@@ -1770,7 +2107,7 @@ export default function HomePage({
             0 0 50px rgba(12, 224, 178, 0.14);
         }
         .logo-glow {
-          filter: drop-shadow(0 0 18px rgba(12,224,178,.12));
+          filter: drop-shadow(0 0 18px rgba(12, 224, 178, 0.12));
         }
         .no-scrollbar {
           -ms-overflow-style: none;
@@ -1783,7 +2120,7 @@ export default function HomePage({
         @media (prefers-reduced-motion: reduce) {
           .streak {
             animation: none !important;
-            opacity: .35;
+            opacity: 0.35;
           }
         }
 
@@ -1818,7 +2155,7 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     | order(coalesce(publishedAt, _createdAt) desc)[0...8]{
       "id": _id,
       "title": coalesce(title, ""),
-      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+"excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
       "contentType": coalesce(contentType, "noticia"),
       "section": coalesce(
         section,
@@ -1833,7 +2170,8 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
-      "_createdAt": _createdAt
+      "_createdAt": _createdAt,
+      "authorName": coalesce(authorName, author->name, "")
     }
   `;
 
@@ -1847,11 +2185,12 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     | order(coalesce(publishedAt, _createdAt) desc)[0...3]{
       "id": _id,
       "title": coalesce(title, ""),
-      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+"excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
-      "_createdAt": _createdAt
+      "_createdAt": _createdAt,
+      "authorName": coalesce(authorName, author->name, "")
     }
   `;
 
@@ -1865,11 +2204,12 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     | order(coalesce(publishedAt, _createdAt) desc)[0...5]{
       "id": _id,
       "title": coalesce(title, ""),
-      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+"excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
-      "_createdAt": _createdAt
+      "_createdAt": _createdAt,
+      "authorName": coalesce(authorName, author->name, "")
     }
   `;
 
@@ -1889,11 +2229,12 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     | order(coalesce(publishedAt, _createdAt) desc)[0...5]{
       "id": _id,
       "title": coalesce(title, ""),
-      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+      "excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
-      "_createdAt": _createdAt
+      "_createdAt": _createdAt,
+      "authorName": coalesce(authorName, author->name, "")
     }
   `;
 
@@ -1968,6 +2309,7 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
       sectionLabel: sectionLabel(section),
       typeLabel: String(it?.contentType || "noticia"),
       when: formatWhen(it?.publishedAt || it?._createdAt),
+      authorName: String(it?.authorName || "MotorWelt"),
     };
   });
 
@@ -1980,18 +2322,22 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     sectionLabel: "Deportes",
     typeLabel: "noticia",
     when: formatWhen(it?.publishedAt || it?._createdAt),
+    authorName: String(it?.authorName || "MotorWelt"),
   }));
 
-  const lifestyleItems: HomeNewsItem[] = (lifestyleRaw ?? []).map((it: any) => ({
-    id: String(it?.id || ""),
-    title: String(it?.title || ""),
-    excerpt: String(it?.excerpt || ""),
-    img: String(it?.img || "/images/noticia-3.jpg"),
-    href: detailHref("lifestyle", it?.slug),
-    sectionLabel: "Lifestyle",
-    typeLabel: "noticia",
-    when: formatWhen(it?.publishedAt || it?._createdAt),
-  }));
+  const lifestyleItems: HomeNewsItem[] = (lifestyleRaw ?? []).map(
+    (it: any) => ({
+      id: String(it?.id || ""),
+      title: String(it?.title || ""),
+      excerpt: String(it?.excerpt || ""),
+      img: String(it?.img || "/images/noticia-3.jpg"),
+      href: detailHref("lifestyle", it?.slug),
+      sectionLabel: "Lifestyle",
+      typeLabel: "noticia",
+      when: formatWhen(it?.publishedAt || it?._createdAt),
+      authorName: String(it?.authorName || "MotorWelt"),
+    }),
+  );
 
   const tuningItems: HomeNewsItem[] = (tuningRaw ?? []).map((it: any) => ({
     id: String(it?.id || ""),
@@ -2002,18 +2348,22 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     sectionLabel: "Tuning",
     typeLabel: "noticia",
     when: formatWhen(it?.publishedAt || it?._createdAt),
+    authorName: String(it?.authorName || "MotorWelt"),
   }));
 
   const initialHomeSettings: HomeSettings = {
     heroImageUrl:
-      String(homeSettingsRaw?.heroImageUrl || "").trim() || DEFAULT_HOME_SETTINGS.heroImageUrl,
+      String(homeSettingsRaw?.heroImageUrl || "").trim() ||
+      DEFAULT_HOME_SETTINGS.heroImageUrl,
     ads: {
       leaderboard: {
         enabled: Boolean(homeSettingsRaw?.ads?.leaderboard?.enabled ?? true),
         label:
           String(homeSettingsRaw?.ads?.leaderboard?.label || "").trim() ||
           DEFAULT_HOME_SETTINGS.ads.leaderboard.label,
-        imageUrl: String(homeSettingsRaw?.ads?.leaderboard?.imageUrl || "").trim(),
+        imageUrl: String(
+          homeSettingsRaw?.ads?.leaderboard?.imageUrl || "",
+        ).trim(),
         href: String(homeSettingsRaw?.ads?.leaderboard?.href || "").trim(),
       },
       mpu: {
@@ -2029,7 +2379,9 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
         label:
           String(homeSettingsRaw?.ads?.billboard?.label || "").trim() ||
           DEFAULT_HOME_SETTINGS.ads.billboard.label,
-        imageUrl: String(homeSettingsRaw?.ads?.billboard?.imageUrl || "").trim(),
+        imageUrl: String(
+          homeSettingsRaw?.ads?.billboard?.imageUrl || "",
+        ).trim(),
         href: String(homeSettingsRaw?.ads?.billboard?.href || "").trim(),
       },
     },

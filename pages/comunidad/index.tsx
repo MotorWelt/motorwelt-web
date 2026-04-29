@@ -21,6 +21,36 @@ type CommunityItem = {
   type: CommunityType;
 };
 
+type Streak = {
+  top: string;
+  left: string;
+  v: "cool" | "warm" | "lime";
+  dir: "fwd" | "rev";
+  delay: string;
+  dur: string;
+  op: number;
+  h?: string;
+};
+
+type LatestArticleData = {
+  id: string;
+  title: string;
+  excerpt: string;
+  img: string;
+  href: string;
+  when: string;
+  sectionLabel: string;
+};
+
+type SectionHeroImages = {
+  tuning: string;
+  autos: string;
+  motos: string;
+  deportes: string;
+  lifestyle: string;
+  comunidad: string;
+};
+
 type AdConfig = {
   enabled: boolean;
   label: string;
@@ -81,6 +111,15 @@ const DEFAULT_SETTINGS: CommunityPageSettings = {
     },
   },
   partnerLogos: [],
+};
+
+const DEFAULT_SECTION_HERO_IMAGES: SectionHeroImages = {
+  tuning: "/images/noticia-3.jpg",
+  autos: "/images/noticia-1.jpg",
+  motos: "/images/noticia-2.jpg",
+  deportes: "/images/noticia-2.jpg",
+  lifestyle: "/images/comunidad.jpg",
+  comunidad: "/images/comunidad.jpg",
 };
 
 const COMMUNITY_CONTACT_EMAIL =
@@ -215,6 +254,53 @@ function getSlugValue(slug?: string | { current?: string }) {
   if (typeof slug === "string") return slug;
   return String(slug.current || "");
 }
+
+function getMainImage(it: RawPost, fallback = "/images/comunidad.jpg") {
+  return (
+    String(it.mainImageUrl || "").trim() ||
+    (Array.isArray(it.galleryUrls) && it.galleryUrls[0]
+      ? String(it.galleryUrls[0])
+      : fallback)
+  );
+}
+
+function getLatestSectionData(post: RawPost): { label: string; hrefBase: string } | null {
+  const blob = [post.section, post.category, post.subcategory, post.categories, post.tags]
+    .map(normalizeText)
+    .join(" ");
+
+  if (blob.includes("noticias_autos") || blob.includes("autos") || blob.includes("auto")) {
+    return { label: "Autos", hrefBase: "/noticias/autos" };
+  }
+  if (blob.includes("noticias_motos") || blob.includes("motos") || blob.includes("moto")) {
+    return { label: "Motos", hrefBase: "/noticias/motos" };
+  }
+  if (blob.includes("tuning") || blob.includes("builds") || blob.includes("mods")) {
+    return { label: "Tuning", hrefBase: "/tuning" };
+  }
+  if (blob.includes("deportes") || blob.includes("f1") || blob.includes("nascar") || blob.includes("motogp") || blob.includes("wrc") || blob.includes("drift") || blob.includes("rally")) {
+    return { label: "Deportes", hrefBase: "/deportes" };
+  }
+  if (blob.includes("lifestyle") || blob.includes("moda") || blob.includes("relojería") || blob.includes("relojeria") || blob.includes("cine") || blob.includes("fuera del volante")) {
+    return { label: "Lifestyle", hrefBase: "/lifestyle" };
+  }
+  if (blob.includes("comunidad") || blob.includes("evento") || blob.includes("eventos") || blob.includes("meet") || blob.includes("meets") || blob.includes("rutas") || blob.includes("club")) {
+    return { label: "Comunidad", hrefBase: "/comunidad" };
+  }
+  return null;
+}
+
+function sanitizeSectionHeroImages(raw?: Partial<SectionHeroImages>): SectionHeroImages {
+  return {
+    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
+    motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
+    deportes: String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+    lifestyle: String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+    comunidad: String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+  };
+}
+
 
 function sanitizePageSettings(
   raw?: any,
@@ -417,12 +503,57 @@ function ClubCard({
   );
 }
 
+
+function LatestArticleCard({ item }: { item: LatestArticleData }) {
+  return (
+    <article className="group h-full overflow-hidden rounded-[22px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/40">
+      <Link href={item.href} className="flex h-full flex-col">
+        <div className="relative h-36 w-full overflow-hidden">
+          <Image src={item.img} alt={item.title} fill sizes="(max-width: 1024px) 78vw, 260px" style={{ objectFit: "cover" }} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
+          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel}
+          </div>
+        </div>
+        <div className="p-4">
+          <div className="text-[11px] text-gray-400">{item.when}</div>
+          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">{item.title}</h3>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">{item.excerpt}</p>
+        </div>
+      </Link>
+    </article>
+  );
+}
+
+function ExploreCard({ title, subtitle, href, image }: { title: string; subtitle: string; href: string; image: string }) {
+  return (
+    <Link href={href} className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]">
+      <div className="absolute inset-0">
+        <img src={image} alt={title} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]" style={{ filter: "brightness(.42) saturate(1.08)" }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/32 to-black/75" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.09),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.08),transparent_28%)]" />
+      </div>
+      <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            Explora
+          </span>
+        </div>
+        <h3 className="max-w-[85%] text-[2.1rem] font-extrabold leading-[0.92] tracking-tight text-white drop-shadow-[0_6px_20px_rgba(0,0,0,.5)] sm:text-[2.45rem]">{title}</h3>
+        <p className="mt-3 max-w-[88%] text-sm leading-relaxed text-white/88 drop-shadow-[0_4px_14px_rgba(0,0,0,.42)] sm:text-[0.98rem]">{subtitle}</p>
+      </div>
+    </Link>
+  );
+}
+
 function PartnersRow({ partners }: { partners: PartnerLogo[] }) {
   if (!partners.length) return null;
 
   return (
     <section className="py-14 sm:py-16">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
         <SectionHeader
           title="Aliados de la comunidad"
           subtle="Marcas, clubes y proyectos que suman al ecosistema MotorWelt."
@@ -472,83 +603,48 @@ function Header({
 }) {
   return (
     <>
-      <header className="fixed top-0 left-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
-        <div className="mx-auto grid h-16 w-full max-w-[1200px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
+      <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
+        <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
           <div className="flex items-center">
-            <Link href="/" className="inline-flex items-center gap-2" aria-label="Ir al inicio">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2"
+              aria-label="Ir al inicio MotorWelt"
+            >
               <Image
                 src="/brand/motorwelt-logo.png"
                 alt="MotorWelt logo"
-                width={220}
-                height={56}
+                width={280}
+                height={64}
                 priority
-                className="h-10 md:h-12 w-auto"
+                className="logo-glow h-10 w-auto sm:h-11 md:h-12 lg:h-14"
               />
             </Link>
           </div>
 
           <div className="hidden md:flex items-center justify-center">
-            <nav className="flex items-center gap-6 text-sm font-medium">
-              <div className="group relative">
-                <button
-                  type="button"
-                  aria-haspopup="menu"
-                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
-                >
-                  Noticias
-                  <svg
-                    className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
-                    <path
-                      d="M6 9l6 6 6-6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+            <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
+              <Link href="/tuning" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                Tuning
+              </Link>
 
-                <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
-                    <Link
-                      href="/noticias/autos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                    >
-                      Autos
-                    </Link>
-                    <Link
-                      href="/noticias/motos"
-                      className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                    >
-                      Motos
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <Link href="/noticias/autos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                Autos
+              </Link>
 
-              <Link
-                href="/deportes"
-                className="inline-flex items-center h-10 leading-none text-gray-200 hover:text-white"
-              >
+              <Link href="/noticias/motos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                Motos
+              </Link>
+
+              <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Deportes
               </Link>
-              <Link
-                href="/lifestyle"
-                className="inline-flex items-center h-10 leading-none text-gray-200 hover:text-white"
-              >
+
+              <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Lifestyle
               </Link>
-              <Link
-                href="/comunidad"
-                className="inline-flex items-center h-10 leading-none text-white border-b-2 border-[#0CE0B2]"
-                aria-current="page"
-              >
+
+              <Link href="/comunidad" className="inline-flex h-10 items-center leading-none border-b-2 border-[#0CE0B2] text-white">
                 Comunidad
               </Link>
             </nav>
@@ -568,12 +664,7 @@ function Header({
               aria-controls="mobile-menu"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M4 6h16M4 12h16M4 18h16"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -582,83 +673,43 @@ function Header({
 
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] md:hidden">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden
-          />
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
 
           <aside
             id="mobile-menu"
             className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
           >
             <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
-              <Image
-                src="/brand/motorwelt-logo.png"
-                alt="MotorWelt logo"
-                width={140}
-                height={32}
-                className="h-8 w-auto"
-              />
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
-                aria-label="Cerrar menú"
-              >
+              <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={140} height={32} className="h-8 w-auto" />
+              <button onClick={() => setMobileOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5" aria-label="Cerrar menú">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path
-                    d="M6 6l12 12M18 6l-12 12"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
+                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
 
             <nav className="px-4 py-3">
-              <p className="px-3 pb-1 pt-2 text-xs uppercase tracking-wide text-gray-400">
-                Noticias
-              </p>
+              <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                Tuning
+              </Link>
 
-              <div className="mt-1 space-y-1 pl-2">
-                <Link
-                  href="/noticias/autos"
-                  className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Autos
-                </Link>
-                <Link
-                  href="/noticias/motos"
-                  className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Motos
-                </Link>
-              </div>
+              <Link href="/noticias/autos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                Autos
+              </Link>
 
-              <Link
-                href="/deportes"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                Motos
+              </Link>
+
+              <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Deportes
               </Link>
 
-              <Link
-                href="/lifestyle"
-                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Lifestyle
               </Link>
 
-              <Link
-                href="/comunidad"
-                className="block w-full rounded-xl px-3 py-3 text-base text-white"
-                onClick={() => setMobileOpen(false)}
-              >
+              <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-white" onClick={() => setMobileOpen(false)}>
                 Comunidad
               </Link>
             </nav>
@@ -696,31 +747,18 @@ function AdSlot({
     <div
       className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70 ${
         isLeaderboard
-          ? "max-w-[970px] aspect-[970/120] min-h-[72px] md:min-h-0"
+          ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
           : "max-w-[970px] aspect-[970/250]"
       }`}
     >
       {ad.enabled ? (
         ad.imageUrl ? (
           ad.href ? (
-            <a
-              href={ad.href}
-              target="_blank"
-              rel="noreferrer"
-              className="block h-full w-full"
-            >
-              <img
-                src={ad.imageUrl}
-                alt={ad.label}
-                className="h-full w-full object-cover object-center bg-black/20"
-              />
+            <a href={ad.href} target="_blank" rel="noreferrer" className="block h-full w-full">
+              <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
             </a>
           ) : (
-            <img
-              src={ad.imageUrl}
-              alt={ad.label}
-              className="h-full w-full object-cover object-center bg-black/20"
-            />
+            <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
           )
         ) : (
           <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
@@ -729,7 +767,7 @@ function AdSlot({
         )
       ) : (
         editable && (
-          <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
+          <div className="hidden h-full w-full items-center justify-center text-center text-gray-500 md:flex">
             <span className="px-4 text-[11px] sm:text-xs md:text-sm">
               {ad.label} · oculto
             </span>
@@ -738,33 +776,17 @@ function AdSlot({
       )}
 
       {editable && (
-        <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onToggle}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+        <div className="absolute right-2 top-2 z-20 hidden flex-wrap items-center justify-end gap-2 md:flex">
+          <button type="button" onClick={onToggle} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Imagen
           </button>
-          <button
-            type="button"
-            onClick={onEditLink}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onEditLink} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Link
           </button>
-          <button
-            type="button"
-            onClick={onClear}
-            className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
-          >
+          <button type="button" onClick={onClear} className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
             Limpiar
           </button>
         </div>
@@ -815,11 +837,15 @@ const EMPTY_CONTACT: ContactFormState = {
 export default function ComunidadPage({
   year,
   communityItems = [],
+  latestItems = [],
   initialSettings = DEFAULT_SETTINGS,
+  sectionHeroImages = DEFAULT_SECTION_HERO_IMAGES,
 }: {
   year: number;
   communityItems?: CommunityItem[];
+  latestItems?: LatestArticleData[];
   initialSettings?: CommunityPageSettings;
+  sectionHeroImages?: SectionHeroImages;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
@@ -850,6 +876,29 @@ export default function ComunidadPage({
   const upcoming = communityItems.filter((item) => item.type !== "Clubes").slice(0, 6);
   const galleryItems = communityItems.slice(0, 4);
   const clubItems = communityItems.filter((item) => item.type === "Clubes").slice(0, 3);
+
+  const streaks: Streak[] = useMemo(
+    () => [
+      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
+      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
+      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
+      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
+      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
+      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
+      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
+      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
+      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
+      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
+      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
+      { top: "6%", left: "-38%", v: "cool", dir: "rev", delay: "0.6s", dur: "14s", op: 0.55, h: "1px" },
+      { top: "18%", left: "-33%", v: "warm", dir: "fwd", delay: "1.2s", dur: "12.8s", op: 0.55, h: "1px" },
+      { top: "34%", left: "-31%", v: "cool", dir: "fwd", delay: "2.4s", dur: "13.6s", op: 0.58, h: "1px" },
+      { top: "42%", left: "-36%", v: "warm", dir: "rev", delay: "3.0s", dur: "12.2s", op: 0.52, h: "1px" },
+      { top: "66%", left: "-29%", v: "cool", dir: "rev", delay: "4.2s", dur: "14.4s", op: 0.55, h: "1px" },
+      { top: "82%", left: "-28%", v: "lime", dir: "fwd", delay: "5.3s", dur: "12.4s", op: 0.86, h: "3px" },
+    ],
+    []
+  );
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen || composerOpen || contactOpen ? "hidden" : "";
@@ -1412,12 +1461,15 @@ export default function ComunidadPage({
       <div className="relative min-h-screen overflow-x-hidden text-gray-100">
         <div className="mw-global-bg" aria-hidden>
           <div className="mw-global-base" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(12,224,178,.16),transparent_24%),radial-gradient(circle_at_84%_18%,rgba(163,255,18,.12),transparent_26%),radial-gradient(circle_at_50%_80%,rgba(255,122,26,.06),transparent_30%)]" />
-          <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(115deg,transparent_0%,transparent_46%,rgba(255,255,255,.05)_47%,transparent_48%,transparent_100%)]" />
+          {streaks.map((s, i) => (
+            <div key={i} className="streak-wrap" style={{ top: s.top as any, left: s.left as any, height: s.h ?? undefined }}>
+              <div className={`streak streak-${s.v} ${s.dir === "rev" ? "dir-rev" : "dir-fwd"}`} style={{ opacity: s.op as any, animationDelay: s.delay as any, animationDuration: s.dur as any }} />
+            </div>
+          ))}
         </div>
 
         {canEdit && (
-          <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
+          <div className="hidden md:block fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
               <span>{spectatorMode ? "Vista espectador" : "Modo edición comunidad"}</span>
@@ -1438,19 +1490,19 @@ export default function ComunidadPage({
 
         <main aria-hidden={mobileOpen} className="relative z-10">
           <section className="relative isolate overflow-hidden pt-16 lg:pt-[72px]">
-            <div className="relative flex min-h-[46svh] flex-col justify-end overflow-hidden sm:min-h-[50svh] lg:min-h-[56vh]">
+            <div className="relative flex min-h-[48svh] flex-col justify-end overflow-hidden sm:min-h-[54svh] lg:min-h-[60vh]">
               <Image
                 src={settings.heroImageUrl || DEFAULT_SETTINGS.heroImageUrl}
-                alt="Comunidad MotorWelt"
+                alt="Comunidad | MotorWelt"
                 fill
                 sizes="100vw"
-                style={{ objectFit: "cover", filter: "brightness(.45) saturate(1.08)" }}
+                style={{ objectFit: "cover", filter: "brightness(.38) saturate(1.14)" }}
                 priority
               />
 
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(12,224,178,.18),transparent_26%),radial-gradient(circle_at_84%_20%,rgba(163,255,18,.16),transparent_28%),linear-gradient(180deg,rgba(0,0,0,.18)_0%,rgba(0,0,0,.42)_42%,rgba(2,10,10,.92)_100%)]" />
-              <div className="absolute inset-y-0 left-0 hidden w-[56%] bg-gradient-to-r from-black/80 via-black/46 to-transparent lg:block" />
-              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(12,224,178,.14),transparent_26%),radial-gradient(circle_at_84%_18%,rgba(255,122,26,.16),transparent_30%),linear-gradient(180deg,rgba(0,0,0,.24)_0%,rgba(0,0,0,.45)_38%,rgba(2,10,10,.88)_100%)]" />
+              <div className="absolute inset-y-0 left-0 hidden w-[58%] bg-gradient-to-r from-black/75 via-black/45 to-transparent lg:block" />
+              <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
 
               {editControlsVisible && (
                 <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
@@ -1464,8 +1516,8 @@ export default function ComunidadPage({
                 </div>
               )}
 
-              <div className="relative z-10 w-full px-4 pb-10 pt-12 sm:px-6 lg:px-8 lg:pb-12">
-                <div className="mx-auto w-full max-w-[1200px]">
+              <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:pb-16 xl:px-10">
+                <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
@@ -1486,10 +1538,11 @@ export default function ComunidadPage({
             </div>
           </section>
 
-          <section className="mt-4">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <AdSlot
-                kind="leaderboard"
+          {(settings.ads.leaderboard.enabled || editControlsVisible) && (
+            <section className={`${!settings.ads.leaderboard.enabled ? "hidden md:block" : ""} py-4 sm:py-6`}>
+              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+                <AdSlot
+                  kind="leaderboard"
                 ad={settings.ads.leaderboard}
                 editable={editControlsVisible}
                 inputRef={leaderboardInputRef}
@@ -1497,13 +1550,14 @@ export default function ComunidadPage({
                 onPick={(files) => void handleAdImagePick("leaderboard", files)}
                 onEditLink={() => void editAdLink("leaderboard")}
                 onClear={() => void clearAdImage("leaderboard")}
-              />
-            </div>
-          </section>
+                />
+              </div>
+            </section>
+          )}
 
           {featured ? (
             <section className="pt-10">
-              <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
                 <SectionHeader
                   title="Próximo destacado"
                   subtle="Asegura tu lugar antes de que se agote."
@@ -1557,7 +1611,7 @@ export default function ComunidadPage({
           ) : null}
 
           <section className="pt-12" aria-labelledby="proximos-title">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
                 title="Próximos eventos"
                 subtle="Agenda, lugares, encuentros y registro."
@@ -1586,7 +1640,7 @@ export default function ComunidadPage({
           </section>
 
           <section className="pt-2">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
                 title="Lo último de la comunidad"
                 subtle="Highlights de encuentros, rutas y momentos recientes."
@@ -1615,7 +1669,7 @@ export default function ComunidadPage({
           </section>
 
           <section className="pt-12">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
                 title="Clubes & Grupos locales"
                 subtle="Conecta con la comunidad cerca de ti."
@@ -1645,10 +1699,11 @@ export default function ComunidadPage({
             </div>
           </section>
 
-          <section className="py-12">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-              <AdSlot
-                kind="billboard"
+          {(settings.ads.billboard.enabled || editControlsVisible) && (
+            <section className={`${!settings.ads.billboard.enabled ? "hidden md:block" : ""} py-8`}>
+              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+                <AdSlot
+                  kind="billboard"
                 ad={settings.ads.billboard}
                 editable={editControlsVisible}
                 inputRef={billboardInputRef}
@@ -1656,12 +1711,13 @@ export default function ComunidadPage({
                 onPick={(files) => void handleAdImagePick("billboard", files)}
                 onEditLink={() => void editAdLink("billboard")}
                 onClear={() => void clearAdImage("billboard")}
-              />
-            </div>
-          </section>
+                />
+              </div>
+            </section>
+          )}
 
           <section className="pt-12">
-            <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <div className="rounded-[28px] border border-white/10 bg-black/20 p-6 md:p-8 backdrop-blur-md">
                 <div className="grid gap-6 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
                   <div>
@@ -1702,6 +1758,44 @@ export default function ComunidadPage({
             </div>
           </section>
 
+          <section className="py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+              <SectionHeader title="Últimas publicaciones" subtle="Lo más reciente publicado en MotorWelt, mezclando todas las secciones conforme se actualiza el sitio." glow="cool" />
+              {latestItems.length > 0 ? (
+                <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
+                  <div className="flex snap-x snap-mandatory gap-4">
+                    {latestItems.map((item) => (
+                      <div key={item.id} className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]">
+                        <LatestArticleCard item={item} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center text-gray-300">Próximamente habrá contenido disponible en MotorWelt.</div>
+              )}
+            </div>
+          </section>
+
+          <section className="py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+              <div className="mb-8 text-center">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">Explora</p>
+                <h2 className="mt-2 font-display text-3xl font-bold text-white">Seguir explorando MotorWelt</h2>
+              </div>
+              <div className="no-scrollbar overflow-x-auto pb-6">
+                <div className="flex items-start gap-5 pr-12">
+                  <ExploreCard title="Tuning" subtitle="Builds, mods, aero, stance y cultura visual." href="/tuning" image={sectionHeroImages.tuning} />
+                  <ExploreCard title="Autos" subtitle="Nuevos lanzamientos, pruebas y contexto editorial." href="/noticias/autos" image={sectionHeroImages.autos} />
+                  <ExploreCard title="Motos" subtitle="Pruebas, rutas y piezas con ADN de dos ruedas." href="/noticias/motos" image={sectionHeroImages.motos} />
+                  <ExploreCard title="Deportes" subtitle="Competencia, paddock y piezas con peso visual real." href="/deportes" image={sectionHeroImages.deportes} />
+                  <ExploreCard title="Lifestyle" subtitle="La capa aspiracional y estética del universo MotorWelt." href="/lifestyle" image={sectionHeroImages.lifestyle} />
+                  <ExploreCard title="Comunidad" subtitle="Eventos, meets, rutas y cultura desde la calle." href="/comunidad" image={sectionHeroImages.comunidad} />
+                </div>
+              </div>
+            </div>
+          </section>
+
           <PartnersRow partners={settings.partnerLogos} />
         </main>
 
@@ -1709,14 +1803,14 @@ export default function ComunidadPage({
           aria-hidden={mobileOpen}
           className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
-          <div className="mx-auto grid w-full max-w-[1200px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
+          <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 xl:px-10 2xl:max-w-[1560px]">
             <div>
               <Image
                 src="/brand/motorwelt-logo.png"
                 alt="MotorWelt logo"
                 width={160}
                 height={36}
-                className="h-9 w-auto"
+                className="logo-glow h-9 w-auto"
               />
               <p className="mt-2 text-sm">
                 Cultura automotriz, motociclismo, tuning y comunidad con enfoque
@@ -1754,7 +1848,7 @@ export default function ComunidadPage({
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
                 <a
-                  href="https://instagram.com/motorwelt"
+                  href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1762,7 +1856,7 @@ export default function ComunidadPage({
                   IG
                 </a>
                 <a
-                  href="https://facebook.com/motorwelt"
+                  href="https://www.facebook.com/share/18JRxV8AAu/"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1770,7 +1864,7 @@ export default function ComunidadPage({
                   FB
                 </a>
                 <a
-                  href="https://tiktok.com/@motorwelt"
+                  href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1778,7 +1872,7 @@ export default function ComunidadPage({
                   TikTok
                 </a>
                 <a
-                  href="https://youtube.com/@motorwelt"
+                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -1796,12 +1890,6 @@ export default function ComunidadPage({
       </div>
 
       <style jsx global>{`
-        .glow-cool {
-          text-shadow: 0 0 14px rgba(12, 224, 178, 0.25);
-        }
-        .glow-warm {
-          text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
-        }
         .mw-global-bg {
           position: fixed;
           inset: 0;
@@ -1815,7 +1903,49 @@ export default function ComunidadPage({
           background:
             radial-gradient(120% 80% at 20% 10%, rgba(0, 0, 0, 0.15) 0%, transparent 60%),
             radial-gradient(120% 80% at 80% 90%, rgba(0, 0, 0, 0.18) 0%, transparent 60%),
-            linear-gradient(180deg, rgba(4, 18, 16, 0.85), rgba(4, 18, 16, 0.92));
+            linear-gradient(180deg, rgba(4, 18, 16, 0.85), rgba(4, 18, 16, 0.85));
+        }
+        .streak-wrap {
+          position: absolute;
+          width: 220%;
+          height: 2px;
+          transform: rotate(-12deg);
+        }
+        .streak {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 220%;
+          height: 100%;
+          will-change: transform, opacity;
+          filter: blur(.5px);
+        }
+        @keyframes slide-fwd {
+          0% { transform: translateX(-30%); opacity: 0; }
+          10% { opacity: .9; }
+          100% { transform: translateX(130%); opacity: 0; }
+        }
+        @keyframes slide-rev {
+          0% { transform: translateX(130%); opacity: 0; }
+          10% { opacity: .9; }
+          100% { transform: translateX(-30%); opacity: 0; }
+        }
+        .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
+        .streak.dir-rev { animation: slide-rev 11s linear infinite; }
+        .streak-cool {
+          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
+        }
+        .streak-warm {
+          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
+        }
+        .streak-lime {
+          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .9), transparent);
+        }
+        .glow-warm {
+          text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
+        }
+        .logo-glow {
+          filter: drop-shadow(0 0 18px rgba(12,224,178,.12));
         }
         .no-scrollbar {
           -ms-overflow-style: none;
@@ -1823,6 +1953,20 @@ export default function ComunidadPage({
         }
         .no-scrollbar::-webkit-scrollbar {
           display: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .streak {
+            animation: none !important;
+            opacity: .35;
+          }
+        }
+
+        @supports (content-visibility: auto) {
+          main > section {
+            content-visibility: auto;
+            contain-intrinsic-size: 1px 1000px;
+          }
         }
       `}</style>
     </>
@@ -1832,7 +1976,7 @@ export default function ComunidadPage({
 export async function getServerSideProps() {
   const { sanityReadClient } = await import("../../lib/sanityClient");
 
-  const communityQuery = `
+  const allPostsQuery = `
     *[
       _type in ["article", "post"] &&
       defined(slug.current) &&
@@ -1852,71 +1996,84 @@ export async function getServerSideProps() {
       subcategory,
       categories,
       tags,
-      "mainImageUrl": coalesce(
-        mainImageUrl,
-        coverImage.asset->url,
-        mainImage.asset->url,
-        heroImage.asset->url,
-        image.asset->url,
-        galleryUrls[0]
-      ),
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0]),
       "galleryUrls": coalesce(galleryUrls, [])
     }
   `;
 
   const communitySettingsQuery = `
-    *[
-      _type in ["homeSettings", "sitePageSettings", "pageSettings"] &&
-      pageKey == "comunidad"
-    ][0]{
+    *[_type in ["homeSettings", "sitePageSettings", "pageSettings"] && pageKey == "comunidad"][0]{
       "heroImageUrl": coalesce(heroImageUrl, ""),
       "ads": {
-        "leaderboard": {
-          "enabled": coalesce(ads.leaderboard.enabled, true),
-          "label": coalesce(ads.leaderboard.label, "Publicidad — Leaderboard (728×90 / 970×250)"),
-          "imageUrl": coalesce(ads.leaderboard.imageUrl, ""),
-          "href": coalesce(ads.leaderboard.href, "")
-        },
-        "billboard": {
-          "enabled": coalesce(ads.billboard.enabled, true),
-          "label": coalesce(ads.billboard.label, "Publicidad — Billboard (970×250 / 970×90)"),
-          "imageUrl": coalesce(ads.billboard.imageUrl, ""),
-          "href": coalesce(ads.billboard.href, "")
-        }
+        "leaderboard": { "enabled": coalesce(ads.leaderboard.enabled, true), "label": coalesce(ads.leaderboard.label, "Publicidad — Leaderboard (728×90 / 970×250)"), "imageUrl": coalesce(ads.leaderboard.imageUrl, ""), "href": coalesce(ads.leaderboard.href, "") },
+        "billboard": { "enabled": coalesce(ads.billboard.enabled, true), "label": coalesce(ads.billboard.label, "Publicidad — Billboard (970×250 / 970×90)"), "imageUrl": coalesce(ads.billboard.imageUrl, ""), "href": coalesce(ads.billboard.href, "") }
       },
       "partnerLogos": coalesce(partnerLogos, [])
     }
   `;
 
-  const [communityRaw, communitySettingsRaw] = await Promise.all([
-    sanityReadClient.fetch(communityQuery).catch(() => []),
+  const sectionSettingsQuery = `
+    *[_type in ["sitePageSettings", "pageSettings", "homeSettings"] && pageKey in ["tuning", "deportes", "lifestyle", "comunidad", "autos", "motos"]]{
+      pageKey,
+      "heroImageUrl": coalesce(heroImageUrl, "")
+    }
+  `;
+
+  const autosFallbackQuery = `
+    *[
+      _type in ["article", "post"] &&
+      coalesce(status, "publicado") == "publicado" &&
+      defined(slug.current) &&
+      (
+        section == "autos" ||
+        section == "noticias_autos" ||
+        lower(category) == "autos" ||
+        "autos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+    }
+  `;
+
+  const motosFallbackQuery = `
+    *[
+      _type in ["article", "post"] &&
+      coalesce(status, "publicado") == "publicado" &&
+      defined(slug.current) &&
+      (
+        section == "motos" ||
+        section == "noticias_motos" ||
+        lower(category) == "motos" ||
+        "motos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+    }
+  `;
+
+  const [allPostsRaw, communitySettingsRaw, sectionSettingsRaw, autosFallback, motosFallback] = await Promise.all([
+    sanityReadClient.fetch(allPostsQuery).catch(() => []),
     sanityReadClient.fetch(communitySettingsQuery).catch(() => null),
+    sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
+    sanityReadClient.fetch(autosFallbackQuery).catch(() => null),
+    sanityReadClient.fetch(motosFallbackQuery).catch(() => null),
   ]);
 
-  const communityItems: CommunityItem[] = (communityRaw || [])
+  const rawPosts = Array.isArray(allPostsRaw) ? allPostsRaw : [];
+
+  const communityItems: CommunityItem[] = rawPosts
     .map((it: RawPost) => {
       const type = detectCommunityType(it);
       if (!type) return null;
-
       const slug = getSlugValue(it.slug);
       if (!slug) return null;
-
-      const mainImage =
-        String(it.mainImageUrl || "").trim() ||
-        (Array.isArray(it.galleryUrls) && it.galleryUrls[0]
-          ? String(it.galleryUrls[0])
-          : "/images/comunidad.jpg");
-
       return {
         id: String(it._id || slug),
         title: String(it.title || ""),
-        excerpt: String(
-          it.excerpt ||
-            it.subtitle ||
-            it.seoDescription ||
-            "Consulta el detalle completo dentro de MotorWelt."
-        ),
-        img: mainImage,
+        excerpt: String(it.excerpt || it.subtitle || it.seoDescription || "Consulta el detalle completo dentro de MotorWelt."),
+        img: getMainImage(it, "/images/comunidad.jpg"),
         href: `/comunidad/${slug}`,
         when: formatWhen(it.publishedAt || it._createdAt),
         place: String(it.subcategory || it.category || ""),
@@ -1925,13 +2082,52 @@ export async function getServerSideProps() {
     })
     .filter(Boolean) as CommunityItem[];
 
+  const latestItems: LatestArticleData[] = rawPosts
+    .map((it: RawPost) => {
+      const slug = getSlugValue(it.slug);
+      if (!slug) return null;
+      const sectionData = getLatestSectionData(it);
+      if (!sectionData) return null;
+      return {
+        id: String(it._id || slug),
+        title: String(it.title || ""),
+        excerpt: String(it.excerpt || it.subtitle || it.seoDescription || "Lee la publicación completa en MotorWelt."),
+        img: getMainImage(it, "/images/noticia-3.jpg"),
+        href: `${sectionData.hrefBase}/${slug}`,
+        when: formatWhen(it.publishedAt || it._createdAt),
+        sectionLabel: sectionData.label,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 18) as LatestArticleData[];
+
   const fallbackHero = communityItems[0]?.img || DEFAULT_SETTINGS.heroImageUrl;
+
+  const settingsMap = new Map<string, string>();
+  if (Array.isArray(sectionSettingsRaw)) {
+    for (const item of sectionSettingsRaw) {
+      const key = String(item?.pageKey || "").trim();
+      const value = String(item?.heroImageUrl || "").trim();
+      if (key && value) settingsMap.set(key, value);
+    }
+  }
+
+  const sectionHeroImages = sanitizeSectionHeroImages({
+    tuning: settingsMap.get("tuning"),
+    autos: settingsMap.get("autos") || String(autosFallback?.image || ""),
+    motos: settingsMap.get("motos") || String(motosFallback?.image || ""),
+    deportes: settingsMap.get("deportes"),
+    lifestyle: settingsMap.get("lifestyle"),
+    comunidad: settingsMap.get("comunidad"),
+  });
 
   return {
     props: {
       year: new Date().getFullYear(),
       communityItems: Array.isArray(communityItems) ? communityItems : [],
+      latestItems,
       initialSettings: sanitizePageSettings(communitySettingsRaw, fallbackHero),
+      sectionHeroImages,
     },
   };
 }

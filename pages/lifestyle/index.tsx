@@ -496,9 +496,9 @@ function ArticleCard({
   compact?: boolean;
 }) {
   return (
-    <article className="group overflow-hidden rounded-[24px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#FF7A1A]/45">
-      <Link href={item.href} className="block">
-        <div className={`relative w-full ${compact ? "h-48" : "h-64"} overflow-hidden`}>
+    <article className="group h-full overflow-hidden rounded-[24px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#FF7A1A]/45">
+      <Link href={item.href} className="block h-full">
+        <div className={`relative w-full ${compact ? "h-[118px] sm:h-48" : "h-64"} overflow-hidden`}>
           <Image
             src={item.img}
             alt={item.title}
@@ -514,18 +514,18 @@ function ArticleCard({
           </div>
         </div>
 
-        <div className="p-5">
+        <div className="flex flex-1 flex-col p-5">
           <div className="text-xs text-gray-400">{item.when}</div>
-          <h3 className="mt-2 text-xl font-semibold leading-tight text-white transition group-hover:text-[#FFB36B]">
+          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#FFB36B] sm:text-xl">
             {item.title}
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-gray-300 line-clamp-3">
             {item.excerpt}
           </p>
 
-          <div className="mt-4">
-            <span className={getButtonClasses("link")}>Leer más</span>
-          </div>
+          <div className="mt-auto pt-4">
+  <span className={getButtonClasses("link")}>Leer más</span>
+</div>
         </div>
       </Link>
     </article>
@@ -535,7 +535,7 @@ function ArticleCard({
 function LatestArticleCard({ item }: { item: LatestArticleData }) {
   return (
     <article className="group h-full overflow-hidden rounded-[22px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/40">
-      <Link href={item.href} className="block h-full">
+      <Link href={item.href} className="flex h-full flex-col">
         <div className="relative h-36 w-full overflow-hidden">
           <Image
             src={item.img}
@@ -623,7 +623,7 @@ function LifestyleCategoryLayout({
           {items.slice(0, 8).map((item) => (
             <div
               key={item.id}
-              className="w-[78%] min-w-[78%] shrink-0 snap-start sm:w-[320px] sm:min-w-[320px]"
+              className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
             >
               <ArticleCard item={item} compact />
             </div>
@@ -660,7 +660,7 @@ function LifestyleCategoryLayout({
             {items.slice(0, 8).map((item) => (
               <div
                 key={item.id}
-                className="w-[84%] min-w-[84%] shrink-0 snap-start sm:w-[360px] sm:min-w-[360px]"
+                className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
               >
                 <ArticleCard item={item} compact />
               </div>
@@ -701,7 +701,7 @@ function LifestyleCategoryLayout({
           {items.slice(0, 8).map((item) => (
             <div
               key={item.id}
-              className="w-[84%] min-w-[84%] shrink-0 snap-start sm:w-[360px] sm:min-w-[360px]"
+              className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
             >
               <ArticleCard item={item} compact />
             </div>
@@ -840,29 +840,13 @@ function Header({
                 Tuning
               </Link>
 
-              <div className="group relative">
-                <button
-                  type="button"
-                  aria-haspopup="menu"
-                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
-                >
-                  Noticias
-                  <svg className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+              <Link href="/noticias/autos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                Autos
+              </Link>
 
-                <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
-                    <Link href="/noticias/autos" className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5">
-                      Autos
-                    </Link>
-                    <Link href="/noticias/motos" className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5">
-                      Motos
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <Link href="/noticias/motos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                Motos
+              </Link>
 
               <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Deportes
@@ -921,18 +905,13 @@ function Header({
                 Tuning
               </Link>
 
-              <p className="px-3 pb-1 pt-2 text-xs uppercase tracking-wide text-gray-400">
-                Noticias
-              </p>
+              <Link href="/noticias/autos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                Autos
+              </Link>
 
-              <div className="mt-1 space-y-1 pl-2">
-                <Link href="/noticias/autos" className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
-                  Autos
-                </Link>
-                <Link href="/noticias/motos" className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
-                  Motos
-                </Link>
-              </div>
+              <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                Motos
+              </Link>
 
               <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Deportes
@@ -980,8 +959,8 @@ function AdSlot({
     <div
       className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70 ${
         isLeaderboard
-          ? "w-full min-h-[84px] aspect-[970/120] md:max-w-[1100px] md:min-h-0"
-          : "max-w-[1100px] aspect-[970/250]"
+          ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
+          : "max-w-[970px] aspect-[970/250]"
       }`}
     >
       {ad.enabled ? (
@@ -1000,7 +979,7 @@ function AdSlot({
         )
       ) : (
         editable && (
-          <div className="flex h-full w-full items-center justify-center text-center text-gray-500">
+          <div className="hidden h-full w-full items-center justify-center text-center text-gray-500 md:flex">
             <span className="px-4 text-[11px] sm:text-xs md:text-sm">
               {ad.label} · oculto
             </span>
@@ -1345,20 +1324,22 @@ export default function LifestylePage({
             </div>
           </section>
 
-          <section className="py-4 sm:py-6">
-            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-              <AdSlot
-                kind="leaderboard"
+          {(settings.ads.leaderboard.enabled || editControlsVisible) && (
+            <section className={`${!settings.ads.leaderboard.enabled ? "hidden md:block" : ""} py-4 sm:py-6`}>
+              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+                <AdSlot
+                  kind="leaderboard"
                 ad={settings.ads.leaderboard}
                 editable={editControlsVisible}
                 inputRef={leaderboardInputRef}
                 onToggle={() => void toggleAd("leaderboard")}
                 onPick={(files) => void handleAdImagePick("leaderboard", files)}
                 onEditLink={() => void editAdLink("leaderboard")}
-                onClear={() => void clearAdImage("leaderboard")}
-              />
-            </div>
-          </section>
+                  onClear={() => void clearAdImage("leaderboard")}
+                />
+              </div>
+            </section>
+          )}
 
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
@@ -1406,20 +1387,22 @@ export default function LifestylePage({
             </div>
           </section>
 
-          <section className="py-8">
-            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-              <AdSlot
-                kind="billboard"
+          {(settings.ads.billboard.enabled || editControlsVisible) && (
+            <section className={`${!settings.ads.billboard.enabled ? "hidden md:block" : ""} py-8`}>
+              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+                <AdSlot
+                  kind="billboard"
                 ad={settings.ads.billboard}
                 editable={editControlsVisible}
                 inputRef={billboardInputRef}
                 onToggle={() => void toggleAd("billboard")}
                 onPick={(files) => void handleAdImagePick("billboard", files)}
                 onEditLink={() => void editAdLink("billboard")}
-                onClear={() => void clearAdImage("billboard")}
-              />
-            </div>
-          </section>
+                  onClear={() => void clearAdImage("billboard")}
+                />
+              </div>
+            </section>
+          )}
 
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
@@ -1436,7 +1419,7 @@ export default function LifestylePage({
                     {latestItems.map((item) => (
                       <div
                         key={item.id}
-                        className="w-[78%] min-w-[78%] snap-start sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
+                        className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
                       >
                         <LatestArticleCard item={item} />
                       </div>
@@ -1505,10 +1488,10 @@ export default function LifestylePage({
             <div>
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
-                <a href="https://instagram.com/motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">IG</a>
-                <a href="https://facebook.com/motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">FB</a>
-                <a href="https://tiktok.com/@motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">TikTok</a>
-                <a href="https://youtube.com/@motorwelt" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">YouTube</a>
+                <a href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">IG</a>
+                <a href="https://www.facebook.com/share/18JRxV8AAu/" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">FB</a>
+                <a href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">TikTok</a>
+                <a href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">YouTube</a>
               </div>
             </div>
           </div>

@@ -87,9 +87,20 @@ type TuningItem = {
   href: string;
   when: string;
   typeLabel: string;
+  authorName: string;
   galleryUrls: string[];
   videoUrl: string;
   reelUrl: string;
+};
+
+type LatestArticleData = {
+  id: string;
+  title: string;
+  excerpt: string;
+  img: string;
+  href: string;
+  when: string;
+  sectionLabel: string;
 };
 
 type VisualMediaKind = "photo" | "video" | "reel";
@@ -148,6 +159,15 @@ type TuningPageSettings = {
   reelEntries: MediaEntry[];
 };
 
+type SectionHeroImages = {
+  tuning: string;
+  autos: string;
+  motos: string;
+  deportes: string;
+  lifestyle: string;
+  comunidad: string;
+};
+
 const DEFAULT_TUNING_SETTINGS: TuningPageSettings = {
   heroImageUrl: "/images/noticia-2.jpg",
   ads: {
@@ -169,6 +189,15 @@ const DEFAULT_TUNING_SETTINGS: TuningPageSettings = {
   reelEntries: [],
 };
 
+const DEFAULT_SECTION_HERO_IMAGES: SectionHeroImages = {
+  tuning: "/images/noticia-3.jpg",
+  autos: "/images/noticia-1.jpg",
+  motos: "/images/noticia-2.jpg",
+  deportes: "/images/noticia-2.jpg",
+  lifestyle: "/images/comunidad.jpg",
+  comunidad: "/images/comunidad.jpg",
+};
+
 function fallbackItem(
   id: string,
   title: string,
@@ -185,6 +214,7 @@ function fallbackItem(
     href,
     when: "",
     typeLabel,
+    authorName: "MotorWelt",
     galleryUrls: [],
     videoUrl: "",
     reelUrl: "",
@@ -236,6 +266,51 @@ function detailHref(slug?: string | null) {
   const cleanSlug = String(slug || "").trim();
   if (!cleanSlug) return "/tuning";
   return `/tuning/${cleanSlug}`;
+}
+
+
+function getSlugValue(slug?: string | { current?: string } | null) {
+  if (!slug) return "";
+  if (typeof slug === "string") return slug;
+  return String(slug.current || "");
+}
+
+function normalizeText(value: unknown) {
+  if (!value) return "";
+  if (Array.isArray(value)) return value.map(normalizeText).join(" ").toLowerCase();
+  if (typeof value === "object") {
+    const item = value as Record<string, unknown>;
+    return String(item.title || item.name || item.label || item.value || "")
+      .trim()
+      .toLowerCase();
+  }
+  return String(value).trim().toLowerCase();
+}
+
+function getLatestSectionData(post: any): { label: string; hrefBase: string } | null {
+  const blob = [post.section, post.category, post.subcategory, post.categories, post.tags]
+    .map(normalizeText)
+    .join(" ");
+
+  if (blob.includes("noticias_autos") || blob.includes("autos") || blob.includes("auto")) {
+    return { label: "Autos", hrefBase: "/noticias/autos" };
+  }
+  if (blob.includes("noticias_motos") || blob.includes("motos") || blob.includes("moto")) {
+    return { label: "Motos", hrefBase: "/noticias/motos" };
+  }
+  if (blob.includes("tuning") || blob.includes("builds") || blob.includes("mods")) {
+    return { label: "Tuning", hrefBase: "/tuning" };
+  }
+  if (blob.includes("deportes") || blob.includes("f1") || blob.includes("nascar") || blob.includes("motogp") || blob.includes("wrc") || blob.includes("drift") || blob.includes("rally")) {
+    return { label: "Deportes", hrefBase: "/deportes" };
+  }
+  if (blob.includes("lifestyle") || blob.includes("moda") || blob.includes("relojería") || blob.includes("relojeria") || blob.includes("cine") || blob.includes("fuera del volante")) {
+    return { label: "Lifestyle", hrefBase: "/lifestyle" };
+  }
+  if (blob.includes("comunidad") || blob.includes("evento") || blob.includes("eventos") || blob.includes("meet") || blob.includes("meets") || blob.includes("rutas") || blob.includes("club")) {
+    return { label: "Comunidad", hrefBase: "/comunidad" };
+  }
+  return null;
 }
 
 function detectMediaPlatform(url?: string | null): MediaPlatform {
@@ -520,6 +595,22 @@ function sanitizeTuningSettings(
   };
 }
 
+function sanitizeSectionHeroImages(
+  raw?: Partial<SectionHeroImages>
+): SectionHeroImages {
+  return {
+    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
+    motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
+    deportes:
+      String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+    lifestyle:
+      String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+    comunidad:
+      String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+  };
+}
+
 const SectionHeader: React.FC<{
   eyebrow: string;
   title: string;
@@ -574,13 +665,19 @@ function TuningFeatureCard({ item }: { item: TuningItem }) {
             <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
             Tuning · {item.typeLabel}
           </div>
-          {item.when ? <div className="text-xs text-gray-500">{item.when}</div> : null}
           <h3 className="mt-1 text-base font-semibold leading-tight text-white sm:text-lg">
             {item.title}
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-gray-300 line-clamp-3">
             {item.excerpt}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
 
           <div className="mt-4 mt-auto">
             <span className={getButtonClasses("link")}>Leer más</span>
@@ -611,6 +708,39 @@ function EmptySectionNotice({
   );
 }
 
+function LatestArticleCard({ item }: { item: LatestArticleData }) {
+  return (
+    <article className="group h-full overflow-hidden rounded-[22px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/40">
+      <Link href={item.href} className="flex h-full flex-col">
+        <div className="relative h-36 w-full overflow-hidden">
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="(max-width: 1024px) 78vw, 260px"
+            style={{ objectFit: "cover" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
+          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel}
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col p-4">
+          <div className="text-[11px] text-gray-400">{item.when}</div>
+          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+            {item.title}
+          </h3>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+            {item.excerpt}
+          </p>
+        </div>
+      </Link>
+    </article>
+  );
+}
+
 function ExploreCard({
   title,
   subtitle,
@@ -625,7 +755,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]"
+      className="group relative block h-[320px] w-[320px] min-w-[320px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
     >
       <div className="absolute inset-0">
         <img
@@ -902,10 +1032,14 @@ export default function TuningPage({
   year,
   tuningItems = [],
   initialTuningSettings = DEFAULT_TUNING_SETTINGS,
+  sectionHeroImages = DEFAULT_SECTION_HERO_IMAGES,
+  latestItems = [],
 }: {
   year: number;
   tuningItems: TuningItem[];
   initialTuningSettings?: TuningPageSettings;
+  sectionHeroImages?: SectionHeroImages;
+  latestItems?: LatestArticleData[];
 }) {
   const { t } = useTranslation("home");
   const router = useRouter();
@@ -1611,6 +1745,7 @@ export default function TuningPage({
 
     const wrapClass = `
       relative w-full mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70
+      ${!ad.enabled && editControlsVisible ? "hidden md:block" : ""}
       ${
         kind === "leaderboard"
           ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
@@ -1663,7 +1798,7 @@ export default function TuningPage({
         )}
 
         {editControlsVisible && (
-          <div className="absolute right-2 top-2 z-20 flex flex-wrap items-center justify-end gap-2">
+          <div className="absolute right-2 top-2 z-20 hidden flex-wrap items-center justify-end gap-2 md:flex">
             <button
               type="button"
               onClick={() => toggleAd(kind)}
@@ -1756,7 +1891,7 @@ export default function TuningPage({
         </div>
 
         {canEditTuning && (
-          <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
+          <div className="hidden md:block fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
               <span>
@@ -1803,48 +1938,19 @@ export default function TuningPage({
                   Tuning
                 </Link>
 
-                <div className="group relative">
-                  <button
-                    type="button"
-                    aria-haspopup="menu"
-                    className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white focus:outline-none"
-                  >
-                    {t("nav.news")}
-                    <svg
-                      className="ml-2 mt-[1px] opacity-70 group-hover:opacity-100"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      aria-hidden
-                    >
-                      <path
-                        d="M6 9l6 6 6-6"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
+                <Link
+                  href="/noticias/autos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Autos
+                </Link>
 
-                  <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 translate-y-1 opacity-0 transition duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                    <div className="min-w-[180px] rounded-xl border border-mw-line/70 bg-mw-surface/95 p-2 shadow-xl backdrop-blur-md">
-                      <Link
-                        href="/noticias/autos"
-                        className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                      >
-                        Autos
-                      </Link>
-                      <Link
-                        href="/noticias/motos"
-                        className="block rounded-lg px-3 py-2 text-gray-100 hover:bg-white/5"
-                      >
-                        Motos
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <Link
+                  href="/noticias/motos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Motos
+                </Link>
 
                 <Link
                   href="/deportes"
@@ -1939,26 +2045,21 @@ export default function TuningPage({
                   Tuning
                 </Link>
 
-                <p className="px-3 pb-1 pt-2 text-xs uppercase tracking-wide text-gray-400">
-                  {t("nav.news")}
-                </p>
+                <Link
+                  href="/noticias/autos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Autos
+                </Link>
 
-                <div className="mt-1 space-y-1 pl-2">
-                  <Link
-                    href="/noticias/autos"
-                    className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Autos
-                  </Link>
-                  <Link
-                    href="/noticias/motos"
-                    className="block rounded-lg px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Motos
-                  </Link>
-                </div>
+                <Link
+                  href="/noticias/motos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Motos
+                </Link>
 
                 <Link
                   href="/deportes"
@@ -2034,7 +2135,7 @@ export default function TuningPage({
                     <button
                       type="button"
                       onClick={() => openGalleryEditorFromItem(activeMedia)}
-                      className="rounded-full border border-white/20 bg-black/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                      className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                     >
                       Editar
                     </button>
@@ -2282,7 +2383,7 @@ export default function TuningPage({
               <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
 
               {editControlsVisible && (
-                <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
+                <div className="absolute right-4 top-20 z-20 hidden flex-wrap gap-2 md:flex">
                   <button
                     type="button"
                     onClick={() => heroInputRef.current?.click()}
@@ -2316,8 +2417,8 @@ export default function TuningPage({
             </div>
           </section>
 
-          <section className="py-4 sm:py-6">
-            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-2 sm:px-6 lg:px-8">
+          <section className={`${!tuningSettings.ads.leaderboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-4 sm:py-6`}>
+            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               {renderEditableAd("leaderboard")}
             </div>
           </section>
@@ -2353,10 +2454,10 @@ export default function TuningPage({
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="group block w-[78%] min-w-[78%] shrink-0 snap-start text-left sm:w-[58%] sm:min-w-[58%]"
+                      className="group block h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start text-left sm:h-auto sm:w-[300px] sm:min-w-[300px]"
                     >
-                      <Card className="overflow-hidden">
-                        <div className="relative h-44 w-full">
+                      <Card className="h-full overflow-hidden">
+                        <div className="relative h-36 w-full">
                           <Image
                             src={item.img}
                             alt={item.title}
@@ -2367,23 +2468,29 @@ export default function TuningPage({
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                         </div>
 
-                        <CardContent className="p-5">
+                        <CardContent className="p-4">
                           <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
                             <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
                             Tuning · {item.typeLabel}
                           </div>
 
-                          {item.when ? <div className="text-xs text-gray-500">{item.when}</div> : null}
-
-                          <h3 className="mt-1 text-xl font-semibold leading-tight text-white">
+                          <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
                             {item.title}
                           </h3>
 
-                          <p className="mt-3 text-sm leading-relaxed text-gray-300 line-clamp-3">
+                          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
                             {item.excerpt}
                           </p>
 
-                          <div className="mt-5">
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                            {item.authorName ? <span>Por {item.authorName}</span> : null}
+                            {item.authorName && item.when ? (
+                              <span className="text-gray-600">•</span>
+                            ) : null}
+                            {item.when ? <span>{item.when}</span> : null}
+                          </div>
+
+                          <div className="mt-auto pt-3">
                             <span className="text-[#43A1AD] underline underline-offset-4">
                               Leer más
                             </span>
@@ -2416,7 +2523,7 @@ export default function TuningPage({
                     <button
                       type="button"
                       onClick={() => openGalleryEditorFromItem()}
-                      className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90"
+                      className="hidden rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                     >
                       Nueva galería
                     </button>
@@ -2435,7 +2542,9 @@ export default function TuningPage({
                     </h3>
                   </div>
 
-                  <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+                  {photoItems.length > 0 ? (
+                    <>
+                  <div className="hidden gap-4 overflow-x-auto pb-2 no-scrollbar sm:flex">
                     {photoItems.slice(0, 6).map((item) => (
                       <div
                         key={item.id}
@@ -2451,7 +2560,7 @@ export default function TuningPage({
                                 e.stopPropagation();
                                 openGalleryEditorFromItem(item);
                               }}
-                              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                              className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                             >
                               Editar
                             </button>
@@ -2508,7 +2617,7 @@ export default function TuningPage({
                       {photoItems.slice(0, 6).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative min-w-[72%] max-w-[72%] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )}`}
                         >
@@ -2520,7 +2629,7 @@ export default function TuningPage({
                                   e.stopPropagation();
                                   openGalleryEditorFromItem(item);
                                 }}
-                                className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                                className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                               >
                                 Editar
                               </button>
@@ -2532,12 +2641,12 @@ export default function TuningPage({
                             onClick={() => openMediaPreview(item)}
                             className="block w-full text-left"
                           >
-                            <div className="relative aspect-[4/5] w-full">
+                            <div className="relative h-full w-full">
                               <Image
                                 src={item.img}
                                 alt={item.title}
                                 fill
-                                sizes="84vw"
+                                sizes="320px"
                                 style={{ objectFit: "cover" }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
@@ -2548,10 +2657,10 @@ export default function TuningPage({
                               </div>
 
                               <div className="absolute bottom-0 left-0 right-0 p-4">
-                                <h4 className="text-lg font-semibold text-white">
+                                <h4 className="line-clamp-2 text-base font-semibold text-white">
                                   {item.title}
                                 </h4>
-                                <p className="mt-2 line-clamp-3 text-sm text-gray-200">
+                                <p className="mt-2 line-clamp-2 text-xs text-gray-200">
                                   {item.subtitle}
                                 </p>
                               </div>
@@ -2561,6 +2670,13 @@ export default function TuningPage({
                       ))}
                     </div>
                   </div>
+                    </>
+                  ) : (
+                    <EmptySectionNotice
+                      title="Próximas publicaciones"
+                      message="Muy pronto publicaremos galerías de builds, detalles, interiores y cultura de garage dentro de MotorWelt Tuning."
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -2576,7 +2692,7 @@ export default function TuningPage({
                         <button
                           type="button"
                           onClick={() => openMediaEditor("video")}
-                          className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90"
+                          className="hidden rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                         >
                           Nuevo video
                         </button>
@@ -2584,6 +2700,8 @@ export default function TuningPage({
                     ) : null}
                   </div>
 
+                  {videoItems.length > 0 ? (
+                    <>
                   <div className="hidden gap-5 lg:grid lg:grid-cols-2">
                     {videoItems.slice(0, 4).map((item) => (
                       <div
@@ -2600,7 +2718,7 @@ export default function TuningPage({
                                 e.stopPropagation();
                                 openMediaEditor("video", item);
                               }}
-                              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                              className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                             >
                               Editar
                             </button>
@@ -2661,9 +2779,9 @@ export default function TuningPage({
                       {videoItems.slice(0, 4).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative min-w-[72%] max-w-[72%] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
-                          )} sm:min-w-[62%] sm:max-w-[62%]`}
+                          )} sm:h-auto sm:w-[300px] sm:min-w-[300px]`}
                         >
                           {editControlsVisible ? (
                             <div className="absolute right-3 top-3 z-20">
@@ -2673,7 +2791,7 @@ export default function TuningPage({
                                   e.stopPropagation();
                                   openMediaEditor("video", item);
                                 }}
-                                className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                                className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                               >
                                 Editar
                               </button>
@@ -2684,10 +2802,10 @@ export default function TuningPage({
                             onClick={() => openMediaPreview(item)}
                             className="block w-full text-left"
                           >
-                          <div className="relative aspect-[16/10] w-full">
+                          <div className="relative h-full w-full sm:aspect-[16/10]">
                             {renderMediaVisual(
                               item,
-                              "(max-width: 640px) 84vw, 62vw",
+                              "(max-width: 640px) 320px, 300px",
                               "h-full w-full object-cover"
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
@@ -2716,10 +2834,10 @@ export default function TuningPage({
                             </div>
 
                             <div className="absolute bottom-0 left-0 right-0 p-4">
-                              <h4 className="text-lg font-semibold text-white">
+                              <h4 className="line-clamp-2 text-base font-semibold text-white">
                                 {item.title}
                               </h4>
-                              <p className="mt-2 line-clamp-3 text-sm text-gray-200">
+                              <p className="mt-2 line-clamp-2 text-xs text-gray-200">
                                 {item.subtitle}
                               </p>
                             </div>
@@ -2729,6 +2847,13 @@ export default function TuningPage({
                       ))}
                     </div>
                   </div>
+                    </>
+                  ) : (
+                    <EmptySectionNotice
+                      title="Próximas publicaciones"
+                      message="Muy pronto aparecerán piezas de video con movimiento, sonido y energía editorial para esta sección."
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -2744,7 +2869,7 @@ export default function TuningPage({
                         <button
                           type="button"
                           onClick={() => openMediaEditor("reel")}
-                          className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90"
+                          className="hidden rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                         >
                           Nuevo formato corto
                         </button>
@@ -2752,6 +2877,8 @@ export default function TuningPage({
                     ) : null}
                   </div>
 
+                  {reelItems.length > 0 ? (
+                    <>
                   <div className="hidden overflow-x-auto pb-2 no-scrollbar sm:block">
                     <div className="flex gap-4">
                     {reelItems.slice(0, 8).map((item) => (
@@ -2769,7 +2896,7 @@ export default function TuningPage({
                                 e.stopPropagation();
                                 openMediaEditor("reel", item);
                               }}
-                              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                              className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                             >
                               Editar
                             </button>
@@ -2780,7 +2907,7 @@ export default function TuningPage({
                           onClick={() => openMediaPreview(item)}
                           className="block w-full text-left"
                         >
-                        <div className="relative aspect-[4/5] w-full">
+                        <div className="relative h-full w-full">
                           {renderMediaVisual(
                             item,
                             "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
@@ -2831,7 +2958,7 @@ export default function TuningPage({
                       {reelItems.slice(0, 4).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative min-w-[42vw] max-w-[42vw] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )}`}
                         >
@@ -2843,7 +2970,7 @@ export default function TuningPage({
                                   e.stopPropagation();
                                   openMediaEditor("reel", item);
                                 }}
-                                className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90"
+                                className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                               >
                                 Editar
                               </button>
@@ -2854,10 +2981,10 @@ export default function TuningPage({
                             onClick={() => openMediaPreview(item)}
                             className="block w-full text-left"
                           >
-                          <div className="relative aspect-[4/5] w-full">
+                          <div className="relative h-full w-full">
                             {renderMediaVisual(
                               item,
-                              "58vw",
+                              "320px",
                               "h-full w-full object-cover"
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
@@ -2899,14 +3026,52 @@ export default function TuningPage({
                       ))}
                     </div>
                   </div>
+                    </>
+                  ) : (
+                    <EmptySectionNotice
+                      title="Próximas publicaciones"
+                      message="Muy pronto llegarán formatos cortos, previews verticales y clips rápidos del universo Tuning."
+                    />
+                  )}
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="py-8">
+          <section className={`${!tuningSettings.ads.billboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-8`}>
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               {renderEditableAd("billboard")}
+            </div>
+          </section>
+
+          <section className="py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="Últimas publicaciones"
+                title="Lo más reciente en MotorWelt"
+                description="Una selección actualizada con las publicaciones más nuevas de todas las secciones."
+                accent="cool"
+              />
+
+              {latestItems.length > 0 ? (
+                <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+                  <div className="flex snap-x snap-mandatory gap-4">
+                    {latestItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
+                      >
+                        <LatestArticleCard item={item} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <EmptySectionNotice
+                  title="Próximas publicaciones"
+                  message="En cuanto publiques más contenido en MotorWelt, aparecerá aquí automáticamente."
+                />
+              )}
             </div>
           </section>
 
@@ -2928,127 +3093,44 @@ export default function TuningPage({
                 </p>
               </div>
 
-              <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-                <div className="flex gap-4 snap-x snap-mandatory">
-                  <Link
+              <div className="no-scrollbar overflow-x-auto pb-6">
+                <div className="flex items-start gap-5 pr-12">
+                  <ExploreCard
+                    title="Tuning"
+                    subtitle="Builds, mods, aero, stance y cultura visual."
+                    href="/tuning"
+                    image={sectionHeroImages.tuning}
+                  />
+                  <ExploreCard
+                    title="Autos"
+                    subtitle="Nuevos lanzamientos, pruebas y contexto editorial."
                     href="/noticias/autos"
-                    className="relative w-[82%] min-w-[82%] sm:w-[420px] sm:min-w-[420px] snap-start"
-                  >
-                    <div className="relative h-[240px] w-full overflow-hidden rounded-2xl border border-mw-line/70">
-                      <Image
-                        src="/images/noticia-1.jpg"
-                        alt="Autos"
-                        fill
-                        style={{ objectFit: "cover" }}
-                      />
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                      <div className="absolute bottom-0 p-5">
-                        <p className="text-[11px] uppercase tracking-wide text-[#0CE0B2]">
-                          Noticias
-                        </p>
-
-                        <h3 className="text-2xl font-bold text-white">
-                          Autos
-                        </h3>
-
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                          Lanzamientos, pruebas, industria y todo lo que mueve al universo automotriz.
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link
+                    image={sectionHeroImages.autos}
+                  />
+                  <ExploreCard
+                    title="Motos"
+                    subtitle="Pruebas, rutas y piezas con ADN de dos ruedas."
                     href="/noticias/motos"
-                    className="relative w-[82%] min-w-[82%] sm:w-[420px] sm:min-w-[420px] snap-start"
-                  >
-                    <div className="relative h-[240px] w-full overflow-hidden rounded-2xl border border-mw-line/70">
-                      <Image
-                        src="/images/noticia-2.jpg"
-                        alt="Motos"
-                        fill
-                        style={{ objectFit: "cover" }}
-                      />
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                      <div className="absolute bottom-0 p-5">
-                        <p className="text-[11px] uppercase tracking-wide text-[#FF7A1A]">
-                          Noticias
-                        </p>
-
-                        <h3 className="text-2xl font-bold text-white">
-                          Motos
-                        </h3>
-
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                          Pruebas, rutas y cultura de motociclismo con enfoque visual.
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link
+                    image={sectionHeroImages.motos}
+                  />
+                  <ExploreCard
+                    title="Deportes"
+                    subtitle="Competencia, paddock y piezas con peso visual real."
                     href="/deportes"
-                    className="relative w-[82%] min-w-[82%] sm:w-[420px] sm:min-w-[420px] snap-start"
-                  >
-                    <div className="relative h-[240px] w-full overflow-hidden rounded-2xl border border-mw-line/70">
-                      <Image
-                        src="/images/noticia-3.jpg"
-                        alt="Deportes"
-                        fill
-                        style={{ objectFit: "cover" }}
-                      />
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                      <div className="absolute bottom-0 p-5">
-                        <p className="text-[11px] uppercase tracking-wide text-[#A3FF12]">
-                          Sección
-                        </p>
-
-                        <h3 className="text-2xl font-bold text-white">
-                          Deportes
-                        </h3>
-
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                          Motorsport, competencia y adrenalina con mirada editorial.
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link
+                    image={sectionHeroImages.deportes}
+                  />
+                  <ExploreCard
+                    title="Lifestyle"
+                    subtitle="La capa aspiracional y estética del universo MotorWelt."
                     href="/lifestyle"
-                    className="relative w-[82%] min-w-[82%] sm:w-[420px] sm:min-w-[420px] snap-start"
-                  >
-                    <div className="relative h-[240px] w-full overflow-hidden rounded-2xl border border-mw-line/70">
-                      <Image
-                        src="/images/noticia-1.jpg"
-                        alt="Lifestyle"
-                        fill
-                        style={{ objectFit: "cover" }}
-                      />
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                      <div className="absolute bottom-0 p-5">
-                        <p className="text-[11px] uppercase tracking-wide text-[#E2A24C]">
-                          Sección
-                        </p>
-
-                        <h3 className="text-2xl font-bold text-white">
-                          Lifestyle
-                        </h3>
-
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
-                          Diseño, viajes, gadgets y cultura alrededor de MotorWelt.
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
+                    image={sectionHeroImages.lifestyle}
+                  />
+                  <ExploreCard
+                    title="Comunidad"
+                    subtitle="Eventos, meets, rutas y cultura desde la calle."
+                    href="/comunidad"
+                    image={sectionHeroImages.comunidad}
+                  />
                 </div>
               </div>
             </div>
@@ -3108,7 +3190,7 @@ export default function TuningPage({
               </h4>
               <div className="mt-2 flex gap-4">
                 <a
-                  href="https://instagram.com/motorwelt"
+                  href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -3116,7 +3198,7 @@ export default function TuningPage({
                   IG
                 </a>
                 <a
-                  href="https://facebook.com/motorwelt"
+                  href="https://www.facebook.com/share/18JRxV8AAu/"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -3124,7 +3206,7 @@ export default function TuningPage({
                   FB
                 </a>
                 <a
-                  href="https://tiktok.com/@motorwelt"
+                  href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -3132,7 +3214,7 @@ export default function TuningPage({
                   TikTok
                 </a>
                 <a
-                  href="https://youtube.com/@motorwelt"
+                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"
@@ -3282,12 +3364,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     | order(coalesce(publishedAt, _createdAt) desc)[0...16]{
       "id": _id,
       "title": coalesce(title, ""),
-      "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
+      "excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, galleryUrls[0], ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
       "_createdAt": _createdAt,
       "typeLabel": coalesce(contentType, "Build"),
+      "authorName": coalesce(authorName, author->name, ""),
       "galleryUrls": coalesce(galleryUrls, []),
       "videoUrl": coalesce(videoUrl, youtubeUrl, ""),
       "reelUrl": coalesce(reelUrl, shortVideoUrl, socialUrl, "")
@@ -3324,9 +3407,53 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     }
   `;
 
-  const [tuningRaw, tuningSettingsRaw] = await Promise.all([
+  const latestQuery = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado"
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...24]{
+      _id,
+      title,
+      excerpt,
+      subtitle,
+      seoDescription,
+      slug,
+      publishedAt,
+      _createdAt,
+      section,
+      category,
+      subcategory,
+      categories,
+      tags,
+      "mainImageUrl": coalesce(
+        mainImageUrl,
+        coverImage.asset->url,
+        mainImage.asset->url,
+        heroImage.asset->url,
+        image.asset->url,
+        galleryUrls[0]
+      ),
+      "galleryUrls": coalesce(galleryUrls, [])
+    }
+  `;
+
+  const sectionSettingsQuery = `
+    *[
+      _type in ["sitePageSettings", "pageSettings", "homeSettings"] &&
+      pageKey in ["tuning", "deportes", "lifestyle", "comunidad", "autos", "motos"]
+    ]{
+      pageKey,
+      "heroImageUrl": coalesce(heroImageUrl, "")
+    }
+  `;
+
+  const [tuningRaw, tuningSettingsRaw, sectionSettingsRaw, latestRaw] = await Promise.all([
     sanityReadClient.fetch(tuningQuery),
     sanityReadClient.fetch(tuningSettingsQuery).catch(() => null),
+    sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
+    sanityReadClient.fetch(latestQuery).catch(() => []),
   ]);
 
   const formatWhen = (iso?: string | null) => {
@@ -3348,6 +3475,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     href: detailHref(it?.slug),
     when: formatWhen(it?.publishedAt || it?._createdAt),
     typeLabel: String(it?.typeLabel || "Build"),
+    authorName: String(it?.authorName || "MotorWelt"),
     galleryUrls: Array.isArray(it?.galleryUrls)
       ? it.galleryUrls.filter(Boolean).map((url: unknown) => String(url))
       : [],
@@ -3355,8 +3483,57 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     reelUrl: String(it?.reelUrl || ""),
   }));
 
-  const fallbackHero =
-    tuningItems[0]?.img || DEFAULT_TUNING_SETTINGS.heroImageUrl;
+  const latestItems: LatestArticleData[] = (Array.isArray(latestRaw) ? latestRaw : [])
+    .map((it: any) => {
+      const slug = getSlugValue(it?.slug);
+      if (!slug) return null;
+
+      const sectionData = getLatestSectionData(it);
+      if (!sectionData) return null;
+
+      const img =
+        String(it?.mainImageUrl || "").trim() ||
+        (Array.isArray(it?.galleryUrls) && it.galleryUrls[0]
+          ? String(it.galleryUrls[0])
+          : "/images/noticia-3.jpg");
+
+      return {
+        id: String(it?._id || slug),
+        title: String(it?.title || ""),
+        excerpt: String(
+          it?.excerpt ||
+            it?.subtitle ||
+            it?.seoDescription ||
+            "Lee la publicación completa en MotorWelt."
+        ),
+        img,
+        href: `${sectionData.hrefBase}/${slug}`,
+        when: formatWhen(it?.publishedAt || it?._createdAt),
+        sectionLabel: sectionData.label,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 18) as LatestArticleData[];
+
+  const fallbackHero = DEFAULT_TUNING_SETTINGS.heroImageUrl;
+
+  const settingsMap = new Map<string, string>();
+  if (Array.isArray(sectionSettingsRaw)) {
+    for (const item of sectionSettingsRaw) {
+      const key = String(item?.pageKey || "").trim();
+      const value = String(item?.heroImageUrl || "").trim();
+      if (key && value) settingsMap.set(key, value);
+    }
+  }
+
+  const sectionHeroImages = sanitizeSectionHeroImages({
+    tuning: settingsMap.get("tuning"),
+    autos: settingsMap.get("autos"),
+    motos: settingsMap.get("motos"),
+    deportes: settingsMap.get("deportes"),
+    lifestyle: settingsMap.get("lifestyle"),
+    comunidad: settingsMap.get("comunidad"),
+  });
 
   return {
     props: {
@@ -3371,6 +3548,8 @@ export async function getServerSideProps({ locale }: { locale: string }) {
         tuningSettingsRaw,
         fallbackHero
       ),
+      sectionHeroImages,
+      latestItems,
     },
   };
 }
