@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@sanity/vision": "^3.57.4",
+    "country-state-city": "^3.2.1",
     "sanity": "^3.57.4",
     "styled-components": "^6.3.12"
   }
