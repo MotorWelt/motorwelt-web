@@ -32,6 +32,7 @@ type ArticleCardData = {
   href: string;
   when: string;
   category: LifestyleKey;
+  authorName: string;
 };
 
 type LatestArticleData = {
@@ -94,6 +95,8 @@ type RawPost = {
   tags?: Array<
     string | { title?: string; name?: string; label?: string; value?: string }
   >;
+  authorName?: string;
+  author?: { name?: string };
 };
 
 const LIFESTYLE_SECTIONS: LifestyleKey[] = [
@@ -145,15 +148,15 @@ const getButtonClasses = (
   className = ""
 ) => {
   const base =
-    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition will-change-transform focus:outline-none";
+    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold text-white transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60";
 
   const styles: Record<ButtonVariant, string> = {
     cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus:ring-2 focus:ring-[#0CE0B2]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+      "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#0CE0B2]/35",
     pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+      "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(255,122,26,.24),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.34),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
     link:
-      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
+      "border border-white/10 bg-white/[0.035] px-4 py-2 text-xs no-underline shadow-[0_0_18px_rgba(255,122,26,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
   };
 
   return `${base} ${styles[variant]} ${className}`.trim();
@@ -186,7 +189,8 @@ function formatWhen(iso?: string | null) {
 
 function normalizeText(value: unknown) {
   if (!value) return "";
-  if (Array.isArray(value)) return value.map(normalizeText).join(" ").toLowerCase();
+  if (Array.isArray(value))
+    return value.map(normalizeText).join(" ").toLowerCase();
   if (typeof value === "object") {
     const item = value as Record<string, unknown>;
     return String(item.title || item.name || item.label || item.value || "")
@@ -265,7 +269,9 @@ function detectLifestyleCategory(post: RawPost): LifestyleKey | null {
 
   if (isClearlyOtherSection) return null;
 
-  const blob = controlledFields.includes("lifestyle") ? fullBlob : controlledFields;
+  const blob = controlledFields.includes("lifestyle")
+    ? fullBlob
+    : controlledFields;
 
   if (
     blob.includes("lifestyle_moda") ||
@@ -320,7 +326,10 @@ function detectLifestyleCategory(post: RawPost): LifestyleKey | null {
   return null;
 }
 
-function getLatestSectionData(post: RawPost): { label: string; hrefBase: string } | null {
+function getLatestSectionData(post: RawPost): {
+  label: string;
+  hrefBase: string;
+} | null {
   const blob = [
     post.section,
     post.category,
@@ -367,10 +376,7 @@ function getLatestSectionData(post: RawPost): { label: string; hrefBase: string 
     return { label: "Deportes", hrefBase: "/deportes" };
   }
 
-  if (
-    blob.includes("lifestyle") ||
-    detectLifestyleCategory(post)
-  ) {
+  if (blob.includes("lifestyle") || detectLifestyleCategory(post)) {
     return { label: "Lifestyle", hrefBase: "/lifestyle" };
   }
 
@@ -428,15 +434,19 @@ function sanitizeSectionHeroImages(
   raw?: Partial<SectionHeroImages>
 ): SectionHeroImages {
   return {
-    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    tuning:
+      String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
     autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
     motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
     deportes:
-      String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+      String(raw?.deportes || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.deportes,
     lifestyle:
-      String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+      String(raw?.lifestyle || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.lifestyle,
     comunidad:
-      String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+      String(raw?.comunidad || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.comunidad,
   };
 }
 
@@ -465,10 +475,10 @@ const SectionHeader: React.FC<{
 }> = ({ eyebrow, title, description, accent = "warm" }) => {
   const lineClass =
     accent === "cool"
-      ? "from-[#0CE0B2] via-[#43A1AD] to-[#E2A24C]"
+      ? "from-[#0CE0B2]/60 via-[#43A1AD]/55 to-[#E2A24C]/55"
       : accent === "lime"
-      ? "from-[#A3FF12] via-[#0CE0B2] to-[#FF7A1A]"
-      : "from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]";
+        ? "from-[#A3FF12]/60 via-[#0CE0B2]/55 to-[#FF7A1A]/60"
+        : "from-[#FF7A1A]/70 via-[#E2A24C]/55 to-[#0CE0B2]/55";
 
   return (
     <div className="mb-8 sm:mb-10">
@@ -478,7 +488,9 @@ const SectionHeader: React.FC<{
       <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
         {title}
       </h2>
-      <div className={`mt-3 h-1 w-28 rounded-full bg-gradient-to-r ${lineClass}`} />
+      <div
+        className={`mt-3 h-px w-28 rounded-full bg-gradient-to-r ${lineClass}`}
+      />
       {description ? (
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
           {description}
@@ -496,36 +508,58 @@ function ArticleCard({
   compact?: boolean;
 }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[24px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#FF7A1A]/45">
-      <Link href={item.href} className="block h-full">
-        <div className={`relative w-full ${compact ? "h-[118px] sm:h-48" : "h-64"} overflow-hidden`}>
+    <article className="group h-full overflow-hidden rounded-[24px] border border-white/[0.06] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
+      <Link href={item.href} className="flex h-full flex-col">
+        <div
+          className={`relative w-full ${
+            compact ? "h-[112px] sm:h-48" : "h-64"
+          } overflow-hidden`}
+        >
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes={compact ? "(max-width: 1024px) 80vw, 320px" : "(max-width: 1024px) 100vw, 33vw"}
+            sizes={
+              compact
+                ? "(max-width: 1024px) 290px, 320px"
+                : "(max-width: 1024px) 100vw, 33vw"
+            }
             style={{ objectFit: "cover" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
+          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
             {item.category}
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <div className="text-xs text-gray-400">{item.when}</div>
-          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#FFB36B] sm:text-xl">
+        <div className="flex flex-1 flex-col p-4 sm:p-5">
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#FFB36B] sm:text-xl">
             {item.title}
           </h3>
-          <p className="mt-3 text-sm leading-relaxed text-gray-300 line-clamp-3">
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-300 sm:line-clamp-3">
             {item.excerpt}
           </p>
 
-          <div className="mt-auto pt-4">
-  <span className={getButtonClasses("link")}>Leer más</span>
-</div>
+          <div className="mt-auto flex flex-wrap items-center gap-2 pt-3 text-xs text-gray-400">
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
+
+          <div className="hidden pt-4 md:block">
+            <span
+              className={getButtonClasses(
+                "pink",
+                "h-10 rounded-xl px-4 py-0 text-sm leading-none"
+              )}
+            >
+              Leer más
+            </span>
+          </div>
         </div>
       </Link>
     </article>
@@ -534,25 +568,25 @@ function ArticleCard({
 
 function LatestArticleCard({ item }: { item: LatestArticleData }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[22px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/40">
+    <article className="group h-full overflow-hidden rounded-[22px] border border-white/[0.08] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
       <Link href={item.href} className="flex h-full flex-col">
         <div className="relative h-36 w-full overflow-hidden">
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes="(max-width: 1024px) 78vw, 260px"
+            sizes="(max-width: 1024px) 78vw, 280px"
             style={{ objectFit: "cover" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
 
-          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
+          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
             {item.sectionLabel}
           </div>
         </div>
 
-        <div className="p-4">
+        <div className="flex flex-1 flex-col p-4">
           <div className="text-[11px] text-gray-400">{item.when}</div>
           <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
             {item.title}
@@ -570,10 +604,16 @@ function CompactSideItem({ item }: { item: ArticleCardData }) {
   return (
     <Link
       href={item.href}
-      className="group grid grid-cols-[112px_1fr] gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition hover:border-[#FF7A1A]/35 hover:bg-white/[0.055]"
+      className="group grid grid-cols-[112px_1fr] gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 transition hover:border-white/12 hover:bg-white/[0.055]"
     >
       <div className="relative h-24 overflow-hidden rounded-xl">
-        <Image src={item.img} alt={item.title} fill sizes="140px" style={{ objectFit: "cover" }} />
+        <Image
+          src={item.img}
+          alt={item.title}
+          fill
+          sizes="140px"
+          style={{ objectFit: "cover" }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
       </div>
 
@@ -587,7 +627,11 @@ function CompactSideItem({ item }: { item: ArticleCardData }) {
         <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-400">
           {item.excerpt}
         </p>
-        <p className="mt-2 text-[11px] text-gray-500">{item.when}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
+          {item.authorName ? <span>Por {item.authorName}</span> : null}
+          {item.authorName && item.when ? <span>•</span> : null}
+          {item.when ? <span>{item.when}</span> : null}
+        </div>
       </div>
     </Link>
   );
@@ -595,8 +639,8 @@ function CompactSideItem({ item }: { item: ArticleCardData }) {
 
 function EmptyCategoryCard({ title }: { title: LifestyleKey }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
+    <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04]">
         <span className="h-2.5 w-2.5 rounded-full bg-[#FF7A1A]" />
       </div>
       <h3 className="mt-5 text-xl font-semibold text-white">{title}</h3>
@@ -623,7 +667,7 @@ function LifestyleCategoryLayout({
           {items.slice(0, 8).map((item) => (
             <div
               key={item.id}
-              className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
+              className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
             >
               <ArticleCard item={item} compact />
             </div>
@@ -642,12 +686,14 @@ function LifestyleCategoryLayout({
         <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,.72fr)]">
           <ArticleCard item={mainItem} />
 
-          <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/10 bg-mw-surface/45 p-3 no-scrollbar">
+          <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/[0.08] bg-mw-surface/45 p-3 no-scrollbar">
             <div className="space-y-3">
               {sideItems.length > 0 ? (
-                sideItems.map((item) => <CompactSideItem key={item.id} item={item} />)
+                sideItems.map((item) => (
+                  <CompactSideItem key={item.id} item={item} />
+                ))
               ) : (
-                <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-gray-400">
+                <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-gray-400">
                   Por ahora solo hay una nota en esta categoría.
                 </div>
               )}
@@ -660,7 +706,7 @@ function LifestyleCategoryLayout({
             {items.slice(0, 8).map((item) => (
               <div
                 key={item.id}
-                className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
+                className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
               >
                 <ArticleCard item={item} compact />
               </div>
@@ -683,12 +729,14 @@ function LifestyleCategoryLayout({
           ))}
         </div>
 
-        <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/10 bg-mw-surface/45 p-3 no-scrollbar">
+        <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/[0.08] bg-mw-surface/45 p-3 no-scrollbar">
           <div className="space-y-3">
             {sideItems.length > 0 ? (
-              sideItems.map((item) => <CompactSideItem key={item.id} item={item} />)
+              sideItems.map((item) => (
+                <CompactSideItem key={item.id} item={item} />
+              ))
             ) : (
-              <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-gray-400">
+              <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-gray-400">
                 Por ahora solo hay pocas notas en esta categoría.
               </div>
             )}
@@ -701,7 +749,7 @@ function LifestyleCategoryLayout({
           {items.slice(0, 8).map((item) => (
             <div
               key={item.id}
-              className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
+              className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
             >
               <ArticleCard item={item} compact />
             </div>
@@ -726,7 +774,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]"
+      className="group relative block h-[270px] w-[290px] min-w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/25 transition hover:border-white/14 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
     >
       <div className="absolute inset-0">
         <img
@@ -736,12 +784,12 @@ function ExploreCard({
           style={{ filter: "brightness(.42) saturate(1.08)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/32 to-black/75" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.09),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.08),transparent_28%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.08),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.07),transparent_28%)]" />
       </div>
 
       <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
         <div className="mb-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
             Explora
           </span>
@@ -775,7 +823,7 @@ function PartnersRow({ partners }: { partners: PartnerLogo[] }) {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {partners.map((partner) => {
             const content = (
-              <div className="relative h-24 overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70">
+              <div className="relative h-24 overflow-hidden rounded-2xl border border-white/[0.08] bg-mw-surface/70">
                 <Image
                   src={partner.imageUrl}
                   alt={partner.name}
@@ -815,7 +863,7 @@ function Header({
 }) {
   return (
     <>
-      <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
+      <header className="fixed left-0 top-0 z-50 w-full border-b border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
         <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
           <div className="flex items-center">
             <Link
@@ -834,35 +882,53 @@ function Header({
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center justify-center">
+          <div className="hidden items-center justify-center md:flex">
             <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
-              <Link href="/tuning" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/tuning"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 Tuning
               </Link>
 
-              <Link href="/noticias/autos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/noticias/autos"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 Autos
               </Link>
 
-              <Link href="/noticias/motos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/noticias/motos"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 Motos
               </Link>
 
-              <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/deportes"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 Deportes
               </Link>
 
-              <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none border-b-2 border-[#FF7A1A] text-white">
+              <Link
+                href="/lifestyle"
+                className="inline-flex h-10 items-center leading-none border-b-2 border-[#FF7A1A] text-white"
+              >
                 Lifestyle
               </Link>
 
-              <Link href="/comunidad" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+              <Link
+                href="/comunidad"
+                className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+              >
                 Comunidad
               </Link>
             </nav>
           </div>
 
-          <div className="hidden md:flex items-center justify-end">
+          <div className="hidden items-center justify-end md:flex">
             <ProfileButton />
           </div>
 
@@ -870,13 +936,24 @@ function Header({
             <ProfileButton />
             <button
               onClick={() => setMobileOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
               aria-label="Abrir menú"
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M4 6h16M4 12h16M4 18h16"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
           </div>
@@ -885,43 +962,92 @@ function Header({
 
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] md:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden
+          />
 
           <aside
             id="mobile-menu"
-            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
+            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/[0.08] bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
           >
-            <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
-              <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={140} height={32} className="h-8 w-auto" />
-              <button onClick={() => setMobileOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5" aria-label="Cerrar menú">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-4">
+              <Image
+                src="/brand/motorwelt-logo.png"
+                alt="MotorWelt logo"
+                width={140}
+                height={32}
+                className="h-8 w-auto"
+              />
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
+                aria-label="Cerrar menú"
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M6 6l12 12M18 6l-12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
             </div>
 
             <nav className="px-4 py-3">
-              <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/tuning"
+                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                onClick={() => setMobileOpen(false)}
+              >
                 Tuning
               </Link>
 
-              <Link href="/noticias/autos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/noticias/autos"
+                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                onClick={() => setMobileOpen(false)}
+              >
                 Autos
               </Link>
 
-              <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/noticias/motos"
+                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                onClick={() => setMobileOpen(false)}
+              >
                 Motos
               </Link>
 
-              <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/deportes"
+                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                onClick={() => setMobileOpen(false)}
+              >
                 Deportes
               </Link>
 
-              <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-white" onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/lifestyle"
+                className="block w-full rounded-xl px-3 py-3 text-base text-white"
+                onClick={() => setMobileOpen(false)}
+              >
                 Lifestyle
               </Link>
 
-              <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/comunidad"
+                className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                onClick={() => setMobileOpen(false)}
+              >
                 Comunidad
               </Link>
             </nav>
@@ -957,7 +1083,7 @@ function AdSlot({
 
   return (
     <div
-      className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70 ${
+      className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-mw-surface/70 ${
         isLeaderboard
           ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
           : "max-w-[970px] aspect-[970/250]"
@@ -966,15 +1092,30 @@ function AdSlot({
       {ad.enabled ? (
         ad.imageUrl ? (
           ad.href ? (
-            <a href={ad.href} target="_blank" rel="noreferrer" className="block h-full w-full">
-              <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
+            <a
+              href={ad.href}
+              target="_blank"
+              rel="noreferrer"
+              className="block h-full w-full"
+            >
+              <img
+                src={ad.imageUrl}
+                alt={ad.label}
+                className="h-full w-full bg-black/20 object-cover object-center"
+              />
             </a>
           ) : (
-            <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
+            <img
+              src={ad.imageUrl}
+              alt={ad.label}
+              className="h-full w-full bg-black/20 object-cover object-center"
+            />
           )
         ) : (
           <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
-            <span className="px-4 text-[11px] sm:text-xs md:text-sm">{ad.label}</span>
+            <span className="px-4 text-[11px] sm:text-xs md:text-sm">
+              {ad.label}
+            </span>
           </div>
         )
       ) : (
@@ -989,16 +1130,32 @@ function AdSlot({
 
       {editable && (
         <div className="absolute right-2 top-2 z-20 hidden flex-wrap items-center justify-end gap-2 md:flex">
-          <button type="button" onClick={onToggle} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
-          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
             Imagen
           </button>
-          <button type="button" onClick={onEditLink} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={onEditLink}
+            className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
             Link
           </button>
-          <button type="button" onClick={onClear} className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-full border border-red-400/35 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
+          >
             Limpiar
           </button>
         </div>
@@ -1045,10 +1202,15 @@ export default function LifestylePage({
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
 
   const grouped = useMemo(() => {
-    return LIFESTYLE_SECTIONS.reduce((acc, category) => {
-      acc[category] = lifestyleItems.filter((item) => item.category === category);
-      return acc;
-    }, {} as Record<LifestyleKey, ArticleCardData[]>);
+    return LIFESTYLE_SECTIONS.reduce(
+      (acc, category) => {
+        acc[category] = lifestyleItems.filter(
+          (item) => item.category === category
+        );
+        return acc;
+      },
+      {} as Record<LifestyleKey, ArticleCardData[]>
+    );
   }, [lifestyleItems]);
 
   const streaks: Streak[] = useMemo(
@@ -1205,7 +1367,9 @@ export default function LifestylePage({
   }
 
   const heroImage =
-    settings.heroImageUrl || lifestyleItems[0]?.img || DEFAULT_SETTINGS.heroImageUrl;
+    settings.heroImageUrl ||
+    lifestyleItems[0]?.img ||
+    DEFAULT_SETTINGS.heroImageUrl;
 
   return (
     <>
@@ -1254,17 +1418,21 @@ export default function LifestylePage({
         </div>
 
         {canEdit && (
-          <div className="fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#FF7A1A]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
+          <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-[#FF7A1A]/25 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-[#FF7A1A] animate-pulse" />
-              <span>{spectatorMode ? "Vista espectador" : "Modo edición lifestyle"}</span>
+              <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-[#FF7A1A]" />
+              <span>
+                {spectatorMode
+                  ? "Vista espectador"
+                  : "Modo edición lifestyle"}
+              </span>
               {saving && <span className="text-[#FFB36B]">Guardando…</span>}
             </div>
             {error && <div className="mt-1 text-red-300">{error}</div>}
             <button
               type="button"
               onClick={() => setSpectatorMode((v) => !v)}
-              className="mt-2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="mt-2 rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               {spectatorMode ? "Volver a editar" : "Ver como espectador"}
             </button>
@@ -1281,7 +1449,10 @@ export default function LifestylePage({
                 alt="Lifestyle | MotorWelt"
                 fill
                 sizes="100vw"
-                style={{ objectFit: "cover", filter: "brightness(.38) saturate(1.14)" }}
+                style={{
+                  objectFit: "cover",
+                  filter: "brightness(.38) saturate(1.14)",
+                }}
                 priority
               />
 
@@ -1290,11 +1461,11 @@ export default function LifestylePage({
               <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
 
               {editControlsVisible && (
-                <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
+                <div className="absolute right-4 top-20 z-20 hidden flex-wrap gap-2 md:flex">
                   <button
                     type="button"
                     onClick={() => heroInputRef.current?.click()}
-                    className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                    className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
                   >
                     Cambiar portada
                   </button>
@@ -1304,19 +1475,22 @@ export default function LifestylePage({
               <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:pb-16 xl:px-10">
                 <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
                       Lifestyle • Style • Motor Culture
                     </div>
 
                     <h1 className="mt-5 font-display text-[2.8rem] font-black leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.4rem]">
                       <span className="glow-warm block">Lifestyle</span>
-                      <span className="block text-white/95">Beyond the Drive</span>
+                      <span className="block text-white/95">
+                        Beyond the Drive
+                      </span>
                     </h1>
 
                     <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                      Moda, relojería, vida fuera de pista y cine automovilístico.
-                      La capa más aspiracional, estética y humana del universo MotorWelt.
+                      Moda, relojería, vida fuera de pista y cine
+                      automovilístico. La capa más aspiracional, estética y
+                      humana del universo MotorWelt.
                     </p>
                   </div>
                 </div>
@@ -1325,16 +1499,22 @@ export default function LifestylePage({
           </section>
 
           {(settings.ads.leaderboard.enabled || editControlsVisible) && (
-            <section className={`${!settings.ads.leaderboard.enabled ? "hidden md:block" : ""} py-4 sm:py-6`}>
+            <section
+              className={`${
+                !settings.ads.leaderboard.enabled ? "hidden md:block" : ""
+              } py-4 sm:py-6`}
+            >
               <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
                 <AdSlot
                   kind="leaderboard"
-                ad={settings.ads.leaderboard}
-                editable={editControlsVisible}
-                inputRef={leaderboardInputRef}
-                onToggle={() => void toggleAd("leaderboard")}
-                onPick={(files) => void handleAdImagePick("leaderboard", files)}
-                onEditLink={() => void editAdLink("leaderboard")}
+                  ad={settings.ads.leaderboard}
+                  editable={editControlsVisible}
+                  inputRef={leaderboardInputRef}
+                  onToggle={() => void toggleAd("leaderboard")}
+                  onPick={(files) =>
+                    void handleAdImagePick("leaderboard", files)
+                  }
+                  onEditLink={() => void editAdLink("leaderboard")}
                   onClear={() => void clearAdImage("leaderboard")}
                 />
               </div>
@@ -1357,29 +1537,26 @@ export default function LifestylePage({
                     category === "Moda"
                       ? "moda"
                       : category === "Relojería"
-                      ? "relojeria"
-                      : category === "Fuera del volante"
-                      ? "fuera-del-volante"
-                      : "cine-automovilistico";
+                        ? "relojeria"
+                        : category === "Fuera del volante"
+                          ? "fuera-del-volante"
+                          : "cine-automovilistico";
 
                   return (
                     <section key={category} id={id} className="scroll-mt-28">
-                      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">
-                            Categoría
-                          </p>
-                          <h3 className="mt-1 text-3xl font-bold text-white">{category}</h3>
-                        </div>
-
-                        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-gray-300">
-                          {items.length > 0
-                            ? `${items.length} publicación${items.length === 1 ? "" : "es"}`
-                            : "Próximamente"}
-                        </div>
+                      <div className="mb-6">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">
+                          Categoría
+                        </p>
+                        <h3 className="mt-1 text-3xl font-bold text-white">
+                          {category}
+                        </h3>
                       </div>
 
-                      <LifestyleCategoryLayout category={category} items={items} />
+                      <LifestyleCategoryLayout
+                        category={category}
+                        items={items}
+                      />
                     </section>
                   );
                 })}
@@ -1388,16 +1565,22 @@ export default function LifestylePage({
           </section>
 
           {(settings.ads.billboard.enabled || editControlsVisible) && (
-            <section className={`${!settings.ads.billboard.enabled ? "hidden md:block" : ""} py-8`}>
+            <section
+              className={`${
+                !settings.ads.billboard.enabled ? "hidden md:block" : ""
+              } py-8`}
+            >
               <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
                 <AdSlot
                   kind="billboard"
-                ad={settings.ads.billboard}
-                editable={editControlsVisible}
-                inputRef={billboardInputRef}
-                onToggle={() => void toggleAd("billboard")}
-                onPick={(files) => void handleAdImagePick("billboard", files)}
-                onEditLink={() => void editAdLink("billboard")}
+                  ad={settings.ads.billboard}
+                  editable={editControlsVisible}
+                  inputRef={billboardInputRef}
+                  onToggle={() => void toggleAd("billboard")}
+                  onPick={(files) =>
+                    void handleAdImagePick("billboard", files)
+                  }
+                  onEditLink={() => void editAdLink("billboard")}
                   onClear={() => void clearAdImage("billboard")}
                 />
               </div>
@@ -1419,7 +1602,7 @@ export default function LifestylePage({
                     {latestItems.map((item) => (
                       <div
                         key={item.id}
-                        className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
+                        className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-[285px] sm:w-[300px] sm:min-w-[300px] lg:h-[285px] lg:w-[280px] lg:min-w-[280px]"
                       >
                         <LatestArticleCard item={item} />
                       </div>
@@ -1427,7 +1610,7 @@ export default function LifestylePage({
                   </div>
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center text-gray-300">
+                <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center text-gray-300">
                   Próximamente habrá contenido disponible en MotorWelt.
                 </div>
               )}
@@ -1436,24 +1619,55 @@ export default function LifestylePage({
 
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-              <div className="mb-8 text-center">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
+              <div className="mb-8">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-gray-400">
                   Explora
                 </p>
 
-                <h2 className="mt-2 font-display text-3xl font-bold text-white">
+                <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
                   Seguir explorando MotorWelt
                 </h2>
+                <div className="mt-3 h-px w-24 rounded-full bg-gradient-to-r from-[#0CE0B2]/60 to-[#E2A24C]/55" />
               </div>
 
               <div className="no-scrollbar overflow-x-auto pb-6">
                 <div className="flex items-start gap-5 pr-12">
-                  <ExploreCard title="Tuning" subtitle="Builds, mods, aero, stance y cultura visual." href="/tuning" image={sectionHeroImages.tuning} />
-                  <ExploreCard title="Autos" subtitle="Nuevos lanzamientos, pruebas y contexto editorial." href="/noticias/autos" image={sectionHeroImages.autos} />
-                  <ExploreCard title="Motos" subtitle="Pruebas, rutas y piezas con ADN de dos ruedas." href="/noticias/motos" image={sectionHeroImages.motos} />
-                  <ExploreCard title="Deportes" subtitle="Competencia, paddock y piezas con peso visual real." href="/deportes" image={sectionHeroImages.deportes} />
-                  <ExploreCard title="Lifestyle" subtitle="La capa aspiracional y estética del universo MotorWelt." href="/lifestyle" image={sectionHeroImages.lifestyle} />
-                  <ExploreCard title="Comunidad" subtitle="Eventos, meets, rutas y cultura desde la calle." href="/comunidad" image={sectionHeroImages.comunidad} />
+                  <ExploreCard
+                    title="Tuning"
+                    subtitle="Builds, mods, aero, stance y cultura visual."
+                    href="/tuning"
+                    image={sectionHeroImages.tuning}
+                  />
+                  <ExploreCard
+                    title="Autos"
+                    subtitle="Nuevos lanzamientos, pruebas y contexto editorial."
+                    href="/noticias/autos"
+                    image={sectionHeroImages.autos}
+                  />
+                  <ExploreCard
+                    title="Motos"
+                    subtitle="Pruebas, rutas y piezas con ADN de dos ruedas."
+                    href="/noticias/motos"
+                    image={sectionHeroImages.motos}
+                  />
+                  <ExploreCard
+                    title="Deportes"
+                    subtitle="Competencia, paddock y piezas con peso visual real."
+                    href="/deportes"
+                    image={sectionHeroImages.deportes}
+                  />
+                  <ExploreCard
+                    title="Lifestyle"
+                    subtitle="La capa aspiracional y estética del universo MotorWelt."
+                    href="/lifestyle"
+                    image={sectionHeroImages.lifestyle}
+                  />
+                  <ExploreCard
+                    title="Comunidad"
+                    subtitle="Eventos, meets, rutas y cultura desde la calle."
+                    href="/comunidad"
+                    image={sectionHeroImages.comunidad}
+                  />
                 </div>
               </div>
             </div>
@@ -1464,11 +1678,17 @@ export default function LifestylePage({
 
         <footer
           aria-hidden={mobileOpen}
-          className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
+          className="relative z-10 mt-12 border-t border-white/[0.08] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
           <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 xl:px-10 2xl:max-w-[1560px]">
             <div>
-              <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={160} height={36} className="logo-glow h-9 w-auto" />
+              <Image
+                src="/brand/motorwelt-logo.png"
+                alt="MotorWelt logo"
+                width={160}
+                height={36}
+                className="logo-glow h-9 w-auto"
+              />
               <p className="mt-2 text-sm">
                 Cultura automotriz, motociclismo, tuning y comunidad con enfoque
                 visual, editorial y aspiracional.
@@ -1478,20 +1698,64 @@ export default function LifestylePage({
             <div>
               <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
-                <li><Link href="/about" className="hover:text-white">About</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contacto</Link></li>
-                <li><Link href="/terminos" className="hover:text-white">Términos y condiciones</Link></li>
-                <li><Link href="/privacidad" className="hover:text-white">Política de privacidad</Link></li>
+                <li>
+                  <Link href="/about" className="hover:text-white">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-white">
+                    Contacto
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terminos" className="hover:text-white">
+                    Términos y condiciones
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacidad" className="hover:text-white">
+                    Política de privacidad
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
-                <a href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">IG</a>
-                <a href="https://www.facebook.com/share/18JRxV8AAu/" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">FB</a>
-                <a href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">TikTok</a>
-                <a href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">YouTube</a>
+                <a
+                  href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  IG
+                </a>
+                <a
+                  href="https://www.facebook.com/share/18JRxV8AAu/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  FB
+                </a>
+                <a
+                  href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  TikTok
+                </a>
+                <a
+                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  YouTube
+                </a>
               </div>
             </div>
           </div>
@@ -1513,10 +1777,21 @@ export default function LifestylePage({
         .mw-global-base {
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(120% 80% at 20% 10%, rgba(0, 0, 0, 0.15) 0%, transparent 60%),
-            radial-gradient(120% 80% at 80% 90%, rgba(0, 0, 0, 0.18) 0%, transparent 60%),
-            linear-gradient(180deg, rgba(4, 18, 16, 0.85), rgba(4, 18, 16, 0.85));
+          background: radial-gradient(
+              120% 80% at 20% 10%,
+              rgba(0, 0, 0, 0.15) 0%,
+              transparent 60%
+            ),
+            radial-gradient(
+              120% 80% at 80% 90%,
+              rgba(0, 0, 0, 0.18) 0%,
+              transparent 60%
+            ),
+            linear-gradient(
+              180deg,
+              rgba(4, 18, 16, 0.85),
+              rgba(4, 18, 16, 0.85)
+            );
         }
         .streak-wrap {
           position: absolute;
@@ -1531,34 +1806,69 @@ export default function LifestylePage({
           width: 220%;
           height: 100%;
           will-change: transform, opacity;
-          filter: blur(.5px);
+          filter: blur(0.5px);
         }
         @keyframes slide-fwd {
-          0% { transform: translateX(-30%); opacity: 0; }
-          10% { opacity: .9; }
-          100% { transform: translateX(130%); opacity: 0; }
+          0% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
         }
         @keyframes slide-rev {
-          0% { transform: translateX(130%); opacity: 0; }
-          10% { opacity: .9; }
-          100% { transform: translateX(-30%); opacity: 0; }
+          0% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
         }
-        .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
-        .streak.dir-rev { animation: slide-rev 11s linear infinite; }
+        .streak.dir-fwd {
+          animation: slide-fwd 11s linear infinite;
+        }
+        .streak.dir-rev {
+          animation: slide-rev 11s linear infinite;
+        }
         .streak-cool {
-          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(12, 224, 178, 0.72),
+            transparent
+          );
         }
         .streak-warm {
-          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 122, 26, 0.72),
+            transparent
+          );
         }
         .streak-lime {
-          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .9), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(163, 255, 18, 0.65),
+            transparent
+          );
         }
         .glow-warm {
-          text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
+          text-shadow: 0 0 14px rgba(255, 122, 26, 0.22);
         }
         .logo-glow {
-          filter: drop-shadow(0 0 18px rgba(12,224,178,.12));
+          filter: drop-shadow(0 0 18px rgba(12, 224, 178, 0.12));
         }
         .no-scrollbar {
           -ms-overflow-style: none;
@@ -1571,7 +1881,7 @@ export default function LifestylePage({
         @media (prefers-reduced-motion: reduce) {
           .streak {
             animation: none !important;
-            opacity: .35;
+            opacity: 0.35;
           }
         }
 
@@ -1609,6 +1919,8 @@ export async function getServerSideProps() {
       subcategory,
       categories,
       tags,
+      authorName,
+      author->{name},
       "mainImageUrl": coalesce(
         mainImageUrl,
         coverImage.asset->url,
@@ -1730,6 +2042,7 @@ export async function getServerSideProps() {
         href: `/lifestyle/${slug}`,
         when: formatWhen(it.publishedAt || it._createdAt),
         category,
+        authorName: String(it.authorName || it.author?.name || "MotorWelt"),
       };
     })
     .filter(Boolean) as ArticleCardData[];

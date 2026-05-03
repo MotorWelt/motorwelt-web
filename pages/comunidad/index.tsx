@@ -139,15 +139,15 @@ const getButtonClasses = (
   className = ""
 ) => {
   const base =
-    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition will-change-transform focus:outline-none";
+    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold text-white transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60";
 
   const styles: Record<ButtonVariant, string> = {
     cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus:ring-2 focus:ring-[#0CE0B2]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+      "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#0CE0B2]/35",
     pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+      "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(255,122,26,.24),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.34),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
     link:
-      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
+      "border border-white/10 bg-white/[0.035] px-4 py-2 text-xs no-underline shadow-[0_0_18px_rgba(255,122,26,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
   };
 
   return `${base} ${styles[variant]} ${className}`.trim();
@@ -264,43 +264,95 @@ function getMainImage(it: RawPost, fallback = "/images/comunidad.jpg") {
   );
 }
 
-function getLatestSectionData(post: RawPost): { label: string; hrefBase: string } | null {
-  const blob = [post.section, post.category, post.subcategory, post.categories, post.tags]
+function getLatestSectionData(post: RawPost): {
+  label: string;
+  hrefBase: string;
+} | null {
+  const blob = [
+    post.section,
+    post.category,
+    post.subcategory,
+    post.categories,
+    post.tags,
+  ]
     .map(normalizeText)
     .join(" ");
 
-  if (blob.includes("noticias_autos") || blob.includes("autos") || blob.includes("auto")) {
+  if (
+    blob.includes("noticias_autos") ||
+    blob.includes("autos") ||
+    blob.includes("auto")
+  ) {
     return { label: "Autos", hrefBase: "/noticias/autos" };
   }
-  if (blob.includes("noticias_motos") || blob.includes("motos") || blob.includes("moto")) {
+  if (
+    blob.includes("noticias_motos") ||
+    blob.includes("motos") ||
+    blob.includes("moto")
+  ) {
     return { label: "Motos", hrefBase: "/noticias/motos" };
   }
-  if (blob.includes("tuning") || blob.includes("builds") || blob.includes("mods")) {
+  if (
+    blob.includes("tuning") ||
+    blob.includes("builds") ||
+    blob.includes("mods")
+  ) {
     return { label: "Tuning", hrefBase: "/tuning" };
   }
-  if (blob.includes("deportes") || blob.includes("f1") || blob.includes("nascar") || blob.includes("motogp") || blob.includes("wrc") || blob.includes("drift") || blob.includes("rally")) {
+  if (
+    blob.includes("deportes") ||
+    blob.includes("f1") ||
+    blob.includes("nascar") ||
+    blob.includes("motogp") ||
+    blob.includes("wrc") ||
+    blob.includes("drift") ||
+    blob.includes("rally")
+  ) {
     return { label: "Deportes", hrefBase: "/deportes" };
   }
-  if (blob.includes("lifestyle") || blob.includes("moda") || blob.includes("relojería") || blob.includes("relojeria") || blob.includes("cine") || blob.includes("fuera del volante")) {
+  if (
+    blob.includes("lifestyle") ||
+    blob.includes("moda") ||
+    blob.includes("relojería") ||
+    blob.includes("relojeria") ||
+    blob.includes("cine") ||
+    blob.includes("fuera del volante")
+  ) {
     return { label: "Lifestyle", hrefBase: "/lifestyle" };
   }
-  if (blob.includes("comunidad") || blob.includes("evento") || blob.includes("eventos") || blob.includes("meet") || blob.includes("meets") || blob.includes("rutas") || blob.includes("club")) {
+  if (
+    blob.includes("comunidad") ||
+    blob.includes("evento") ||
+    blob.includes("eventos") ||
+    blob.includes("meet") ||
+    blob.includes("meets") ||
+    blob.includes("rutas") ||
+    blob.includes("club")
+  ) {
     return { label: "Comunidad", hrefBase: "/comunidad" };
   }
   return null;
 }
 
-function sanitizeSectionHeroImages(raw?: Partial<SectionHeroImages>): SectionHeroImages {
+function sanitizeSectionHeroImages(
+  raw?: Partial<SectionHeroImages>
+): SectionHeroImages {
   return {
-    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    tuning:
+      String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
     autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
     motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
-    deportes: String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
-    lifestyle: String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
-    comunidad: String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+    deportes:
+      String(raw?.deportes || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.deportes,
+    lifestyle:
+      String(raw?.lifestyle || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+    comunidad:
+      String(raw?.comunidad || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.comunidad,
   };
 }
-
 
 function sanitizePageSettings(
   raw?: any,
@@ -394,21 +446,25 @@ const SectionHeader: React.FC<{
             {title}
           </h2>
           {subtle ? (
-            <p className="mt-2 text-gray-300 max-w-2xl mx-auto md:mx-0">
+            <p className="mx-auto mt-2 max-w-2xl text-gray-300 md:mx-0">
               {subtle}
             </p>
           ) : null}
           <div
-            className={`mt-3 h-1 w-28 rounded-full mx-auto md:mx-0 ${
+            className={`mx-auto mt-3 h-px w-28 rounded-full md:mx-0 ${
               glow === "cool"
-                ? "bg-gradient-to-r from-[#0CE0B2] via-[#A3FF12] to-[#E2A24C]"
-                : "bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]"
+                ? "bg-gradient-to-r from-[#0CE0B2]/65 via-[#A3FF12]/55 to-[#E2A24C]/55"
+                : "bg-gradient-to-r from-[#FF7A1A]/70 via-[#E2A24C]/55 to-[#0CE0B2]/55"
             }`}
           />
         </div>
 
         {showAction && actionLabel && onAction ? (
-          <button type="button" onClick={onAction} className={getButtonClasses("pink")}>
+          <button
+            type="button"
+            onClick={onAction}
+            className={`${getButtonClasses("pink")} hidden md:inline-flex`}
+          >
             {actionLabel}
           </button>
         ) : null}
@@ -417,33 +473,72 @@ const SectionHeader: React.FC<{
   );
 };
 
-function CommunityCard({ item }: { item: CommunityItem }) {
+function CommunityCard({
+  item,
+  mobileSize = false,
+}: {
+  item: CommunityItem;
+  mobileSize?: boolean;
+}) {
   return (
-    <article className="rounded-2xl border border-mw-line/70 bg-mw-surface/80 overflow-hidden hover:border-[#0CE0B2]/50 transition will-change-transform hover:-translate-y-[2px]">
-      <Link href={item.href} className="block">
-        <div className="relative h-48">
+    <article
+      className={`overflow-hidden rounded-2xl border border-white/[0.06] bg-mw-surface/80 transition hover:-translate-y-[2px] hover:border-white/12 ${
+        mobileSize ? "h-full" : ""
+      }`}
+    >
+      <Link href={item.href} className="flex h-full flex-col">
+        <div className={`relative ${mobileSize ? "h-[112px]" : "h-48"}`}>
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes="(max-width: 1024px) 50vw, 33vw"
+            sizes={mobileSize ? "290px" : "(max-width: 1024px) 50vw, 33vw"}
             style={{ objectFit: "cover" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          <span className="absolute left-3 top-3 rounded-full border border-white/20 bg-black/50 px-2 py-0.5 text-xs text-white/90 backdrop-blur">
+          <span className="absolute left-3 top-3 rounded-full border border-white/[0.08] bg-black/50 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-white/90 backdrop-blur">
             {item.type}
           </span>
         </div>
 
-        <div className="p-5">
-          <div className="text-xs text-gray-300">
+        <div className={mobileSize ? "flex flex-1 flex-col p-4" : "flex flex-1 flex-col p-5"}>
+          <div
+            className={
+              mobileSize
+                ? "text-[10.5px] leading-tight text-gray-400"
+                : "text-xs text-gray-300"
+            }
+          >
             {item.when}
             {item.place ? ` • ${item.place}` : ""}
           </div>
-          <h4 className="mt-1 text-white font-semibold">{item.title}</h4>
-          <p className="mt-2 text-sm text-gray-300 line-clamp-3">{item.excerpt}</p>
-          <div className="mt-3">
-            <span className={getButtonClasses("link")}>Ver detalles</span>
+          <h4
+            className={
+              mobileSize
+                ? "mt-2 line-clamp-2 text-base font-semibold leading-tight text-white"
+                : "mt-1 font-semibold text-white"
+            }
+          >
+            {item.title}
+          </h4>
+          <p
+            className={
+              mobileSize
+                ? "mt-2 line-clamp-2 text-[12px] leading-relaxed text-gray-300"
+                : "mt-2 line-clamp-3 text-sm text-gray-300"
+            }
+          >
+            {item.excerpt}
+          </p>
+          <div className={mobileSize ? "hidden" : "mt-auto hidden pt-4 md:block"}>
+            <span
+              className={getButtonClasses(
+                "pink",
+                "h-10 rounded-xl px-4 py-0 text-sm leading-none"
+              )}
+            >
+              Leer más
+            </span>
           </div>
         </div>
       </Link>
@@ -459,7 +554,7 @@ function GalleryCard({
   caption: string;
 }) {
   return (
-    <figure className="rounded-2xl border border-mw-line/70 bg-mw-surface/70 overflow-hidden">
+    <figure className="overflow-hidden rounded-2xl border border-white/[0.08] bg-mw-surface/70">
       <div className="relative h-36 md:h-40">
         <Image
           src={img}
@@ -486,16 +581,18 @@ function ClubCard({
   href?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-mw-line/70 bg-mw-surface/80 p-5">
-      <h4 className="text-white font-semibold">{title}</h4>
-      <p className="text-sm text-gray-300 mt-1">{area}</p>
-      <p className="text-xs text-gray-400 mt-1">{members} miembros</p>
+    <div className="rounded-2xl border border-white/[0.08] bg-mw-surface/80 p-5">
+      <h4 className="font-semibold text-white">{title}</h4>
+      <p className="mt-1 text-sm text-gray-300">{area}</p>
+      <p className="mt-1 text-xs text-gray-400">{members} miembros</p>
       {href ? (
-        <Link href={href} className="inline-flex mt-3">
-          <span className={getButtonClasses("link")}>Ver grupo</span>
+        <Link href={href} className="mt-3 hidden md:inline-flex">
+          <span className={getButtonClasses("pink", "h-10 rounded-xl px-4 py-0 text-sm leading-none")}>
+            Leer más
+          </span>
         </Link>
       ) : (
-        <Button type="button" variant="link" className="mt-3">
+        <Button type="button" variant="pink" className="mt-3 hidden h-10 rounded-xl px-4 py-0 text-sm leading-none md:inline-flex">
           Unirme
         </Button>
       )}
@@ -503,46 +600,77 @@ function ClubCard({
   );
 }
 
-
 function LatestArticleCard({ item }: { item: LatestArticleData }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[22px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/40">
+    <article className="group h-full overflow-hidden rounded-[22px] border border-white/[0.08] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
       <Link href={item.href} className="flex h-full flex-col">
         <div className="relative h-36 w-full overflow-hidden">
-          <Image src={item.img} alt={item.title} fill sizes="(max-width: 1024px) 78vw, 260px" style={{ objectFit: "cover" }} />
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="(max-width: 1024px) 78vw, 280px"
+            style={{ objectFit: "cover" }}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
-          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
+          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
             {item.sectionLabel}
           </div>
         </div>
-        <div className="p-4">
+        <div className="flex flex-1 flex-col p-4">
           <div className="text-[11px] text-gray-400">{item.when}</div>
-          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">{item.title}</h3>
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">{item.excerpt}</p>
+          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+            {item.title}
+          </h3>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+            {item.excerpt}
+          </p>
         </div>
       </Link>
     </article>
   );
 }
 
-function ExploreCard({ title, subtitle, href, image }: { title: string; subtitle: string; href: string; image: string }) {
+function ExploreCard({
+  title,
+  subtitle,
+  href,
+  image,
+}: {
+  title: string;
+  subtitle: string;
+  href: string;
+  image: string;
+}) {
   return (
-    <Link href={href} className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]">
+    <Link
+      href={href}
+      className="group relative block h-[270px] w-[290px] min-w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/25 transition hover:border-white/14 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
+    >
       <div className="absolute inset-0">
-        <img src={image} alt={title} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]" style={{ filter: "brightness(.42) saturate(1.08)" }} />
+        <img
+          src={image}
+          alt={title}
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.06]"
+          style={{ filter: "brightness(.42) saturate(1.08)" }}
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/32 to-black/75" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.09),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.08),transparent_28%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.08),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.07),transparent_28%)]" />
       </div>
       <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
         <div className="mb-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
             Explora
           </span>
         </div>
-        <h3 className="max-w-[85%] text-[2.1rem] font-extrabold leading-[0.92] tracking-tight text-white drop-shadow-[0_6px_20px_rgba(0,0,0,.5)] sm:text-[2.45rem]">{title}</h3>
-        <p className="mt-3 max-w-[88%] text-sm leading-relaxed text-white/88 drop-shadow-[0_4px_14px_rgba(0,0,0,.42)] sm:text-[0.98rem]">{subtitle}</p>
+        <h3 className="max-w-[85%] text-[2.1rem] font-extrabold leading-[0.92] tracking-tight text-white drop-shadow-[0_6px_20px_rgba(0,0,0,.5)] sm:text-[2.45rem]">
+          {title}
+        </h3>
+        <p className="mt-3 max-w-[88%] text-sm leading-relaxed text-white/88 drop-shadow-[0_4px_14px_rgba(0,0,0,.42)] sm:text-[0.98rem]">
+          {subtitle}
+        </p>
       </div>
     </Link>
   );
@@ -563,7 +691,7 @@ function PartnersRow({ partners }: { partners: PartnerLogo[] }) {
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {partners.map((partner) => {
             const content = (
-              <div className="relative h-24 overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70">
+              <div className="relative h-24 overflow-hidden rounded-2xl border border-white/[0.08] bg-mw-surface/70">
                 <Image
                   src={partner.imageUrl}
                   alt={partner.name}
@@ -603,7 +731,7 @@ function Header({
 }) {
   return (
     <>
-      <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
+      <header className="fixed left-0 top-0 z-50 w-full border-b border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
         <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
           <div className="flex items-center">
             <Link
@@ -622,35 +750,30 @@ function Header({
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center justify-center">
+          <div className="hidden items-center justify-center md:flex">
             <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
               <Link href="/tuning" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Tuning
               </Link>
-
               <Link href="/noticias/autos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Autos
               </Link>
-
               <Link href="/noticias/motos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Motos
               </Link>
-
               <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Deportes
               </Link>
-
               <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
                 Lifestyle
               </Link>
-
               <Link href="/comunidad" className="inline-flex h-10 items-center leading-none border-b-2 border-[#0CE0B2] text-white">
                 Comunidad
               </Link>
             </nav>
           </div>
 
-          <div className="hidden md:flex items-center justify-end">
+          <div className="hidden items-center justify-end md:flex">
             <ProfileButton />
           </div>
 
@@ -658,7 +781,7 @@ function Header({
             <ProfileButton />
             <button
               onClick={() => setMobileOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
               aria-label="Abrir menú"
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
@@ -677,9 +800,9 @@ function Header({
 
           <aside
             id="mobile-menu"
-            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
+            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/[0.08] bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
           >
-            <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-4">
               <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={140} height={32} className="h-8 w-auto" />
               <button onClick={() => setMobileOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5" aria-label="Cerrar menú">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -692,23 +815,18 @@ function Header({
               <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Tuning
               </Link>
-
               <Link href="/noticias/autos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Autos
               </Link>
-
               <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Motos
               </Link>
-
               <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Deportes
               </Link>
-
               <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
                 Lifestyle
               </Link>
-
               <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-white" onClick={() => setMobileOpen(false)}>
                 Comunidad
               </Link>
@@ -745,7 +863,7 @@ function AdSlot({
 
   return (
     <div
-      className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70 ${
+      className={`relative mx-auto w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-mw-surface/70 ${
         isLeaderboard
           ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
           : "max-w-[970px] aspect-[970/250]"
@@ -755,10 +873,10 @@ function AdSlot({
         ad.imageUrl ? (
           ad.href ? (
             <a href={ad.href} target="_blank" rel="noreferrer" className="block h-full w-full">
-              <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
+              <img src={ad.imageUrl} alt={ad.label} className="h-full w-full bg-black/20 object-cover object-center" />
             </a>
           ) : (
-            <img src={ad.imageUrl} alt={ad.label} className="h-full w-full object-cover object-center bg-black/20" />
+            <img src={ad.imageUrl} alt={ad.label} className="h-full w-full bg-black/20 object-cover object-center" />
           )
         ) : (
           <div className="flex h-full w-full items-center justify-center text-center text-gray-400">
@@ -777,16 +895,16 @@ function AdSlot({
 
       {editable && (
         <div className="absolute right-2 top-2 z-20 hidden flex-wrap items-center justify-end gap-2 md:flex">
-          <button type="button" onClick={onToggle} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button type="button" onClick={onToggle} className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
-          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Imagen
           </button>
-          <button type="button" onClick={onEditLink} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button type="button" onClick={onEditLink} className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
             Link
           </button>
-          <button type="button" onClick={onClear} className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
+          <button type="button" onClick={onClear} className="rounded-full border border-red-400/35 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
             Limpiar
           </button>
         </div>
@@ -1207,7 +1325,7 @@ export default function ComunidadPage({
 
       {composerOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
-          <div className="w-full max-w-2xl rounded-[28px] border border-white/10 bg-[#041210] p-6 shadow-2xl backdrop-blur-xl">
+          <div className="w-full max-w-2xl rounded-[28px] border border-white/[0.08] bg-[#041210] p-6 shadow-2xl backdrop-blur-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
@@ -1348,7 +1466,7 @@ export default function ComunidadPage({
 
       {contactOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
-          <div className="w-full max-w-2xl rounded-[28px] border border-white/10 bg-[#041210] p-6 shadow-2xl backdrop-blur-xl">
+          <div className="w-full max-w-2xl rounded-[28px] border border-white/[0.08] bg-[#041210] p-6 shadow-2xl backdrop-blur-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
@@ -1469,9 +1587,9 @@ export default function ComunidadPage({
         </div>
 
         {canEdit && (
-          <div className="hidden md:block fixed bottom-4 left-4 z-[80] rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur">
+          <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-[#0CE0B2]/25 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
+              <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-[#0CE0B2]" />
               <span>{spectatorMode ? "Vista espectador" : "Modo edición comunidad"}</span>
               {saving && <span className="text-[#0CE0B2]">Guardando…</span>}
             </div>
@@ -1479,7 +1597,7 @@ export default function ComunidadPage({
             <button
               type="button"
               onClick={() => setSpectatorMode((v) => !v)}
-              className="mt-2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="mt-2 rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               {spectatorMode ? "Volver a editar" : "Ver como espectador"}
             </button>
@@ -1505,11 +1623,11 @@ export default function ComunidadPage({
               <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
 
               {editControlsVisible && (
-                <div className="absolute right-4 top-20 z-20 flex flex-wrap gap-2">
+                <div className="absolute right-4 top-20 z-20 hidden flex-wrap gap-2 md:flex">
                   <button
                     type="button"
                     onClick={() => heroInputRef.current?.click()}
-                    className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                    className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
                   >
                     Cambiar portada
                   </button>
@@ -1519,7 +1637,7 @@ export default function ComunidadPage({
               <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:pb-16 xl:px-10">
                 <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
                       MotorWelt Comunidad
                     </div>
@@ -1543,13 +1661,13 @@ export default function ComunidadPage({
               <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
                 <AdSlot
                   kind="leaderboard"
-                ad={settings.ads.leaderboard}
-                editable={editControlsVisible}
-                inputRef={leaderboardInputRef}
-                onToggle={() => void toggleAd("leaderboard")}
-                onPick={(files) => void handleAdImagePick("leaderboard", files)}
-                onEditLink={() => void editAdLink("leaderboard")}
-                onClear={() => void clearAdImage("leaderboard")}
+                  ad={settings.ads.leaderboard}
+                  editable={editControlsVisible}
+                  inputRef={leaderboardInputRef}
+                  onToggle={() => void toggleAd("leaderboard")}
+                  onPick={(files) => void handleAdImagePick("leaderboard", files)}
+                  onEditLink={() => void editAdLink("leaderboard")}
+                  onClear={() => void clearAdImage("leaderboard")}
                 />
               </div>
             </section>
@@ -1567,7 +1685,7 @@ export default function ComunidadPage({
                   onAction={() => openComposer("Eventos")}
                 />
 
-                <article className="relative overflow-hidden rounded-3xl border border-mw-line/70 bg-mw-surface/70">
+                <article className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-mw-surface/70">
                   <Link href={featured.href} className="block">
                     <div className="relative h-[40vh] min-h-[320px]">
                       <Image
@@ -1580,28 +1698,28 @@ export default function ComunidadPage({
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                       <div className="absolute inset-0">
-                        <div className="absolute -left-24 -bottom-28 h-96 w-96 rounded-full bg-[#0CE0B2]/25 blur-3xl" />
-                        <div className="absolute -right-14 -top-24 h-[28rem] w-[28rem] rounded-full bg-[#A3FF12]/15 blur-3xl" />
+                        <div className="absolute -bottom-28 -left-24 h-96 w-96 rounded-full bg-[#0CE0B2]/20 blur-3xl" />
+                        <div className="absolute -right-14 -top-24 h-[28rem] w-[28rem] rounded-full bg-[#A3FF12]/12 blur-3xl" />
                       </div>
                     </div>
 
                     <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
-                      <span className="inline-block rounded-full border border-white/30 bg-black/40 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
+                      <span className="inline-block rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
                         {featured.when}
                         {featured.place ? ` — ${featured.place}` : ""}
                       </span>
 
-                      <h3 className="mt-3 text-3xl md:text-4xl font-extrabold text-white">
+                      <h3 className="mt-3 text-3xl font-extrabold text-white md:text-4xl">
                         {featured.title}
                       </h3>
 
-                      <p className="mt-3 max-w-2xl text-sm md:text-base text-gray-200">
+                      <p className="mt-3 max-w-2xl text-sm text-gray-200 md:text-base">
                         {featured.excerpt}
                       </p>
 
-                      <div className="mt-5 flex flex-wrap gap-3">
+                      <div className="mt-5 hidden flex-wrap gap-3 md:flex">
                         <span className={getButtonClasses("cyan")}>Confirmar asistencia</span>
-                        <span className={getButtonClasses("pink")}>Ver detalles</span>
+                        <span className={getButtonClasses("pink")}>Leer más</span>
                       </div>
                     </div>
                   </Link>
@@ -1626,15 +1744,30 @@ export default function ComunidadPage({
               </p>
 
               {upcoming.length === 0 ? (
-                <div className="rounded-3xl border border-white/10 bg-black/25 p-8 text-center text-gray-300">
+                <div className="rounded-3xl border border-white/[0.08] bg-black/25 p-8 text-center text-gray-300">
                   Próximamente habrá eventos publicados en esta sección.
                 </div>
               ) : (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                  {upcoming.map((item) => (
-                    <CommunityCard key={item.id} item={item} />
-                  ))}
-                </div>
+                <>
+                  <div className="hidden grid-cols-1 gap-6 sm:grid-cols-2 md:grid lg:grid-cols-3">
+                    {upcoming.map((item) => (
+                      <CommunityCard key={item.id} item={item} />
+                    ))}
+                  </div>
+
+                  <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
+                    <div className="flex snap-x snap-mandatory gap-4">
+                      {upcoming.map((item) => (
+                        <div
+                          key={item.id}
+                          className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+                        >
+                          <CommunityCard item={item} mobileSize />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </section>
@@ -1651,7 +1784,7 @@ export default function ComunidadPage({
               />
 
               {galleryItems.length > 0 ? (
-                <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                   {galleryItems.map((item, idx) => (
                     <GalleryCard
                       key={item.id}
@@ -1661,7 +1794,7 @@ export default function ComunidadPage({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center text-gray-300">
+                <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center text-gray-300">
                   Próximamente tendremos highlights visuales de la comunidad.
                 </div>
               )}
@@ -1680,7 +1813,7 @@ export default function ComunidadPage({
               />
 
               {clubItems.length > 0 ? (
-                <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   {clubItems.map((club, index) => (
                     <ClubCard
                       key={club.id}
@@ -1692,7 +1825,7 @@ export default function ComunidadPage({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center text-gray-300">
+                <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center text-gray-300">
                   Próximamente habrá clubes y grupos publicados en esta sección.
                 </div>
               )}
@@ -1704,13 +1837,13 @@ export default function ComunidadPage({
               <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
                 <AdSlot
                   kind="billboard"
-                ad={settings.ads.billboard}
-                editable={editControlsVisible}
-                inputRef={billboardInputRef}
-                onToggle={() => void toggleAd("billboard")}
-                onPick={(files) => void handleAdImagePick("billboard", files)}
-                onEditLink={() => void editAdLink("billboard")}
-                onClear={() => void clearAdImage("billboard")}
+                  ad={settings.ads.billboard}
+                  editable={editControlsVisible}
+                  inputRef={billboardInputRef}
+                  onToggle={() => void toggleAd("billboard")}
+                  onPick={(files) => void handleAdImagePick("billboard", files)}
+                  onEditLink={() => void editAdLink("billboard")}
+                  onClear={() => void clearAdImage("billboard")}
                 />
               </div>
             </section>
@@ -1718,22 +1851,22 @@ export default function ComunidadPage({
 
           <section className="pt-12">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-              <div className="rounded-[28px] border border-white/10 bg-black/20 p-6 md:p-8 backdrop-blur-md">
+              <div className="rounded-[28px] border border-white/[0.08] bg-black/20 p-6 backdrop-blur-md md:p-8">
                 <div className="grid gap-6 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
                   <div>
                     <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
                       MotorWelt Comunidad
                     </p>
-                    <h3 className="mt-2 text-3xl md:text-4xl font-extrabold text-white">
+                    <h3 className="mt-2 text-3xl font-extrabold text-white md:text-4xl">
                       Publica tu evento en MotorWelt
                     </h3>
-                    <p className="mt-3 max-w-2xl text-sm md:text-base text-gray-300">
+                    <p className="mt-3 max-w-2xl text-sm text-gray-300 md:text-base">
                       Si organizas un meet, ruta, trackday, cars & coffee o encuentro especial,
                       este espacio está pensado para darle visibilidad, contexto y presencia visual.
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                  <div className="rounded-2xl border border-white/[0.08] bg-white/5 p-5">
                     <p className="text-sm text-gray-300">
                       Podrás integrar:
                     </p>
@@ -1760,28 +1893,42 @@ export default function ComunidadPage({
 
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-              <SectionHeader title="Últimas publicaciones" subtle="Lo más reciente publicado en MotorWelt, mezclando todas las secciones conforme se actualiza el sitio." glow="cool" />
+              <SectionHeader
+                title="Últimas publicaciones"
+                subtle="Lo más reciente publicado en MotorWelt, mezclando todas las secciones conforme se actualiza el sitio."
+                glow="cool"
+              />
               {latestItems.length > 0 ? (
                 <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
                   <div className="flex snap-x snap-mandatory gap-4">
                     {latestItems.map((item) => (
-                      <div key={item.id} className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]">
+                      <div
+                        key={item.id}
+                        className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-[285px] sm:w-[300px] sm:min-w-[300px] lg:h-[285px] lg:w-[280px] lg:min-w-[280px]"
+                      >
                         <LatestArticleCard item={item} />
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center text-gray-300">Próximamente habrá contenido disponible en MotorWelt.</div>
+                <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center text-gray-300">
+                  Próximamente habrá contenido disponible en MotorWelt.
+                </div>
               )}
             </div>
           </section>
 
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-              <div className="mb-8 text-center">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">Explora</p>
-                <h2 className="mt-2 font-display text-3xl font-bold text-white">Seguir explorando MotorWelt</h2>
+              <div className="mb-8">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-gray-400">
+                  Explora
+                </p>
+                <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
+                  Seguir explorando MotorWelt
+                </h2>
+                <div className="mt-3 h-px w-24 rounded-full bg-gradient-to-r from-[#0CE0B2]/60 to-[#E2A24C]/55" />
               </div>
               <div className="no-scrollbar overflow-x-auto pb-6">
                 <div className="flex items-start gap-5 pr-12">
@@ -1801,7 +1948,7 @@ export default function ComunidadPage({
 
         <footer
           aria-hidden={mobileOpen}
-          className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
+          className="relative z-10 mt-12 border-t border-white/[0.08] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
           <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 xl:px-10 2xl:max-w-[1560px]">
             <div>
@@ -1933,16 +2080,19 @@ export default function ComunidadPage({
         .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
         .streak.dir-rev { animation: slide-rev 11s linear infinite; }
         .streak-cool {
-          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
+          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .72), transparent);
         }
         .streak-warm {
-          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .72), transparent);
         }
         .streak-lime {
-          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .9), transparent);
+          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .65), transparent);
+        }
+        .glow-cool {
+          text-shadow: 0 0 14px rgba(12, 224, 178, 0.28);
         }
         .glow-warm {
-          text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
+          text-shadow: 0 0 14px rgba(255, 122, 26, 0.22);
         }
         .logo-glow {
           filter: drop-shadow(0 0 18px rgba(12,224,178,.12));

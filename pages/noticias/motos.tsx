@@ -59,6 +59,25 @@ const LinkButton: React.FC<{
   );
 };
 
+const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({
+  className = "",
+  children,
+}) => (
+  <div
+    className={`h-full rounded-2xl border border-white/10 bg-mw-surface/80 backdrop-blur-md transition hover:border-white/10 flex flex-col ${className}`}
+  >
+    {children}
+  </div>
+);
+
+const CardContent: React.FC<{
+  className?: string;
+  children: React.ReactNode;
+}> = ({ className = "", children }) => (
+  <div className={`p-5 flex flex-1 flex-col ${className}`}>{children}</div>
+);
+
+
 /* ---------- Helpers ---------- */
 function readCookie(name: string) {
   if (typeof document === "undefined") return "";
@@ -546,12 +565,7 @@ function CategoryRail({
           <div className="md:hidden -mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
             <div className="flex gap-4 snap-x snap-mandatory">
               {items.slice(0, 5).map((item) => (
-                <div
-                  key={item.id}
-                  className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start"
-                >
-                  <NewsCard item={item} imageHeight="h-36" />
-                </div>
+                <MobileNewsCard key={item.id} item={item} />
               ))}
             </div>
           </div>
@@ -586,9 +600,9 @@ function NewsCard({
   compact?: boolean;
 }) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-[22px] border border-white/10 bg-mw-surface/80 backdrop-blur-md transition will-change-transform hover:-translate-y-[2px] hover:border-white/10">
+    <article className="group flex h-full flex-col overflow-hidden rounded-[22px] border border-white/10 bg-mw-surface/80 backdrop-blur-md transition will-change-transform hover:-translate-y-[2px] hover:border-white/10">
       <Link href={item.slug} className="block">
-        <div className={`relative ${imageHeight}`}>
+        <div className={`relative ${imageHeight} w-full overflow-hidden`}>
           <Image
             src={item.img}
             alt={item.title}
@@ -596,36 +610,80 @@ function NewsCard({
             sizes="(max-width: 1280px) 50vw, 33vw"
             style={{ objectFit: "cover" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent md:from-black/60 md:via-black/10" />
           <span className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/55 px-2 py-0.5 text-xs text-white/90 backdrop-blur">
             {item.tag}
           </span>
         </div>
       </Link>
 
-      <div className={`${compact ? "p-4" : "p-5"} flex flex-1 flex-col`}>
-        <div className="text-xs text-gray-300">{item.when}</div>
-        <h3
-          className={`mt-1 text-white font-semibold leading-tight ${
-            compact ? "text-base" : "text-lg"
-          }`}
-        >
-          {item.title}
-        </h3>
-        <p className="mt-2 text-sm text-gray-300 line-clamp-2">{item.excerpt}</p>
+      <div className={`${compact ? "p-3 md:p-4" : "p-4 md:p-5"} flex flex-1 flex-col`}>
+        <div className="text-[11px] text-gray-400 md:text-xs md:text-gray-300">{item.when}</div>
+        <Link href={item.slug} className="block">
+          <h3
+            className={`mt-2 line-clamp-2 text-white font-semibold leading-tight transition group-hover:text-[#0CE0B2] ${
+              compact ? "text-[15px] md:text-base" : "text-base md:text-lg"
+            }`}
+          >
+            {item.title}
+          </h3>
+        </Link>
+        <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-gray-300 md:mt-2 md:text-sm">
+          {item.excerpt}
+        </p>
 
-        <div className="mt-4 mb-2 flex justify-start sm:mt-auto sm:pt-3 sm:pb-2">
-          <Link href={item.slug} className="inline-flex">
-            <Button
-              variant="pink"
-              className="rounded-xl h-7 px-3 py-0 text-[11px] leading-none sm:h-10 sm:px-4 sm:py-0 sm:text-sm"
-            >
-              {compact ? "Leer más" : "Leer completa →"}
-            </Button>
-          </Link>
+        <div className="mt-auto hidden pb-2 pt-3 md:block">
+          <LinkButton
+            href={item.slug}
+            variant="pink"
+            className="rounded-xl h-10 px-4 py-0 text-sm leading-none"
+          >
+            Leer más
+          </LinkButton>
         </div>
       </div>
     </article>
+  );
+}
+
+function MobileNewsCard({ item }: { item: NewsItem }) {
+  return (
+    <Link
+      href={item.slug}
+      className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
+    >
+      <Card className="h-full overflow-hidden">
+        <div className="relative h-36 w-full">
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="78vw"
+            style={{ objectFit: "cover" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        </div>
+
+        <CardContent className="p-4">
+          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#43A1AD]" />
+            Motos · {item.tag}
+          </div>
+
+          <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
+            {item.title}
+          </h3>
+
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+            {item.excerpt}
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -665,7 +723,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      className="group relative block h-[320px] w-[320px] min-w-[320px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/10 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
+      className="group relative block h-[270px] w-[290px] min-w-[290px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-black/25 transition hover:border-white/10 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
     >
       <div className="absolute inset-0">
         <img
@@ -1232,12 +1290,7 @@ export default function NoticiasMotos({
                 <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
                   <div className="flex gap-4 snap-x snap-mandatory">
                     {latestFive.map((item) => (
-                      <div
-                        key={item.id}
-                        className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start"
-                      >
-                        <NewsCard item={item} imageHeight="h-36" />
-                      </div>
+                      <MobileNewsCard key={item.id} item={item} />
                     ))}
                   </div>
                 </div>
@@ -1322,7 +1375,7 @@ export default function NoticiasMotos({
               <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
                 <div className="flex snap-x snap-mandatory gap-4">
                   {latestItems.map((item) => (
-                    <div key={item.id} className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]">
+                    <div key={item.id} className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]">
                       <LatestArticleCard item={item} />
                     </div>
                   ))}
@@ -1469,7 +1522,7 @@ export default function NoticiasMotos({
                   TikTok
                 </a>
                 <a
-                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yomx?si=mNFID1x-2Z81Q4yo"
+                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
                   target="_blank"
                   rel="noreferrer"
                   className="text-[#43A1AD] hover:text-white"

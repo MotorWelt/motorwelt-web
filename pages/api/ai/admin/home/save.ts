@@ -107,14 +107,36 @@ function normalizePhotoGalleries(photoGalleries?: PhotoGalleryEntry[]) {
   }));
 }
 
+function normalizePageKey(pageKey: string) {
+  const clean = String(pageKey || "home").trim();
+  const lower = clean.toLowerCase();
+
+  if (lower === "globalslugads") return "globalSlugAds";
+  if (lower === "home") return "home";
+  if (lower === "tuning") return "tuning";
+  if (lower === "autos") return "autos";
+  if (lower === "motos") return "motos";
+  if (lower === "deportes") return "deportes";
+  if (lower === "lifestyle") return "lifestyle";
+  if (lower === "comunidad") return "comunidad";
+
+  return clean;
+}
+
 function getDocIdForPage(pageKey: string) {
-  const clean = String(pageKey || "home").trim().toLowerCase();
+  const clean = normalizePageKey(pageKey);
 
   switch (clean) {
     case "home":
       return "homeSettings_main";
+    case "globalSlugAds":
+      return "globalSlugAdsSettings_main";
     case "tuning":
       return "tuningSettings_main";
+    case "autos":
+      return "autosSettings_main";
+    case "motos":
+      return "motosSettings_main";
     case "deportes":
       return "deportesSettings_main";
     case "lifestyle":
@@ -167,7 +189,7 @@ export default async function handler(
       });
     }
 
-    const pageKey = String(req.body?.pageKey || "home").trim().toLowerCase();
+    const pageKey = normalizePageKey(String(req.body?.pageKey || "home"));
     const settings = req.body?.settings;
 
     if (!settings || typeof settings !== "object") {

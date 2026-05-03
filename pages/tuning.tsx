@@ -23,13 +23,14 @@ const getButtonClasses = (
   className = ""
 ) => {
   const base =
-    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition will-change-transform focus:outline-none";
+    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition focus:outline-none focus-visible:ring-2";
+
+  const sharedButtonStyle =
+    "text-white border border-white/10 shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus-visible:ring-[#FF7A1A]/40 disabled:opacity-60 disabled:cursor-not-allowed";
 
   const styles: Record<ButtonVariant, string> = {
-    cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus:ring-2 focus:ring-[#0CE0B2]/40 disabled:opacity-60 disabled:cursor-not-allowed",
-    pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40 disabled:opacity-60 disabled:cursor-not-allowed",
+    cyan: sharedButtonStyle,
+    pink: sharedButtonStyle,
     link:
       "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
   };
@@ -55,7 +56,7 @@ const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({
   children,
 }) => (
   <div
-    className={`h-full rounded-2xl border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/50 flex flex-col ${className}`}
+    className={`h-full rounded-2xl border border-white/10 bg-mw-surface/80 backdrop-blur-md transition hover:border-white/10 flex flex-col ${className}`}
   >
     {children}
   </div>
@@ -504,10 +505,8 @@ function getKindAccent(kind: VisualMediaKind) {
   return "bg-[#A3FF12]";
 }
 
-function getKindBorder(kind: VisualMediaKind) {
-  if (kind === "photo") return "border-[#0CE0B2]/25 hover:border-[#0CE0B2]/55";
-  if (kind === "video") return "border-[#FF7A1A]/25 hover:border-[#FF7A1A]/55";
-  return "border-[#A3FF12]/25 hover:border-[#A3FF12]/55";
+function getKindBorder(_kind: VisualMediaKind) {
+  return "border-white/10 hover:border-white/10";
 }
 
 function getPlayGlow(kind: VisualMediaKind) {
@@ -645,10 +644,18 @@ const SectionHeader: React.FC<{
   );
 };
 
+function renderReadMoreButton(href: string, className = "") {
+  return (
+    <Link href={href} className="inline-flex">
+      <span className={getButtonClasses("pink", className)}>Leer más</span>
+    </Link>
+  );
+}
+
 function TuningFeatureCard({ item }: { item: TuningItem }) {
   return (
-    <Link href={item.href} className="block h-full">
-      <Card className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
+    <Card className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
+      <Link href={item.href} className="block">
         <div className="relative h-36 w-full sm:h-40">
           <Image
             src={item.img}
@@ -659,32 +666,34 @@ function TuningFeatureCard({ item }: { item: TuningItem }) {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/58 via-black/12 to-transparent" />
         </div>
+      </Link>
 
-        <CardContent className="p-4">
-          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
-            <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-            Tuning · {item.typeLabel}
-          </div>
+      <CardContent className="p-4">
+        <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+          <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+          Tuning · {item.typeLabel}
+        </div>
+        <Link href={item.href} className="block">
           <h3 className="mt-1 text-base font-semibold leading-tight text-white sm:text-lg">
             {item.title}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-gray-300 line-clamp-3">
-            {item.excerpt}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-            {item.authorName ? <span>Por {item.authorName}</span> : null}
-            {item.authorName && item.when ? (
-              <span className="text-gray-600">•</span>
-            ) : null}
-            {item.when ? <span>{item.when}</span> : null}
-          </div>
+        </Link>
+        <p className="mt-2 text-sm leading-relaxed text-gray-300 line-clamp-3">
+          {item.excerpt}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+          {item.authorName ? <span>Por {item.authorName}</span> : null}
+          {item.authorName && item.when ? (
+            <span className="text-gray-600">•</span>
+          ) : null}
+          {item.when ? <span>{item.when}</span> : null}
+        </div>
 
-          <div className="mt-4 mt-auto">
-            <span className={getButtonClasses("link")}>Leer más</span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+        <div className="mt-auto pt-6 flex justify-start">
+          {renderReadMoreButton(item.href)}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -710,7 +719,7 @@ function EmptySectionNotice({
 
 function LatestArticleCard({ item }: { item: LatestArticleData }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[22px] border border-mw-line/70 bg-mw-surface/80 backdrop-blur-md transition hover:border-[#0CE0B2]/40">
+    <article className="group h-full overflow-hidden rounded-[22px] border border-white/10 bg-mw-surface/80 backdrop-blur-md transition hover:border-white/10">
       <Link href={item.href} className="flex h-full flex-col">
         <div className="relative h-36 w-full overflow-hidden">
           <Image
@@ -755,7 +764,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      className="group relative block h-[320px] w-[320px] min-w-[320px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
+      className="group relative block h-[270px] w-[290px] min-w-[290px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-black/25 transition hover:border-white/10 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
     >
       <div className="absolute inset-0">
         <img
@@ -871,7 +880,7 @@ function PhotoGalleryEditorModal({
                 <button
                   type="button"
                   onClick={() => coverInputRef.current?.click()}
-                  className="rounded-full border border-white/20 bg-black/70 px-3 py-2 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                  className="rounded-full border border-white/10 bg-black/70 px-3 py-2 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
                 >
                   Subir portada
                 </button>
@@ -879,7 +888,7 @@ function PhotoGalleryEditorModal({
                 <button
                   type="button"
                   onClick={() => imagesInputRef.current?.click()}
-                  className="rounded-full border border-white/20 bg-black/70 px-3 py-2 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                  className="rounded-full border border-white/10 bg-black/70 px-3 py-2 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
                 >
                   Subir nuevas fotos
                 </button>
@@ -1744,7 +1753,7 @@ export default function TuningPage({
       kind === "leaderboard" ? leaderboardInputRef : billboardInputRef;
 
     const wrapClass = `
-      relative w-full mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70
+      relative w-full mx-auto overflow-hidden rounded-2xl border border-white/10 bg-mw-surface/70
       ${!ad.enabled && editControlsVisible ? "hidden md:block" : ""}
       ${
         kind === "leaderboard"
@@ -1802,28 +1811,28 @@ export default function TuningPage({
             <button
               type="button"
               onClick={() => toggleAd(kind)}
-              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               {ad.enabled ? "Ocultar" : "Mostrar"}
             </button>
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               Imagen
             </button>
             <button
               type="button"
               onClick={() => editAdLink(kind)}
-              className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               Link
             </button>
             <button
               type="button"
               onClick={() => clearAdImage(kind)}
-              className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
+              className="rounded-full border border-red-400/30 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
             >
               Limpiar
             </button>
@@ -1903,14 +1912,14 @@ export default function TuningPage({
             <button
               type="button"
               onClick={toggleSpectatorMode}
-              className="mt-2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="mt-2 rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               {spectatorMode ? "Volver a editar" : "Ver como espectador"}
             </button>
           </div>
         )}
 
-        <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
+        <header className="fixed left-0 top-0 z-50 w-full border-b border-white/10 bg-mw-surface/70 backdrop-blur-md">
           <div className="mx-auto grid h-16 w-full max-w-[1440px] 2xl:max-w-[1560px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] lg:px-8">
             <div className="flex items-center">
               <Link
@@ -1982,7 +1991,7 @@ export default function TuningPage({
 
               <button
                 onClick={() => setMobileOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
                 aria-label="Abrir menú"
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
@@ -2010,9 +2019,9 @@ export default function TuningPage({
 
             <aside
               id="mobile-menu"
-              className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
+              className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/10 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
             >
-              <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
                 <Image
                   src="/brand/motorwelt-logo.png"
                   alt="MotorWelt logo"
@@ -2135,7 +2144,7 @@ export default function TuningPage({
                     <button
                       type="button"
                       onClick={() => openGalleryEditorFromItem(activeMedia)}
-                      className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                      className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                     >
                       Editar
                     </button>
@@ -2387,7 +2396,7 @@ export default function TuningPage({
                   <button
                     type="button"
                     onClick={() => heroInputRef.current?.click()}
-                    className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                    className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
                   >
                     Cambiar portada
                   </button>
@@ -2454,7 +2463,7 @@ export default function TuningPage({
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="group block h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start text-left sm:h-auto sm:w-[300px] sm:min-w-[300px]"
+                      className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
                     >
                       <Card className="h-full overflow-hidden">
                         <div className="relative h-36 w-full">
@@ -2490,11 +2499,6 @@ export default function TuningPage({
                             {item.when ? <span>{item.when}</span> : null}
                           </div>
 
-                          <div className="mt-auto pt-3">
-                            <span className="text-[#43A1AD] underline underline-offset-4">
-                              Leer más
-                            </span>
-                          </div>
                         </CardContent>
                       </Card>
                     </Link>
@@ -2523,7 +2527,7 @@ export default function TuningPage({
                     <button
                       type="button"
                       onClick={() => openGalleryEditorFromItem()}
-                      className="hidden rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                      className="hidden rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                     >
                       Nueva galería
                     </button>
@@ -2560,7 +2564,7 @@ export default function TuningPage({
                                 e.stopPropagation();
                                 openGalleryEditorFromItem(item);
                               }}
-                              className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                              className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                             >
                               Editar
                             </button>
@@ -2617,7 +2621,7 @@ export default function TuningPage({
                       {photoItems.slice(0, 6).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )}`}
                         >
@@ -2629,7 +2633,7 @@ export default function TuningPage({
                                   e.stopPropagation();
                                   openGalleryEditorFromItem(item);
                                 }}
-                                className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                               >
                                 Editar
                               </button>
@@ -2646,7 +2650,7 @@ export default function TuningPage({
                                 src={item.img}
                                 alt={item.title}
                                 fill
-                                sizes="320px"
+                                sizes="290px"
                                 style={{ objectFit: "cover" }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
@@ -2692,7 +2696,7 @@ export default function TuningPage({
                         <button
                           type="button"
                           onClick={() => openMediaEditor("video")}
-                          className="hidden rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                          className="hidden rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                         >
                           Nuevo video
                         </button>
@@ -2718,7 +2722,7 @@ export default function TuningPage({
                                 e.stopPropagation();
                                 openMediaEditor("video", item);
                               }}
-                              className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                              className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                             >
                               Editar
                             </button>
@@ -2779,9 +2783,9 @@ export default function TuningPage({
                       {videoItems.slice(0, 4).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
-                          )} sm:h-auto sm:w-[300px] sm:min-w-[300px]`}
+                          )}`}
                         >
                           {editControlsVisible ? (
                             <div className="absolute right-3 top-3 z-20">
@@ -2791,7 +2795,7 @@ export default function TuningPage({
                                   e.stopPropagation();
                                   openMediaEditor("video", item);
                                 }}
-                                className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                               >
                                 Editar
                               </button>
@@ -2869,7 +2873,7 @@ export default function TuningPage({
                         <button
                           type="button"
                           onClick={() => openMediaEditor("reel")}
-                          className="hidden rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                          className="hidden rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                         >
                           Nuevo formato corto
                         </button>
@@ -2896,7 +2900,7 @@ export default function TuningPage({
                                 e.stopPropagation();
                                 openMediaEditor("reel", item);
                               }}
-                              className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                              className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                             >
                               Editar
                             </button>
@@ -2958,7 +2962,7 @@ export default function TuningPage({
                       {reelItems.slice(0, 4).map((item) => (
                         <div
                           key={item.id}
-                          className={`group relative h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
+                          className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
                             item.kind
                           )}`}
                         >
@@ -2970,7 +2974,7 @@ export default function TuningPage({
                                   e.stopPropagation();
                                   openMediaEditor("reel", item);
                                 }}
-                                className="hidden rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                               >
                                 Editar
                               </button>
@@ -3059,7 +3063,7 @@ export default function TuningPage({
                     {latestItems.map((item) => (
                       <div
                         key={item.id}
-                        className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
+                        className="h-[270px] w-[290px] min-w-[290px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
                       >
                         <LatestArticleCard item={item} />
                       </div>
@@ -3139,7 +3143,7 @@ export default function TuningPage({
 
         <footer
           aria-hidden={mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel}
-          className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
+          className="relative z-10 mt-12 border-t border-white/10 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
           <div className="mx-auto grid w-full max-w-[1440px] 2xl:max-w-[1560px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
             <div>

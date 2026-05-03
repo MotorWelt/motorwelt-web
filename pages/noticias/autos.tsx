@@ -17,14 +17,11 @@ const Button: React.FC<
   const base =
     "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition focus:outline-none focus-visible:ring-2";
   const map: Record<Variant, string> = {
-    cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus-visible:ring-[#0CE0B2]/40",
-    pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus-visible:ring-[#FF7A1A]/40",
+    cyan: "text-white border border-white/10 shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus-visible:ring-[#0CE0B2]/40",
+    pink: "text-white border border-white/10 shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus-visible:ring-[#FF7A1A]/40",
     ghost:
-      "text-gray-100 border border-white/15 bg-black/20 hover:bg-white/5 hover:border-white/20 focus-visible:ring-white/20",
-    link:
-      "p-0 text-[#43A1AD] underline underline-offset-4 hover:opacity-80 focus:ring-0 rounded-none shadow-none border-0",
+      "text-gray-100 border border-white/15 bg-black/20 hover:bg-white/5 hover:border-white/10 focus-visible:ring-white/20",
+    link: "p-0 text-[#43A1AD] underline underline-offset-4 hover:opacity-80 focus:ring-0 rounded-none shadow-none border-0",
   };
   return (
     <button {...props} className={`${base} ${map[variant]} ${className}`}>
@@ -42,14 +39,11 @@ const LinkButton: React.FC<{
   const base =
     "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition focus:outline-none focus-visible:ring-2";
   const map: Record<Variant, string> = {
-    cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus-visible:ring-[#0CE0B2]/40",
-    pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus-visible:ring-[#FF7A1A]/40",
+    cyan: "text-white border border-white/10 shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus-visible:ring-[#0CE0B2]/40",
+    pink: "text-white border border-white/10 shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus-visible:ring-[#FF7A1A]/40",
     ghost:
-      "text-gray-100 border border-white/15 bg-black/20 hover:bg-white/5 hover:border-white/20 focus-visible:ring-white/20",
-    link:
-      "p-0 text-[#43A1AD] underline underline-offset-4 hover:opacity-80 focus:ring-0 rounded-none shadow-none border-0",
+      "text-gray-100 border border-white/15 bg-black/20 hover:bg-white/5 hover:border-white/10 focus-visible:ring-white/20",
+    link: "p-0 text-[#43A1AD] underline underline-offset-4 hover:opacity-80 focus:ring-0 rounded-none shadow-none border-0",
   };
 
   return (
@@ -64,7 +58,7 @@ function readCookie(name: string) {
   if (typeof document === "undefined") return "";
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const match = document.cookie.match(
-    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
+    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)"),
   );
   return match ? decodeURIComponent(match[2]) : "";
 }
@@ -143,7 +137,10 @@ type Streak = {
 };
 
 /* ---------- Header ---------- */
-const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = () => {
+const SiteHeader: React.FC<{
+  query: string;
+  onQuery: (v: string) => void;
+}> = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -217,7 +214,13 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ()
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
                 <path
                   d="M4 6h16M4 12h16M4 18h16"
                   stroke="currentColor"
@@ -255,7 +258,13 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ()
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
                 aria-label="Cerrar menú"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
                   <path
                     d="M6 6l12 12M18 6l-12 12"
                     stroke="currentColor"
@@ -267,22 +276,46 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ()
             </div>
 
             <nav className="px-4 py-3">
-              <Link href="/tuning" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/tuning"
+                className={mobileLinkClass}
+                onClick={() => setMobileOpen(false)}
+              >
                 Tuning
               </Link>
-              <Link href="/noticias/autos" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/noticias/autos"
+                className={mobileLinkClass}
+                onClick={() => setMobileOpen(false)}
+              >
                 Autos
               </Link>
-              <Link href="/noticias/motos" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/noticias/motos"
+                className={mobileLinkClass}
+                onClick={() => setMobileOpen(false)}
+              >
                 Motos
               </Link>
-              <Link href="/deportes" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/deportes"
+                className={mobileLinkClass}
+                onClick={() => setMobileOpen(false)}
+              >
                 Deportes
               </Link>
-              <Link href="/lifestyle" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/lifestyle"
+                className={mobileLinkClass}
+                onClick={() => setMobileOpen(false)}
+              >
                 Lifestyle
               </Link>
-              <Link href="/comunidad" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>
+              <Link
+                href="/comunidad"
+                className={mobileLinkClass}
+                onClick={() => setMobileOpen(false)}
+              >
                 Comunidad
               </Link>
             </nav>
@@ -292,6 +325,7 @@ const SiteHeader: React.FC<{ query: string; onQuery: (v: string) => void }> = ()
     </>
   );
 };
+
 function SectionHeading({
   title,
   subtle,
@@ -324,9 +358,7 @@ function SectionHeading({
         </p>
       )}
       <div
-        className={`mt-3 h-1 w-28 rounded-full ${
-          isLeft ? "" : "mx-auto"
-        } ${
+        className={`mt-3 h-1 w-28 rounded-full ${isLeft ? "" : "mx-auto"} ${
           glow === "cool"
             ? "bg-gradient-to-r from-[#0CE0B2] via-[#A3FF12] to-[#E2A24C]"
             : "bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]"
@@ -349,6 +381,7 @@ type NewsItem = {
   img: string;
   slug: string;
   publishedAt?: string | null;
+  authorName?: string;
 };
 
 type LatestArticleData = {
@@ -359,6 +392,7 @@ type LatestArticleData = {
   href: string;
   when: string;
   sectionLabel: string;
+  authorName?: string;
 };
 
 type ExploreItem = {
@@ -408,18 +442,22 @@ const DEFAULT_SECTION_HERO_IMAGES: SectionHeroImages = {
 };
 
 function sanitizeSectionHeroImages(
-  raw?: Partial<SectionHeroImages>
+  raw?: Partial<SectionHeroImages>,
 ): SectionHeroImages {
   return {
-    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    tuning:
+      String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
     autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
     motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
     deportes:
-      String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+      String(raw?.deportes || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.deportes,
     lifestyle:
-      String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+      String(raw?.lifestyle || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.lifestyle,
     comunidad:
-      String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+      String(raw?.comunidad || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.comunidad,
   };
 }
 
@@ -451,7 +489,8 @@ function getSlugValue(slug?: string | { current?: string } | null) {
 
 function normalizeText(value: unknown) {
   if (!value) return "";
-  if (Array.isArray(value)) return value.map(normalizeText).join(" ").toLowerCase();
+  if (Array.isArray(value))
+    return value.map(normalizeText).join(" ").toLowerCase();
   if (typeof value === "object") {
     const item = value as Record<string, unknown>;
     return String(item.title || item.name || item.label || item.value || "")
@@ -461,27 +500,70 @@ function normalizeText(value: unknown) {
   return String(value).trim().toLowerCase();
 }
 
-function getLatestSectionData(post: any): { label: string; hrefBase: string } | null {
-  const blob = [post.section, post.category, post.subcategory, post.categories, post.tags]
+function getLatestSectionData(
+  post: any,
+): { label: string; hrefBase: string } | null {
+  const blob = [
+    post.section,
+    post.category,
+    post.subcategory,
+    post.categories,
+    post.tags,
+  ]
     .map(normalizeText)
     .join(" ");
 
-  if (blob.includes("noticias_autos") || blob.includes("autos") || blob.includes("auto")) {
+  if (
+    blob.includes("noticias_autos") ||
+    blob.includes("autos") ||
+    blob.includes("auto")
+  ) {
     return { label: "Autos", hrefBase: "/noticias/autos" };
   }
-  if (blob.includes("noticias_motos") || blob.includes("motos") || blob.includes("moto")) {
+  if (
+    blob.includes("noticias_motos") ||
+    blob.includes("motos") ||
+    blob.includes("moto")
+  ) {
     return { label: "Motos", hrefBase: "/noticias/motos" };
   }
-  if (blob.includes("tuning") || blob.includes("builds") || blob.includes("mods")) {
+  if (
+    blob.includes("tuning") ||
+    blob.includes("builds") ||
+    blob.includes("mods")
+  ) {
     return { label: "Tuning", hrefBase: "/tuning" };
   }
-  if (blob.includes("deportes") || blob.includes("f1") || blob.includes("nascar") || blob.includes("motogp") || blob.includes("wrc") || blob.includes("drift") || blob.includes("rally")) {
+  if (
+    blob.includes("deportes") ||
+    blob.includes("f1") ||
+    blob.includes("nascar") ||
+    blob.includes("motogp") ||
+    blob.includes("wrc") ||
+    blob.includes("drift") ||
+    blob.includes("rally")
+  ) {
     return { label: "Deportes", hrefBase: "/deportes" };
   }
-  if (blob.includes("lifestyle") || blob.includes("moda") || blob.includes("relojería") || blob.includes("relojeria") || blob.includes("cine") || blob.includes("fuera del volante")) {
+  if (
+    blob.includes("lifestyle") ||
+    blob.includes("moda") ||
+    blob.includes("relojería") ||
+    blob.includes("relojeria") ||
+    blob.includes("cine") ||
+    blob.includes("fuera del volante")
+  ) {
     return { label: "Lifestyle", hrefBase: "/lifestyle" };
   }
-  if (blob.includes("comunidad") || blob.includes("evento") || blob.includes("eventos") || blob.includes("meet") || blob.includes("meets") || blob.includes("rutas") || blob.includes("club")) {
+  if (
+    blob.includes("comunidad") ||
+    blob.includes("evento") ||
+    blob.includes("eventos") ||
+    blob.includes("meet") ||
+    blob.includes("meets") ||
+    blob.includes("rutas") ||
+    blob.includes("club")
+  ) {
     return { label: "Comunidad", hrefBase: "/comunidad" };
   }
   return null;
@@ -502,8 +584,10 @@ function normalizeAutoSection(value?: string | null) {
     .replace(/[\u0300-\u036f]/g, "");
 
   if (["gasolina", "combustion", "ice", "gas"].includes(raw)) return "gasolina";
-  if (["hibridos", "hibrido", "hybrid", "hev", "phev"].includes(raw)) return "hibridos";
-  if (["electricos", "electrico", "electric", "ev"].includes(raw)) return "electricos";
+  if (["hibridos", "hibrido", "hybrid", "hev", "phev"].includes(raw))
+    return "hibridos";
+  if (["electricos", "electrico", "electric", "ev"].includes(raw))
+    return "electricos";
   return raw;
 }
 
@@ -518,7 +602,7 @@ function autoSectionLabel(value?: string | null) {
 function itemMatchesAutoSection(
   item: NewsItem,
   sectionKey: "gasolina" | "hibridos" | "electricos",
-  fallbackTerms: string[]
+  fallbackTerms: string[],
 ) {
   const normalized = normalizeAutoSection(item.autoSection);
   if (normalized) return normalized === sectionKey;
@@ -550,15 +634,10 @@ function CategoryRail({
 
       {items.length > 0 ? (
         <>
-          <div className="md:hidden -mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-            <div className="flex gap-4 snap-x snap-mandatory">
+          <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
+            <div className="flex snap-x snap-mandatory gap-4">
               {items.slice(0, 5).map((item) => (
-                <div
-                  key={item.id}
-                  className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start"
-                      >
-                        <NewsCard item={item} imageHeight="h-36" compact />
-                </div>
+                <NewsCard key={item.id} item={item} compact mobileSize />
               ))}
             </div>
           </div>
@@ -587,55 +666,96 @@ function NewsCard({
   item,
   imageHeight = "h-48",
   compact = false,
+  mobileSize = false,
 }: {
   item: NewsItem;
   imageHeight?: string;
   compact?: boolean;
+  mobileSize?: boolean;
 }) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-mw-surface/80 transition will-change-transform hover:-translate-y-[2px] hover:border-white/10">
-      <Link href={item.slug} className="block">
-        <div className={`relative ${imageHeight}`}>
+    <Link
+      href={item.slug}
+      className={
+        mobileSize
+          ? "block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+          : "block h-full w-full"
+      }
+    >
+      <article className="flex h-full flex-col overflow-hidden rounded-[24px] border border-white/[0.06] bg-mw-surface/72 backdrop-blur-md transition will-change-transform hover:-translate-y-[2px] hover:border-white/12 hover:shadow-[0_0_24px_rgba(255,255,255,.045)]">
+        <div
+          className={`relative w-full ${
+            mobileSize ? "h-[112px]" : imageHeight
+          }`}
+        >
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes="(max-width: 1280px) 50vw, 33vw"
+            sizes={mobileSize ? "290px" : "(max-width: 1280px) 50vw, 33vw"}
             style={{ objectFit: "cover" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-          <span className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/55 px-2 py-0.5 text-xs text-white/90 backdrop-blur">
-            {item.tag}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/66 via-black/14 to-transparent" />
+          <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/90 backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.autoSectionLabel || item.tag}
           </span>
         </div>
-      </Link>
 
-      <div className={`${compact ? "p-4" : "p-5"} flex flex-1 flex-col`}>
-        <div className="text-xs text-gray-300">{item.when}</div>
-        <h3
-          className={`mt-1 text-white font-semibold leading-tight ${
-            compact ? "text-base" : "text-lg"
-          }`}
+        <div
+          className={
+            mobileSize
+              ? "flex min-h-0 flex-1 flex-col p-4"
+              : `${compact ? "p-4" : "p-5"} flex flex-1 flex-col`
+          }
         >
-          {item.title}
-        </h3>
-        <p className="mt-2 text-sm text-gray-300 line-clamp-2">{item.excerpt}</p>
-
-        <div className="mt-auto pb-3 pt-3">
-          <LinkButton
-            href={item.slug}
-            variant={compact ? "link" : "pink"}
+          <h3
             className={
-              compact
-                ? "text-sm leading-none"
-                : "rounded-xl h-10 px-4 py-0 text-sm leading-none"
+              mobileSize
+                ? "line-clamp-2 text-[1rem] font-semibold leading-tight text-white"
+                : `mt-1 text-white font-semibold leading-tight ${
+                    compact ? "text-base" : "text-lg"
+                  }`
             }
           >
-            {compact ? "Leer más" : "Leer completa →"}
-          </LinkButton>
+            {item.title}
+          </h3>
+          <p
+            className={
+              mobileSize
+                ? "mt-2 line-clamp-2 text-[12px] leading-relaxed text-gray-300"
+                : "mt-2 line-clamp-2 text-sm leading-relaxed text-gray-300"
+            }
+          >
+            {item.excerpt}
+          </p>
+
+          <div
+            className={
+              mobileSize
+                ? "mt-auto flex flex-wrap items-center gap-1.5 pt-2 text-[10.5px] leading-tight text-gray-400"
+                : "mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400"
+            }
+          >
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
+
+          <div
+            className={
+              mobileSize ? "hidden" : "mt-auto hidden pb-3 pt-4 md:block"
+            }
+          >
+            <span className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 px-4 py-0 text-sm font-semibold leading-none text-white shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] transition hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)]">
+              Leer más
+            </span>
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </Link>
   );
 }
 
@@ -686,7 +806,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      className="group relative block h-[320px] w-[320px] min-w-[320px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/10 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
+      className="group relative block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/10 md:w-[340px] md:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
     >
       <div className="absolute inset-0">
         <img
@@ -736,7 +856,7 @@ export default function NoticiasAutos({
   const [canEditPage, setCanEditPage] = useState(false);
   const [spectatorMode, setSpectatorMode] = useState(false);
   const [pageSettings, setPageSettings] = useState<AutosPageSettings>(
-    initialPageSettings || DEFAULT_AUTOS_PAGE_SETTINGS
+    initialPageSettings || DEFAULT_AUTOS_PAGE_SETTINGS,
   );
   const [pageError, setPageError] = useState<string | null>(null);
 
@@ -798,8 +918,6 @@ export default function NoticiasAutos({
     setPageSettings(initialPageSettings || DEFAULT_AUTOS_PAGE_SETTINGS);
   }, [initialPageSettings]);
 
-
-
   async function persistPageSettings(next: AutosPageSettings) {
     setPageError(null);
 
@@ -823,7 +941,9 @@ export default function NoticiasAutos({
 
       setPageSettings(next);
     } catch (err: any) {
-      setPageError(err?.message || "No se pudo guardar la configuración de Autos.");
+      setPageError(
+        err?.message || "No se pudo guardar la configuración de Autos.",
+      );
     }
   }
 
@@ -846,7 +966,7 @@ export default function NoticiasAutos({
 
   async function handleAdImagePick(
     kind: EditableAdKind,
-    files?: FileList | null
+    files?: FileList | null,
   ) {
     const file = files?.[0];
     if (!file) return;
@@ -932,7 +1052,7 @@ export default function NoticiasAutos({
         query: nextQuery,
       },
       undefined,
-      { shallow: true }
+      { shallow: true },
     );
   }
 
@@ -1052,13 +1172,29 @@ export default function NoticiasAutos({
   const latestColumns = splitFive(latestFive);
   const moreNews = displayItems.slice(5, 17);
   const gasolineItems = safeItems.filter((item) =>
-    itemMatchesAutoSection(item, "gasolina", ["gasolina", "combustión", "combustion", "ice"])
+    itemMatchesAutoSection(item, "gasolina", [
+      "gasolina",
+      "combustión",
+      "combustion",
+      "ice",
+    ]),
   );
   const hybridItems = safeItems.filter((item) =>
-    itemMatchesAutoSection(item, "hibridos", ["híbrido", "hibrido", "hybrid", "phev", "hev"])
+    itemMatchesAutoSection(item, "hibridos", [
+      "híbrido",
+      "hibrido",
+      "hybrid",
+      "phev",
+      "hev",
+    ]),
   );
   const electricItems = safeItems.filter((item) =>
-    itemMatchesAutoSection(item, "electricos", ["eléctrico", "electrico", "electric", "ev"])
+    itemMatchesAutoSection(item, "electricos", [
+      "eléctrico",
+      "electrico",
+      "electric",
+      "ev",
+    ]),
   );
   const heroImageSrc =
     pageSettings.heroImageUrl ||
@@ -1068,19 +1204,107 @@ export default function NoticiasAutos({
 
   const streaks: Streak[] = useMemo(
     () => [
-      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
-      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
-      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
-      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
-      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
-      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
-      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
-      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
-      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
-      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
-      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
+      {
+        top: "8%",
+        left: "-35%",
+        v: "cool",
+        dir: "fwd",
+        delay: "0s",
+        dur: "12s",
+        op: 0.85,
+      },
+      {
+        top: "12%",
+        left: "-28%",
+        v: "warm",
+        dir: "rev",
+        delay: ".4s",
+        dur: "10.5s",
+        op: 0.75,
+      },
+      {
+        top: "20%",
+        left: "-36%",
+        v: "lime",
+        dir: "fwd",
+        delay: "1.0s",
+        dur: "13s",
+        op: 0.8,
+      },
+      {
+        top: "28%",
+        left: "-22%",
+        v: "cool",
+        dir: "rev",
+        delay: "1.6s",
+        dur: "9.5s",
+        op: 0.9,
+      },
+      {
+        top: "36%",
+        left: "-40%",
+        v: "warm",
+        dir: "fwd",
+        delay: "2.1s",
+        dur: "11.5s",
+        op: 0.7,
+      },
+      {
+        top: "44%",
+        left: "-30%",
+        v: "cool",
+        dir: "rev",
+        delay: "2.7s",
+        dur: "12.5s",
+        op: 0.85,
+      },
+      {
+        top: "52%",
+        left: "-26%",
+        v: "warm",
+        dir: "fwd",
+        delay: "3.2s",
+        dur: "10.2s",
+        op: 0.8,
+      },
+      {
+        top: "60%",
+        left: "-18%",
+        v: "lime",
+        dir: "rev",
+        delay: "3.8s",
+        dur: "12.2s",
+        op: 0.75,
+      },
+      {
+        top: "68%",
+        left: "-34%",
+        v: "cool",
+        dir: "fwd",
+        delay: "4.4s",
+        dur: "11.2s",
+        op: 0.85,
+      },
+      {
+        top: "76%",
+        left: "-24%",
+        v: "warm",
+        dir: "rev",
+        delay: "5.0s",
+        dur: "9.8s",
+        op: 0.72,
+      },
+      {
+        top: "84%",
+        left: "-20%",
+        v: "cool",
+        dir: "fwd",
+        delay: "5.6s",
+        dur: "13.2s",
+        op: 0.82,
+      },
     ],
-    []
+    [],
   );
 
   return (
@@ -1132,7 +1356,9 @@ export default function NoticiasAutos({
           <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-white/10 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
-              <span>{spectatorMode ? "Vista espectador" : "Modo edición autos"}</span>
+              <span>
+                {spectatorMode ? "Vista espectador" : "Modo edición autos"}
+              </span>
             </div>
             {pageError && <div className="mt-1 text-red-300">{pageError}</div>}
             <button
@@ -1208,7 +1434,9 @@ export default function NoticiasAutos({
           </div>
         )}
 
-        <section className={`${!pageSettings.ads.leaderboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-4 sm:py-6 relative z-10`}>
+        <section
+          className={`${!pageSettings.ads.leaderboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-4 sm:py-6 relative z-10`}
+        >
           <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
             {renderEditableAd("leaderboard")}
           </div>
@@ -1247,14 +1475,9 @@ export default function NoticiasAutos({
                   align="left"
                 />
                 <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-                  <div className="flex gap-4 snap-x snap-mandatory">
+                  <div className="flex snap-x snap-mandatory gap-4">
                     {latestFive.map((item) => (
-                      <div
-                        key={item.id}
-                        className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start"
-                      >
-                        <NewsCard item={item} imageHeight="h-36" compact />
-                      </div>
+                      <NewsCard key={item.id} item={item} compact mobileSize />
                     ))}
                   </div>
                 </div>
@@ -1301,14 +1524,14 @@ export default function NoticiasAutos({
                       align="left"
                     />
                     <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
-                      <div className="flex gap-4 snap-x snap-mandatory">
+                      <div className="flex snap-x snap-mandatory gap-4">
                         {moreNews.slice(0, 5).map((item) => (
-                          <div
+                          <NewsCard
                             key={item.id}
-                            className="h-[320px] w-[320px] min-w-[320px] shrink-0 snap-start"
-                      >
-                        <NewsCard item={item} imageHeight="h-36" compact />
-                          </div>
+                            item={item}
+                            compact
+                            mobileSize
+                          />
                         ))}
                       </div>
                     </div>
@@ -1354,7 +1577,11 @@ export default function NoticiasAutos({
             items={electricItems}
           />
 
-          <section className={`${!pageSettings.ads.billboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-8 sm:py-10`}>{renderEditableAd("billboard")}</section>
+          <section
+            className={`${!pageSettings.ads.billboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-8 sm:py-10`}
+          >
+            {renderEditableAd("billboard")}
+          </section>
 
           <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
@@ -1369,12 +1596,21 @@ export default function NoticiasAutos({
                 <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
                   <div className="flex snap-x snap-mandatory gap-4">
                     {latestItems.map((item) => (
-                      <div
+                      <NewsCard
                         key={item.id}
-                        className="h-[320px] w-[320px] min-w-[320px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
-                      >
-                        <LatestArticleCard item={item} />
-                      </div>
+                        item={{
+                          id: item.id,
+                          title: item.title,
+                          excerpt: item.excerpt,
+                          tag: item.sectionLabel,
+                          when: item.when,
+                          img: item.img,
+                          slug: item.href,
+                          authorName: item.authorName || "MotorWelt",
+                        }}
+                        compact
+                        mobileSize
+                      />
                     ))}
                   </div>
                 </div>
@@ -1384,7 +1620,8 @@ export default function NoticiasAutos({
                     Próximas publicaciones
                   </h3>
                   <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-gray-300">
-                    En cuanto publiques más contenido en MotorWelt, aparecerá aquí automáticamente.
+                    En cuanto publiques más contenido en MotorWelt, aparecerá
+                    aquí automáticamente.
                   </p>
                 </div>
               )}
@@ -1405,12 +1642,13 @@ export default function NoticiasAutos({
                 <div className="mt-3 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
 
                 <p className="mt-4 max-w-2xl text-sm text-gray-300">
-                  Sigue navegando entre más historias, coberturas y cultura editorial dentro del universo MotorWelt.
+                  Sigue navegando entre más historias, coberturas y cultura
+                  editorial dentro del universo MotorWelt.
                 </p>
               </div>
 
-              <div className="no-scrollbar overflow-x-auto pb-3 sm:pb-6">
-                <div className="flex items-start gap-5 pr-12">
+              <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar md:mx-0 md:px-0 sm:pb-6">
+                <div className="flex snap-x snap-mandatory items-start gap-4 md:gap-5 md:pr-12">
                   <ExploreCard
                     title="Tuning"
                     subtitle="Builds, mods, aero, stance y cultura visual."
@@ -1453,8 +1691,8 @@ export default function NoticiasAutos({
           </section>
         </main>
 
-        <footer className="relative z-10 mt-0 border-t border-white/10 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md">
-          <div className="mx-auto grid w-full max-w-[1440px] 2xl:max-w-[1560px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
+        <footer className="relative z-10 mt-12 border-t border-white/[0.08] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md">
+          <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8 2xl:max-w-[1560px]">
             <div>
               <Image
                 src="/brand/motorwelt-logo.png"
@@ -1470,11 +1708,11 @@ export default function NoticiasAutos({
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-white">Enlaces</h4>
+              <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
                 <li>
                   <Link href="/about" className="hover:text-white">
-                    Sobre nosotros
+                    Acerca de
                   </Link>
                 </li>
                 <li>
@@ -1496,9 +1734,7 @@ export default function NoticiasAutos({
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-white">
-                Redes sociales
-              </h4>
+              <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
                 <a
                   href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
@@ -1587,25 +1823,60 @@ export default function NoticiasAutos({
           filter: blur(0.5px);
         }
         @keyframes slide-fwd {
-          0% { transform: translateX(-30%); opacity: 0; }
-          10% { opacity: 0.9; }
-          100% { transform: translateX(130%); opacity: 0; }
+          0% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
         }
         @keyframes slide-rev {
-          0% { transform: translateX(130%); opacity: 0; }
-          10% { opacity: 0.9; }
-          100% { transform: translateX(-30%); opacity: 0; }
+          0% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
         }
-        .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
-        .streak.dir-rev { animation: slide-rev 11s linear infinite; }
+        .streak.dir-fwd {
+          animation: slide-fwd 11s linear infinite;
+        }
+        .streak.dir-rev {
+          animation: slide-rev 11s linear infinite;
+        }
         .streak-cool {
-          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, 0.95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(12, 224, 178, 0.95),
+            transparent
+          );
         }
         .streak-warm {
-          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, 0.95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 122, 26, 0.95),
+            transparent
+          );
         }
         .streak-lime {
-          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, 0.9), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(163, 255, 18, 0.9),
+            transparent
+          );
         }
         .glow-cool {
           text-shadow: 0 0 14px rgba(12, 224, 178, 0.25);
@@ -1663,7 +1934,8 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
-      "_createdAt": _createdAt
+      "_createdAt": _createdAt,
+      "authorName": coalesce(authorName, author->name, "MotorWelt")
     }
   `;
 
@@ -1724,6 +1996,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       subcategory,
       categories,
       tags,
+      "authorName": coalesce(authorName, author->name, "MotorWelt"),
       "mainImageUrl": coalesce(
         mainImageUrl,
         coverImage.asset->url,
@@ -1736,12 +2009,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     }
   `;
 
-  const [raw, autosSettingsRaw, sectionSettingsRaw, latestRaw] = await Promise.all([
-    sanityReadClient.fetch(autosQuery),
-    sanityReadClient.fetch(autosSettingsQuery).catch(() => null),
-    sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
-    sanityReadClient.fetch(latestQuery).catch(() => []),
-  ]);
+  const [raw, autosSettingsRaw, sectionSettingsRaw, latestRaw] =
+    await Promise.all([
+      sanityReadClient.fetch(autosQuery),
+      sanityReadClient.fetch(autosSettingsQuery).catch(() => null),
+      sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
+      sanityReadClient.fetch(latestQuery).catch(() => []),
+    ]);
 
   const formatWhen = (iso?: string | null) => {
     if (!iso) return "";
@@ -1759,16 +2033,21 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     title: String(it?.title || ""),
     excerpt: String(it?.excerpt || ""),
     tag: String(it?.tag || "noticia"),
-    tags: Array.isArray(it?.tags) ? it.tags.filter(Boolean).map((tag: unknown) => String(tag)) : [],
+    tags: Array.isArray(it?.tags)
+      ? it.tags.filter(Boolean).map((tag: unknown) => String(tag))
+      : [],
     autoSection: normalizeAutoSection(it?.autoSection),
     autoSectionLabel: autoSectionLabel(it?.autoSection),
     when: formatWhen(it?.publishedAt || it?._createdAt),
     img: String(it?.img || "/images/noticia-2.jpg"),
     slug: `/noticias/autos/${String(it?.slug || "")}`,
     publishedAt: it?.publishedAt || null,
+    authorName: String(it?.authorName || "MotorWelt"),
   }));
 
-  const latestItems: LatestArticleData[] = (Array.isArray(latestRaw) ? latestRaw : [])
+  const latestItems: LatestArticleData[] = (
+    Array.isArray(latestRaw) ? latestRaw : []
+  )
     .map((it: any) => {
       const slug = getSlugValue(it?.slug);
       if (!slug) return null;
@@ -1789,12 +2068,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
           it?.excerpt ||
             it?.subtitle ||
             it?.seoDescription ||
-            "Lee la publicación completa en MotorWelt."
+            "Lee la publicación completa en MotorWelt.",
         ),
         img,
         href: `${sectionData.hrefBase}/${slug}`,
         when: formatWhen(it?.publishedAt || it?._createdAt),
         sectionLabel: sectionData.label,
+        authorName: String(it?.authorName || "MotorWelt"),
       };
     })
     .filter(Boolean)
@@ -1810,7 +2090,9 @@ export async function getServerSideProps({ locale }: { locale: string }) {
         label:
           String(autosSettingsRaw?.ads?.leaderboard?.label || "").trim() ||
           DEFAULT_AUTOS_PAGE_SETTINGS.ads.leaderboard.label,
-        imageUrl: String(autosSettingsRaw?.ads?.leaderboard?.imageUrl || "").trim(),
+        imageUrl: String(
+          autosSettingsRaw?.ads?.leaderboard?.imageUrl || "",
+        ).trim(),
         href: String(autosSettingsRaw?.ads?.leaderboard?.href || "").trim(),
       },
       billboard: {
@@ -1818,7 +2100,9 @@ export async function getServerSideProps({ locale }: { locale: string }) {
         label:
           String(autosSettingsRaw?.ads?.billboard?.label || "").trim() ||
           DEFAULT_AUTOS_PAGE_SETTINGS.ads.billboard.label,
-        imageUrl: String(autosSettingsRaw?.ads?.billboard?.imageUrl || "").trim(),
+        imageUrl: String(
+          autosSettingsRaw?.ads?.billboard?.imageUrl || "",
+        ).trim(),
         href: String(autosSettingsRaw?.ads?.billboard?.href || "").trim(),
       },
     },
@@ -1835,7 +2119,10 @@ export async function getServerSideProps({ locale }: { locale: string }) {
 
   const sectionHeroImages = sanitizeSectionHeroImages({
     tuning: settingsMap.get("tuning"),
-    autos: settingsMap.get("autos") || initialPageSettings.heroImageUrl || items[0]?.img,
+    autos:
+      settingsMap.get("autos") ||
+      initialPageSettings.heroImageUrl ||
+      items[0]?.img,
     motos: settingsMap.get("motos"),
     deportes: settingsMap.get("deportes"),
     lifestyle: settingsMap.get("lifestyle"),
@@ -1851,7 +2138,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       ...(await serverSideTranslations(
         locale ?? "es",
         ["home"],
-        nextI18NextConfig
+        nextI18NextConfig,
       )),
     },
   };

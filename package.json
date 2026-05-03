@@ -12,6 +12,7 @@
     "@sanity/client": "^7.20.0",
     "@sanity/image-url": "^2.0.2",
     "cookie": "^1.1.1",
+    "country-state-city": "^3.2.1",
     "dotenv": "^17.2.3",
     "formidable": "^3.5.4",
     "framer-motion": "^12.23.12",

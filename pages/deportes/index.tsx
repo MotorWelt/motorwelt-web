@@ -35,6 +35,17 @@ type ArticleCardData = {
   authorName: string;
 };
 
+type RecentCardData = {
+  id: string;
+  title: string;
+  excerpt: string;
+  img: string;
+  href: string;
+  when: string;
+  sectionLabel: string;
+  authorName: string;
+};
+
 type AdConfig = {
   enabled: boolean;
   label: string;
@@ -143,12 +154,12 @@ async function uploadAssetToSanity(file: File) {
 
 const getButtonClasses = (variant: ButtonVariant = "cyan", className = "") => {
   const base =
-    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition will-change-transform focus:outline-none";
+    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold text-white transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60";
 
   const styles: Record<ButtonVariant, string> = {
-    cyan: "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.28),inset_0_0_0_1px_rgba(12,224,178,.10)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.42),inset_0_0_0_1px_rgba(12,224,178,.14)] focus:ring-2 focus:ring-[#0CE0B2]/40 disabled:opacity-60 disabled:cursor-not-allowed",
-    pink: "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.26),inset_0_0_0_1px_rgba(255,122,26,.10)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.42),inset_0_0_0_1px_rgba(255,122,26,.14)] focus:ring-2 focus:ring-[#FF7A1A]/40 disabled:opacity-60 disabled:cursor-not-allowed",
-    link: "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
+    cyan: "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#0CE0B2]/35",
+    pink: "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(255,122,26,.24),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.34),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
+    link: "border border-white/10 bg-white/[0.035] px-4 py-2 text-xs no-underline shadow-[0_0_18px_rgba(255,122,26,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
   };
 
   return `${base} ${styles[variant]} ${className}`.trim();
@@ -311,6 +322,47 @@ function imageFromPost(post: RawPost) {
   );
 }
 
+function getSectionLabel(post: RawPost) {
+  const section = normalizeText(post.section);
+  const category = normalizeText(post.category);
+  const categories = Array.isArray(post.categories)
+    ? post.categories.map(normalizeText)
+    : [];
+
+  const value = section || category || categories[0] || "";
+
+  if (value.includes("tuning")) return "Tuning";
+  if (value.includes("autos")) return "Autos";
+  if (value.includes("motos")) return "Motos";
+  if (value.includes("deportes")) return "Deportes";
+  if (value.includes("lifestyle")) return "Lifestyle";
+  if (value.includes("comunidad")) return "Comunidad";
+
+  return "MotorWelt";
+}
+
+function hrefFromPost(post: RawPost) {
+  const slug = getSlugValue(post.slug);
+  if (!slug) return "/";
+
+  const section = normalizeText(post.section);
+  const category = normalizeText(post.category);
+  const categories = Array.isArray(post.categories)
+    ? post.categories.map(normalizeText)
+    : [];
+
+  const value = [section, category, ...categories].join(" ");
+
+  if (value.includes("deportes")) return `/deportes/${slug}`;
+  if (value.includes("tuning")) return `/tuning/${slug}`;
+  if (value.includes("motos")) return `/noticias/motos/${slug}`;
+  if (value.includes("autos")) return `/noticias/autos/${slug}`;
+  if (value.includes("lifestyle")) return `/lifestyle/${slug}`;
+  if (value.includes("comunidad")) return `/comunidad/${slug}`;
+
+  return `/noticias/autos/${slug}`;
+}
+
 function sanitizeAd(raw: any, fallback: AdConfig): AdConfig {
   return {
     enabled: Boolean(raw?.enabled ?? fallback.enabled),
@@ -371,7 +423,7 @@ function Card({
 }) {
   return (
     <div
-      className={`flex h-full flex-col overflow-hidden rounded-[24px] border border-white/10 bg-mw-surface/75 backdrop-blur-md transition hover:border-[#0CE0B2]/45 ${className}`}
+      className={`flex h-full flex-col overflow-hidden rounded-[24px] border border-white/[0.06] bg-mw-surface/72 backdrop-blur-md transition hover:border-white/12 ${className}`}
     >
       {children}
     </div>
@@ -386,8 +438,8 @@ function EmptySectionNotice({
   message: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-white/12 bg-mw-surface/60 p-8 text-center backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
+    <div className="rounded-[24px] border border-dashed border-white/[0.08] bg-mw-surface/60 p-8 text-center backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04]">
         <span className="h-2.5 w-2.5 rounded-full bg-[#0CE0B2]" />
       </div>
       <h3 className="mt-5 text-xl font-semibold text-white">{title}</h3>
@@ -411,10 +463,10 @@ function SectionHeader({
 }) {
   const lineClass =
     accent === "warm"
-      ? "from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]"
+      ? "from-[#FF7A1A]/70 via-[#E2A24C]/55 to-[#0CE0B2]/55"
       : accent === "lime"
-        ? "from-[#A3FF12] via-[#0CE0B2] to-[#FF7A1A]"
-        : "from-[#0CE0B2] via-[#43A1AD] to-[#E2A24C]";
+        ? "from-[#A3FF12]/60 via-[#0CE0B2]/55 to-[#FF7A1A]/60"
+        : "from-[#0CE0B2]/60 via-[#43A1AD]/55 to-[#E2A24C]/55";
 
   return (
     <div className="mb-8 sm:mb-10">
@@ -425,7 +477,7 @@ function SectionHeader({
         {title}
       </h2>
       <div
-        className={`mt-3 h-1 w-28 rounded-full bg-gradient-to-r ${lineClass}`}
+        className={`mt-3 h-px w-28 rounded-full bg-gradient-to-r ${lineClass}`}
       />
       <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
         {description}
@@ -448,13 +500,15 @@ function ArticleCard({
       href={item.href}
       className={
         mobileSize
-          ? "block h-[320px] w-[320px] min-w-[320px] snap-start sm:w-[340px] sm:min-w-[340px]"
-          : "block h-full"
+          ? "block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+          : "block h-full w-full md:max-w-[82%]"
       }
     >
-      <Card className="group hover:-translate-y-[2px] hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
+      <Card className="group hover:-translate-y-[2px] hover:shadow-[0_0_24px_rgba(255,255,255,.045)]">
         <div
-          className={`relative w-full ${featured ? "h-64 sm:h-[340px]" : mobileSize ? "h-[118px]" : "h-48"}`}
+          className={`relative w-full ${
+            featured ? "h-64 sm:h-[340px]" : mobileSize ? "h-[112px]" : "h-40"
+          }`}
         >
           <Image
             src={item.img}
@@ -462,15 +516,15 @@ function ArticleCard({
             fill
             sizes={
               mobileSize
-                ? "320px"
+                ? "290px"
                 : featured
                   ? "(max-width: 1024px) 100vw, 58vw"
-                  : "(max-width: 1024px) 100vw, 33vw"
+                  : "(max-width: 1024px) 100vw, 27vw"
             }
             style={{ objectFit: "cover" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/66 via-black/14 to-transparent" />
-          <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/90 backdrop-blur">
+          <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/90 backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
             {item.sport}
           </span>
@@ -479,8 +533,8 @@ function ArticleCard({
         <div
           className={
             mobileSize
-              ? "flex flex-1 flex-col p-4"
-              : "flex flex-1 flex-col p-5 sm:p-6"
+              ? "flex min-h-0 flex-1 flex-col p-4"
+              : "flex flex-1 flex-col p-4 sm:p-5"
           }
         >
           <h3
@@ -488,8 +542,8 @@ function ArticleCard({
               featured
                 ? "text-2xl sm:text-3xl"
                 : mobileSize
-                  ? "text-[1.02rem]"
-                  : "text-xl"
+                  ? "line-clamp-2 text-[1rem]"
+                  : "line-clamp-2 text-lg"
             }`}
           >
             {item.title}
@@ -497,8 +551,8 @@ function ArticleCard({
           <p
             className={
               mobileSize
-                ? "mt-2 line-clamp-3 text-[12.5px] leading-relaxed text-gray-300"
-                : "mt-3 line-clamp-3 text-sm leading-relaxed text-gray-300 sm:text-base"
+                ? "mt-2 line-clamp-2 text-[12px] leading-relaxed text-gray-300"
+                : "mt-2 line-clamp-2 text-sm leading-relaxed text-gray-300"
             }
           >
             {item.excerpt}
@@ -506,7 +560,7 @@ function ArticleCard({
           <div
             className={
               mobileSize
-                ? "mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400"
+                ? "mt-auto flex flex-wrap items-center gap-1.5 pt-2 text-[10.5px] leading-tight text-gray-400"
                 : "mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400"
             }
           >
@@ -516,19 +570,52 @@ function ArticleCard({
             ) : null}
             {item.when ? <span>{item.when}</span> : null}
           </div>
-          <div className={mobileSize ? "mt-auto pt-3" : "mt-auto pt-5"}>
+          <div className={mobileSize ? "hidden" : "mt-auto pt-4 md:block"}>
             <span
               className={getButtonClasses(
-                "link",
-                mobileSize ? "text-xs" : "text-sm",
+                "pink",
+                "h-10 rounded-xl px-4 py-0 text-sm leading-none",
               )}
             >
-              Leer nota
+              Leer más
             </span>
           </div>
         </div>
       </Card>
     </Link>
+  );
+}
+
+function RecentMotorWeltCard({ item }: { item: RecentCardData }) {
+  return (
+    <article className="group h-full overflow-hidden rounded-[22px] border border-white/[0.08] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
+      <Link href={item.href} className="flex h-full flex-col">
+        <div className="relative h-36 w-full overflow-hidden">
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="(max-width: 1024px) 78vw, 280px"
+            style={{ objectFit: "cover" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
+          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel}
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col p-4">
+          <div className="text-[11px] text-gray-400">{item.when}</div>
+          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+            {item.title}
+          </h3>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+            {item.excerpt}
+          </p>
+        </div>
+      </Link>
+    </article>
   );
 }
 
@@ -546,7 +633,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]"
+      className="group relative block h-[270px] w-[290px] min-w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/25 transition hover:border-white/14 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
     >
       <div className="absolute inset-0">
         <img
@@ -556,12 +643,12 @@ function ExploreCard({
           style={{ filter: "brightness(.42) saturate(1.08)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-black/32 to-black/75" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.09),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.08),transparent_28%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,.08),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(12,224,178,.07),transparent_28%)]" />
       </div>
 
       <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
         <div className="mb-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
             Explora
           </span>
@@ -588,7 +675,7 @@ function Header({
 }) {
   return (
     <>
-      <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
+      <header className="fixed left-0 top-0 z-50 w-full border-b border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
         <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] xl:px-10 2xl:max-w-[1560px]">
           <div className="flex items-center">
             <Link
@@ -656,7 +743,7 @@ function Header({
             <ProfileButton />
             <button
               onClick={() => setMobileOpen(true)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
               aria-label="Abrir menú"
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
@@ -689,9 +776,9 @@ function Header({
           />
           <aside
             id="mobile-menu"
-            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
+            className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/[0.08] bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
           >
-            <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
+            <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-4">
               <Image
                 src="/brand/motorwelt-logo.png"
                 alt="MotorWelt logo"
@@ -749,8 +836,8 @@ function Header({
 
 function Footer({ year }: { year: number }) {
   return (
-    <footer className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md">
-      <div className="mx-auto grid w-full max-w-[1440px] 2xl:max-w-[1560px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
+    <footer className="relative z-10 mt-12 border-t border-white/[0.08] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md">
+      <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8 2xl:max-w-[1560px]">
         <div>
           <Image
             src="/brand/motorwelt-logo.png"
@@ -859,7 +946,7 @@ function EditableAd({
   if (!ad.enabled && !editable) return null;
 
   const wrapClass = `
-    relative w-full mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70
+    relative w-full mx-auto overflow-hidden rounded-2xl border border-white/[0.08] bg-mw-surface/70
     ${
       kind === "leaderboard"
         ? "max-w-[970px] aspect-[970/120] min-h-[20px] sm:min-h-[72px] md:min-h-0"
@@ -915,28 +1002,28 @@ function EditableAd({
           <button
             type="button"
             onClick={onToggle}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
           >
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
           >
             Imagen
           </button>
           <button
             type="button"
             onClick={onEditLink}
-            className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+            className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
           >
             Link
           </button>
           <button
             type="button"
             onClick={onClear}
-            className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
+            className="rounded-full border border-red-400/35 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
           >
             Limpiar
           </button>
@@ -960,11 +1047,13 @@ function EditableAd({
 export default function DeportesPage({
   year,
   deportesItems = [],
+  recentItems = [],
   initialSettings = DEFAULT_SETTINGS,
   sectionHeroImages = DEFAULT_SECTION_HERO_IMAGES,
 }: {
   year: number;
   deportesItems?: ArticleCardData[];
+  recentItems?: RecentCardData[];
   initialSettings?: DeportesPageSettings;
   sectionHeroImages?: SectionHeroImages;
 }) {
@@ -984,6 +1073,7 @@ export default function DeportesPage({
 
   const featured = deportesItems[0] || null;
   const latest = deportesItems.slice(0, 8);
+  const recentMotorWelt = recentItems.slice(0, 8);
 
   const grouped = useMemo(() => {
     return SPORTS.reduce(
@@ -1448,7 +1538,7 @@ export default function DeportesPage({
         </div>
 
         {canEdit && (
-          <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
+          <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-[#0CE0B2]/25 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-[#0CE0B2]" />
               <span>
@@ -1460,7 +1550,7 @@ export default function DeportesPage({
             <button
               type="button"
               onClick={toggleSpectatorMode}
-              className="mt-2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="mt-2 rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               {spectatorMode ? "Volver a editar" : "Ver como espectador"}
             </button>
@@ -1493,7 +1583,7 @@ export default function DeportesPage({
                   <button
                     type="button"
                     onClick={() => heroInputRef.current?.click()}
-                    className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                    className="rounded-full border border-white/15 bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
                   >
                     Cambiar portada
                   </button>
@@ -1503,7 +1593,7 @@ export default function DeportesPage({
               <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:px-8 lg:pb-16">
                 <div className="mx-auto w-full max-w-[1440px] px-0 xl:px-10 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
                       MotorWelt Deportes
                     </div>
@@ -1553,7 +1643,7 @@ export default function DeportesPage({
 
               {latest.length > 0 ? (
                 <>
-                  <div className="hidden grid-cols-1 gap-6 md:grid md:grid-cols-2 lg:grid-cols-3">
+                  <div className="hidden grid-cols-1 gap-6 md:grid md:grid-cols-2 md:justify-items-start lg:grid-cols-3">
                     {latest.map((item) => (
                       <ArticleCard key={item.id} item={item} />
                     ))}
@@ -1603,7 +1693,7 @@ export default function DeportesPage({
 
                       {items.length > 0 ? (
                         <>
-                          <div className="hidden grid-cols-1 gap-6 md:grid md:grid-cols-2 lg:grid-cols-3">
+                          <div className="hidden grid-cols-1 gap-6 md:grid md:grid-cols-2 md:justify-items-start lg:grid-cols-3">
                             {items.map((item) => (
                               <ArticleCard key={item.id} item={item} />
                             ))}
@@ -1653,6 +1743,37 @@ export default function DeportesPage({
 
           <section className="py-12 sm:py-16">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+              <SectionHeader
+                eyebrow="MotorWelt"
+                title="Lo más reciente en MotorWelt"
+                description="Las últimas publicaciones del universo MotorWelt en un solo lugar."
+                accent="cool"
+              />
+
+              {recentMotorWelt.length > 0 ? (
+                <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
+                  <div className="flex snap-x snap-mandatory gap-4">
+                    {recentMotorWelt.map((item) => (
+                      <div
+                        key={item.id}
+                        className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-[285px] sm:w-[300px] sm:min-w-[300px] lg:h-[285px] lg:w-[280px] lg:min-w-[280px]"
+                      >
+                        <RecentMotorWeltCard item={item} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <EmptySectionNotice
+                  title="Próximas publicaciones"
+                  message="Aquí aparecerán las publicaciones más recientes de MotorWelt cuando haya contenido publicado."
+                />
+              )}
+            </div>
+          </section>
+
+          <section className="py-12 sm:py-16">
+            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <div className="mb-8">
                 <p className="text-[11px] uppercase tracking-[0.28em] text-gray-400">
                   Explora
@@ -1660,7 +1781,7 @@ export default function DeportesPage({
                 <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
                   Seguir explorando MotorWelt
                 </h2>
-                <div className="mt-3 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
+                <div className="mt-3 h-px w-24 rounded-full bg-gradient-to-r from-[#0CE0B2]/60 to-[#E2A24C]/55" />
               </div>
 
               <div className="no-scrollbar overflow-x-auto pb-6">
@@ -1782,7 +1903,7 @@ export default function DeportesPage({
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(12, 224, 178, 0.95),
+            rgba(12, 224, 178, 0.72),
             transparent
           );
         }
@@ -1790,7 +1911,7 @@ export default function DeportesPage({
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(255, 122, 26, 0.95),
+            rgba(255, 122, 26, 0.72),
             transparent
           );
         }
@@ -1798,12 +1919,15 @@ export default function DeportesPage({
           background: linear-gradient(
             90deg,
             transparent,
-            rgba(163, 255, 18, 0.9),
+            rgba(163, 255, 18, 0.65),
             transparent
           );
         }
+        .glow-cool {
+          text-shadow: 0 0 14px rgba(12, 224, 178, 0.28);
+        }
         .glow-warm {
-          text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
+          text-shadow: 0 0 14px rgba(255, 122, 26, 0.22);
         }
         .logo-glow {
           filter: drop-shadow(0 0 18px rgba(12, 224, 178, 0.12));
@@ -1875,6 +1999,38 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     }
   `;
 
+  const recentQuery = /* groq */ `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado"
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...12]{
+      _id,
+      title,
+      subtitle,
+      excerpt,
+      seoDescription,
+      slug,
+      mainImageUrl,
+      coverImage{asset->{url}},
+      image{asset->{url}},
+      heroImage{asset->{url}},
+      galleryUrls,
+      publishedAt,
+      _createdAt,
+      section,
+      category,
+      subcategory,
+      sport,
+      categories,
+      tags,
+      contentType,
+      authorName,
+      author->{name}
+    }
+  `;
+
   const settingsQuery = /* groq */ `
     *[
       _type in ["sitePageSettings", "pageSettings", "homeSettings"] &&
@@ -1912,8 +2068,9 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     }
   `;
 
-  const [raw, settingsRaw, sectionSettingsRaw] = await Promise.all([
+  const [raw, recentRaw, settingsRaw, sectionSettingsRaw] = await Promise.all([
     sanityReadClient.fetch(deportesQuery),
+    sanityReadClient.fetch(recentQuery).catch(() => []),
     sanityReadClient.fetch(settingsQuery).catch(() => null),
     sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
   ]);
@@ -1936,6 +2093,25 @@ export async function getServerSideProps({ locale }: { locale: string }) {
         authorName: String(post.authorName || post.author?.name || "MotorWelt"),
       };
     });
+
+  const recentItems: RecentCardData[] = (recentRaw ?? []).map(
+    (post: RawPost) => {
+      const slug = getSlugValue(post.slug);
+
+      return {
+        id: String(post._id || slug || Math.random()),
+        title: String(post.title || ""),
+        excerpt: String(
+          post.subtitle || post.excerpt || post.seoDescription || "",
+        ),
+        img: imageFromPost(post),
+        href: hrefFromPost(post),
+        when: formatWhen(post.publishedAt || post._createdAt),
+        sectionLabel: getSectionLabel(post),
+        authorName: String(post.authorName || post.author?.name || "MotorWelt"),
+      };
+    },
+  );
 
   const initialSettings = sanitizePageSettings(
     settingsRaw,
@@ -1974,6 +2150,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       )),
       year: new Date().getFullYear(),
       deportesItems,
+      recentItems,
       initialSettings,
       sectionHeroImages,
     },

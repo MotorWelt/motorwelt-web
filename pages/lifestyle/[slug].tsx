@@ -26,17 +26,14 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const base =
-    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition will-change-transform focus:outline-none";
+    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold text-white transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60";
 
   const styles: Record<ButtonVariant, string> = {
-    cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus:ring-2 focus:ring-[#0CE0B2]/40",
-    pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:ring-2 focus:ring-[#FF7A1A]/40",
+    cyan: "border border-white/[0.06] bg-white/[0.035] shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#0CE0B2]/35",
+    pink: "border border-white/[0.06] bg-white/[0.035] shadow-[0_0_18px_rgba(255,122,26,.24),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.34),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
     ghost:
-      "text-gray-100 border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30",
-    link:
-      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none",
+      "border border-white/[0.06] bg-white/[0.035] text-gray-100 hover:bg-white/5 hover:border-white/12 focus-visible:ring-white/20",
+    link: "rounded-none border-0 p-0 text-[#43A1AD] underline underline-offset-4 shadow-none hover:opacity-80 focus-visible:ring-0",
   };
 
   return (
@@ -90,6 +87,7 @@ type SidebarArticle = {
   excerpt: string;
   publishedAt: string | null;
   mainImageUrl: string;
+  href: string;
 };
 
 type LifestyleAdConfig = {
@@ -125,6 +123,8 @@ type BodyBlock =
   | { type: "image"; url: string; alt: string }
   | { type: "video"; url: string };
 
+const GLOBAL_SLUG_ADS_PAGE_KEY = "globalSlugAds";
+
 const DEFAULT_LIFESTYLE_SETTINGS: LifestyleSettings = {
   ads: {
     leaderboard: {
@@ -155,7 +155,7 @@ function readCookie(name: string) {
   if (typeof document === "undefined") return "";
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const match = document.cookie.match(
-    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
+    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)"),
   );
   return match ? decodeURIComponent(match[2]) : "";
 }
@@ -184,18 +184,22 @@ function sanitizeLifestyleSettings(raw?: any): LifestyleSettings {
 }
 
 function sanitizeSectionHeroImages(
-  raw?: Partial<SectionHeroImages>
+  raw?: Partial<SectionHeroImages>,
 ): SectionHeroImages {
   return {
-    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    tuning:
+      String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
     autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
     motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
     deportes:
-      String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+      String(raw?.deportes || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.deportes,
     lifestyle:
-      String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+      String(raw?.lifestyle || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.lifestyle,
     comunidad:
-      String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+      String(raw?.comunidad || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.comunidad,
   };
 }
 
@@ -233,9 +237,9 @@ function normalizeUrl(url?: string | null) {
   return (url || "").trim();
 }
 
-function normalizeText(value: unknown) {
+function normalizeSectionText(value: unknown) {
   if (!value) return "";
-  if (Array.isArray(value)) return value.map(normalizeText).join(" ").toLowerCase();
+  if (Array.isArray(value)) return value.map(normalizeSectionText).join(" ");
   if (typeof value === "object") {
     const item = value as Record<string, unknown>;
     return String(item.title || item.name || item.label || item.value || "")
@@ -255,7 +259,7 @@ function detectLifestyleLabel(article: LifestyleArticle) {
     article.subcategory,
     article.tags,
   ]
-    .map(normalizeText)
+    .map(normalizeSectionText)
     .join(" ");
 
   if (blob.includes("diseño") || blob.includes("design")) return "Diseño";
@@ -266,6 +270,28 @@ function detectLifestyleLabel(article: LifestyleArticle) {
   if (blob.includes("garage") || blob.includes("cultura")) return "Cultura";
 
   return "Lifestyle";
+}
+
+function hrefFromRelatedPost(post: any) {
+  const slug = String(post?.slug || "").trim();
+  if (!slug) return "/";
+
+  const blob = [post?.section, post?.category, post?.subcategory, post?.categories, post?.tags]
+    .map(normalizeSectionText)
+    .join(" ");
+
+  if (blob.includes("tuning")) return `/tuning/${slug}`;
+  if (blob.includes("deportes")) return `/deportes/${slug}`;
+  if (blob.includes("lifestyle")) return `/lifestyle/${slug}`;
+  if (blob.includes("comunidad")) return `/comunidad/${slug}`;
+  if (blob.includes("noticias_motos") || blob.includes("motos")) {
+    return `/noticias/motos/${slug}`;
+  }
+  if (blob.includes("noticias_autos") || blob.includes("autos")) {
+    return `/noticias/autos/${slug}`;
+  }
+
+  return `/lifestyle/${slug}`;
 }
 
 function getYoutubeEmbedUrl(url: string) {
@@ -304,7 +330,8 @@ function detectPlatform(url: string): "youtube" | "unknown" {
   const clean = normalizeUrl(url);
   if (!clean) return "unknown";
   const lower = clean.toLowerCase();
-  if (lower.includes("youtube.com") || lower.includes("youtu.be")) return "youtube";
+  if (lower.includes("youtube.com") || lower.includes("youtu.be"))
+    return "youtube";
   return "unknown";
 }
 
@@ -398,7 +425,7 @@ function InlineEmbed({ url, title }: { url: string; title?: string }) {
 
   if (platform === "youtube" && embedUrl) {
     return (
-      <div className="relative w-full overflow-hidden rounded-[24px] border border-white/10 bg-black">
+      <div className="relative w-full overflow-hidden rounded-[24px] border border-white/[0.06] bg-black">
         <div className="relative aspect-[16/9] w-full">
           <iframe
             src={embedUrl}
@@ -413,13 +440,13 @@ function InlineEmbed({ url, title }: { url: string; title?: string }) {
   }
 
   return (
-    <div className="rounded-[24px] border border-white/10 bg-black/30 p-5 text-center">
+    <div className="rounded-[24px] border border-white/[0.06] bg-black/30 p-5 text-center">
       <p className="text-sm text-gray-300">Contenido externo disponible.</p>
       <a
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="mt-4 inline-flex items-center justify-center rounded-2xl border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/5"
+        className="mt-4 inline-flex items-center justify-center rounded-2xl border border-white/[0.08] px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/5"
       >
         Abrir enlace
       </a>
@@ -456,17 +483,22 @@ function AdSlot({
   const boxClass = isLeaderboard
     ? "w-full min-h-[84px] aspect-[970/120] md:max-w-[1100px] md:min-h-0"
     : isSidebarTall
-    ? "w-full min-h-[210px] lg:min-h-[250px]"
-    : "max-w-[1100px] aspect-[970/250]";
+      ? "w-full min-h-[210px] lg:min-h-[250px]"
+      : "max-w-[1100px] aspect-[970/250]";
 
   return (
     <div
-      className={`relative mx-auto overflow-hidden rounded-2xl border border-mw-line/70 bg-mw-surface/70 ${boxClass}`}
+      className={`relative mx-auto overflow-hidden rounded-2xl border border-white/[0.06] bg-mw-surface/70 ${boxClass}`}
     >
       {ad.enabled ? (
         ad.imageUrl ? (
           ad.href ? (
-            <a href={ad.href} target="_blank" rel="noreferrer" className="block h-full w-full">
+            <a
+              href={ad.href}
+              target="_blank"
+              rel="noreferrer"
+              className="block h-full w-full"
+            >
               <img
                 src={ad.imageUrl}
                 alt={ad.label}
@@ -486,7 +518,9 @@ function AdSlot({
           )
         ) : (
           <div className="flex h-full w-full items-center justify-center px-4 pt-14 text-center text-gray-400">
-            <span className="text-[11px] sm:text-xs md:text-sm">{ad.label}</span>
+            <span className="text-[11px] sm:text-xs md:text-sm">
+              {ad.label}
+            </span>
           </div>
         )
       ) : (
@@ -501,16 +535,32 @@ function AdSlot({
 
       {editable && (
         <div className="absolute left-1/2 top-3 z-20 hidden w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 md:flex">
-          <button type="button" onClick={onToggle} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="rounded-full border border-white/[0.1] bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
             {ad.enabled ? "Ocultar" : "Mostrar"}
           </button>
-          <button type="button" onClick={() => inputRef.current?.click()} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="rounded-full border border-white/[0.1] bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
             Imagen
           </button>
-          <button type="button" onClick={onEditLink} className="rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={onEditLink}
+            className="rounded-full border border-white/[0.1] bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+          >
             Link
           </button>
-          <button type="button" onClick={onClear} className="rounded-full border border-red-400/50 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90">
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-full border border-red-400/35 bg-black/70 px-3 py-1 text-[10px] font-semibold text-red-200 backdrop-blur hover:bg-black/90"
+          >
             Limpiar
           </button>
         </div>
@@ -533,12 +583,12 @@ function AdSlot({
 function SidebarArticleCard({ item }: { item: SidebarArticle }) {
   return (
     <Link
-      href={`/lifestyle/${item.slug}`}
-      className="group flex items-stretch gap-3 overflow-hidden rounded-[22px] border border-white/10 bg-black/20 p-3 transition hover:border-white/20"
+      href={item.href || `/tuning/${item.slug}`}
+      className="group flex items-stretch gap-3 overflow-hidden rounded-[22px] border border-white/[0.06] bg-black/20 p-3 transition hover:border-white/12"
     >
       <div className="relative h-[82px] w-[96px] shrink-0 overflow-hidden rounded-[16px] sm:h-[88px] sm:w-[108px]">
         <img
-          src={item.mainImageUrl || "/images/noticia-2.jpg"}
+          src={item.mainImageUrl || "/images/comunidad.jpg"}
           alt={item.title}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
         />
@@ -580,7 +630,7 @@ function ExploreCard({
   return (
     <Link
       href={href}
-      className="group relative block h-[270px] w-[290px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 bg-black/25 transition hover:border-white/20 sm:w-[340px] lg:h-[290px] lg:w-[390px]"
+      className="group relative block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[28px] border border-white/[0.06] bg-black/25 transition hover:border-white/12 sm:w-[340px] sm:min-w-[340px] lg:h-[290px] lg:w-[390px] lg:min-w-[390px]"
     >
       <div className="absolute inset-0">
         <img
@@ -595,7 +645,7 @@ function ExploreCard({
 
       <div className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-6">
         <div className="mb-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-black/28 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.24em] text-white/85 backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
             Explora
           </span>
@@ -628,14 +678,16 @@ export default function LifestyleDetailPage({
 }) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(
+    null,
+  );
   const [standaloneImage, setStandaloneImage] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
   const [spectatorMode, setSpectatorMode] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settings, setSettings] = useState<LifestyleSettings>(
-    sanitizeLifestyleSettings(lifestyleSettings)
+    sanitizeLifestyleSettings(lifestyleSettings),
   );
 
   const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
@@ -648,11 +700,14 @@ export default function LifestyleDetailPage({
     new Set(
       [article.mainImageUrl, ...(article.galleryUrls || [])]
         .map((u) => normalizeUrl(u))
-        .filter(Boolean)
-    )
+        .filter(Boolean),
+    ),
   );
 
-  const bodyBlocks = useMemo(() => parseBody(article.body || ""), [article.body]);
+  const bodyBlocks = useMemo(
+    () => parseBody(article.body || ""),
+    [article.body],
+  );
   const heroVideoEmbed = getYoutubeEmbedUrl(article.videoUrl || "");
   const hasVideo = Boolean(heroVideoEmbed);
   const hasGallery = gallery.length > 1;
@@ -666,24 +721,114 @@ export default function LifestyleDetailPage({
     standaloneImage ||
     (activeGalleryIndex !== null ? gallery[activeGalleryIndex] : null);
 
-  const canNavigateGallery =
-    activeGalleryIndex !== null && gallery.length > 1;
+  const canNavigateGallery = activeGalleryIndex !== null && gallery.length > 1;
 
   const streaks: Streak[] = useMemo(
     () => [
-      { top: "7%", left: "-35%", v: "warm", dir: "fwd", delay: "0s", dur: "12s", op: 0.82 },
-      { top: "14%", left: "-28%", v: "cool", dir: "rev", delay: ".7s", dur: "10.6s", op: 0.72 },
-      { top: "23%", left: "-34%", v: "lime", dir: "fwd", delay: "1.2s", dur: "13.5s", op: 0.72 },
-      { top: "31%", left: "-25%", v: "warm", dir: "rev", delay: "1.8s", dur: "11.4s", op: 0.8 },
-      { top: "43%", left: "-38%", v: "cool", dir: "fwd", delay: "2.6s", dur: "12.8s", op: 0.78 },
-      { top: "57%", left: "-27%", v: "warm", dir: "rev", delay: "3.2s", dur: "10.3s", op: 0.8 },
-      { top: "69%", left: "-32%", v: "cool", dir: "fwd", delay: "4.1s", dur: "12.2s", op: 0.84 },
-      { top: "81%", left: "-24%", v: "lime", dir: "rev", delay: "5.1s", dur: "13.4s", op: 0.7 },
-      { top: "10%", left: "-37%", v: "warm", dir: "fwd", delay: ".2s", dur: "11.8s", op: 0.55, h: "1px" },
-      { top: "36%", left: "-31%", v: "cool", dir: "rev", delay: "2.1s", dur: "13.2s", op: 0.5, h: "1px" },
-      { top: "76%", left: "-20%", v: "lime", dir: "fwd", delay: "4.9s", dur: "12.6s", op: 0.48, h: "1px" },
+      {
+        top: "7%",
+        left: "-35%",
+        v: "warm",
+        dir: "fwd",
+        delay: "0s",
+        dur: "12s",
+        op: 0.82,
+      },
+      {
+        top: "14%",
+        left: "-28%",
+        v: "cool",
+        dir: "rev",
+        delay: ".7s",
+        dur: "10.6s",
+        op: 0.72,
+      },
+      {
+        top: "23%",
+        left: "-34%",
+        v: "lime",
+        dir: "fwd",
+        delay: "1.2s",
+        dur: "13.5s",
+        op: 0.72,
+      },
+      {
+        top: "31%",
+        left: "-25%",
+        v: "warm",
+        dir: "rev",
+        delay: "1.8s",
+        dur: "11.4s",
+        op: 0.8,
+      },
+      {
+        top: "43%",
+        left: "-38%",
+        v: "cool",
+        dir: "fwd",
+        delay: "2.6s",
+        dur: "12.8s",
+        op: 0.78,
+      },
+      {
+        top: "57%",
+        left: "-27%",
+        v: "warm",
+        dir: "rev",
+        delay: "3.2s",
+        dur: "10.3s",
+        op: 0.8,
+      },
+      {
+        top: "69%",
+        left: "-32%",
+        v: "cool",
+        dir: "fwd",
+        delay: "4.1s",
+        dur: "12.2s",
+        op: 0.84,
+      },
+      {
+        top: "81%",
+        left: "-24%",
+        v: "lime",
+        dir: "rev",
+        delay: "5.1s",
+        dur: "13.4s",
+        op: 0.7,
+      },
+      {
+        top: "10%",
+        left: "-37%",
+        v: "warm",
+        dir: "fwd",
+        delay: ".2s",
+        dur: "11.8s",
+        op: 0.55,
+        h: "1px",
+      },
+      {
+        top: "36%",
+        left: "-31%",
+        v: "cool",
+        dir: "rev",
+        delay: "2.1s",
+        dur: "13.2s",
+        op: 0.5,
+        h: "1px",
+      },
+      {
+        top: "76%",
+        left: "-20%",
+        v: "lime",
+        dir: "fwd",
+        delay: "4.9s",
+        dur: "12.6s",
+        op: 0.48,
+        h: "1px",
+      },
     ],
-    []
+    [],
   );
 
   useEffect(() => {
@@ -736,7 +881,9 @@ export default function LifestyleDetailPage({
 
   function goToPrevImage() {
     if (activeGalleryIndex === null || gallery.length === 0) return;
-    setActiveGalleryIndex((activeGalleryIndex - 1 + gallery.length) % gallery.length);
+    setActiveGalleryIndex(
+      (activeGalleryIndex - 1 + gallery.length) % gallery.length,
+    );
   }
 
   function goToNextImage() {
@@ -775,11 +922,9 @@ export default function LifestyleDetailPage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          pageKey: "lifestyle",
+          pageKey: GLOBAL_SLUG_ADS_PAGE_KEY,
           settings: {
-            heroImageUrl: "",
             ads: nextSettings.ads,
-            partnerLogos: [],
           },
         }),
       });
@@ -910,27 +1055,37 @@ export default function LifestyleDetailPage({
         </div>
 
         {canEdit && (
-          <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-[#0CE0B2]/40 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
+          <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-[#0CE0B2]/25 bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2] animate-pulse" />
-              <span>{spectatorMode ? "Vista espectador" : "Modo edición ads lifestyle"}</span>
-              {savingSettings && <span className="text-[#0CE0B2]">Guardando…</span>}
+              <span>
+                {spectatorMode ? "Vista espectador" : "Modo edición ads global"}
+              </span>
+              {savingSettings && (
+                <span className="text-[#0CE0B2]">Guardando…</span>
+              )}
             </div>
-            {settingsError && <div className="mt-1 text-red-300">{settingsError}</div>}
+            {settingsError && (
+              <div className="mt-1 text-red-300">{settingsError}</div>
+            )}
             <button
               type="button"
               onClick={() => setSpectatorMode((v) => !v)}
-              className="mt-2 rounded-full border border-white/20 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
+              className="mt-2 rounded-full border border-white/[0.1] bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90"
             >
               {spectatorMode ? "Volver a editar" : "Ver como espectador"}
             </button>
           </div>
         )}
 
-        <header className="fixed left-0 top-0 z-50 w-full border-b border-mw-line/70 bg-mw-surface/70 backdrop-blur-md">
+        <header className="fixed left-0 top-0 z-50 w-full border-b border-white/[0.06] bg-mw-surface/70 backdrop-blur-md">
           <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
             <div className="flex items-center">
-              <Link href="/" className="inline-flex items-center gap-2" aria-label="Ir al inicio MotorWelt">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2"
+                aria-label="Ir al inicio MotorWelt"
+              >
                 <Image
                   src="/brand/motorwelt-logo.png"
                   alt="MotorWelt logo"
@@ -942,24 +1097,42 @@ export default function LifestyleDetailPage({
               </Link>
             </div>
 
-            <div className="hidden md:flex items-center justify-center md:pl-10 lg:pl-16">
+            <div className="hidden md:flex items-center justify-center">
               <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
-                <Link href="/tuning" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/tuning"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Tuning
                 </Link>
-                <Link href="/noticias/autos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/noticias/autos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Autos
                 </Link>
-                <Link href="/noticias/motos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/noticias/motos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Motos
                 </Link>
-                <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/deportes"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Deportes
                 </Link>
-                <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none text-white border-b-2 border-[#0CE0B2]">
+                <Link
+                  href="/lifestyle"
+                  className="inline-flex h-10 items-center leading-none text-white"
+                >
                   Lifestyle
                 </Link>
-                <Link href="/comunidad" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">
+                <Link
+                  href="/comunidad"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
                   Comunidad
                 </Link>
               </nav>
@@ -973,13 +1146,24 @@ export default function LifestyleDetailPage({
               <ProfileButton />
               <button
                 onClick={() => setMobileOpen(true)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-mw-line/70 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.06] bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
                 aria-label="Abrir menú"
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M4 6h16M4 12h16M4 18h16"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
             </div>
@@ -988,13 +1172,16 @@ export default function LifestyleDetailPage({
 
         {mobileOpen && (
           <div className="fixed inset-0 z-[60] md:hidden">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
-
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setMobileOpen(false)}
+              aria-hidden
+            />
             <aside
               id="mobile-menu"
-              className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-mw-line/70 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
+              className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/[0.06] bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
             >
-              <div className="flex items-center justify-between border-b border-mw-line/60 px-4 py-4">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
                 <Image
                   src="/brand/motorwelt-logo.png"
                   alt="MotorWelt logo"
@@ -1007,29 +1194,64 @@ export default function LifestyleDetailPage({
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
                   aria-label="Cerrar menú"
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M6 6l12 12M18 6l-12 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </button>
               </div>
 
               <nav className="px-4 py-3">
-                <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/tuning"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Tuning
                 </Link>
-                <Link href="/noticias/autos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/noticias/autos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Autos
                 </Link>
-                <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/noticias/motos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Motos
                 </Link>
-                <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/deportes"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Deportes
                 </Link>
-                <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-white" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/lifestyle"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-white hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Lifestyle
                 </Link>
-                <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>
+                <Link
+                  href="/comunidad"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
                   Comunidad
                 </Link>
               </nav>
@@ -1046,7 +1268,7 @@ export default function LifestyleDetailPage({
               aria-label="Cerrar imagen"
             />
 
-            <div className="relative z-10 max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[28px] border border-white/10 bg-black">
+            <div className="relative z-10 max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[28px] border border-white/[0.06] bg-black">
               <img
                 src={currentModalImage}
                 alt="Imagen ampliada"
@@ -1058,22 +1280,50 @@ export default function LifestyleDetailPage({
                   <button
                     type="button"
                     onClick={goToPrevImage}
-                    className="absolute left-3 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white backdrop-blur-md hover:bg-black/65"
+                    className="absolute left-3 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.06] bg-black/45 text-white backdrop-blur-md hover:bg-black/65"
                     aria-label="Imagen anterior"
                   >
-                    ‹
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                    >
+                      <path
+                        d="M15 6l-6 6 6 6"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </button>
 
                   <button
                     type="button"
                     onClick={goToNextImage}
-                    className="absolute right-3 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white backdrop-blur-md hover:bg-black/65"
+                    className="absolute right-3 top-1/2 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.06] bg-black/45 text-white backdrop-blur-md hover:bg-black/65"
                     aria-label="Imagen siguiente"
                   >
-                    ›
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                    >
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </button>
 
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/45 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/[0.06] bg-black/45 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
                     {activeGalleryIndex! + 1} / {gallery.length}
                   </div>
                 </>
@@ -1082,16 +1332,32 @@ export default function LifestyleDetailPage({
               <button
                 type="button"
                 onClick={closeImageModal}
-                className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur-md hover:bg-black/60"
+                className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.06] bg-black/40 text-white backdrop-blur-md hover:bg-black/60"
                 aria-label="Cerrar imagen"
               >
-                ✕
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M6 6l12 12M18 6l-12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
               </button>
             </div>
           </div>
         )}
 
-        <main aria-hidden={mobileOpen || isImageModalOpen} className="relative z-10 pt-16 lg:pt-[72px]">
+        <main
+          aria-hidden={mobileOpen || isImageModalOpen}
+          className="relative z-10 pt-16 lg:pt-[72px]"
+        >
           <section className="relative overflow-hidden">
             <div className="absolute inset-0">
               <img
@@ -1108,13 +1374,27 @@ export default function LifestyleDetailPage({
                 <div className="mb-4 flex flex-wrap items-start gap-2">
                   <Link
                     href="/lifestyle"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/30 text-white/75 backdrop-blur transition hover:text-white"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.06] bg-black/30 text-white/75 backdrop-blur transition hover:text-white"
                     aria-label="Volver a Lifestyle"
                   >
-                    ‹
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                    >
+                      <path
+                        d="M15 6l-6 6 6 6"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </Link>
 
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-gray-200 backdrop-blur">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-black/30 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-gray-200 backdrop-blur">
                     <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
                     Lifestyle · {lifestyleLabel}
                   </div>
@@ -1133,7 +1413,10 @@ export default function LifestyleDetailPage({
                 <div className="mt-7 flex flex-wrap items-center gap-3 text-sm text-gray-300 xl:text-[1.02rem]">
                   {article.authorName ? (
                     <span>
-                      Por <span className="font-semibold text-white">{article.authorName}</span>
+                      Por{" "}
+                      <span className="font-semibold text-white">
+                        {article.authorName}
+                      </span>
                     </span>
                   ) : null}
                   {article.authorName && headerDate ? (
@@ -1178,17 +1461,23 @@ export default function LifestyleDetailPage({
                 <article className="min-w-0">
                   {hasVideo && article.useVideoAsHero ? (
                     <div id="video-principal" className="mb-8">
-                      <InlineEmbed url={article.videoUrl} title={article.title} />
+                      <InlineEmbed
+                        url={article.videoUrl}
+                        title={article.title}
+                      />
                     </div>
                   ) : null}
 
-                  <div className="rounded-[30px] border border-white/10 bg-black/25 p-5 backdrop-blur-md sm:p-8 xl:p-10">
+                  <div className="rounded-[30px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md sm:p-8 xl:p-10">
                     <div className="prose-reset">
                       {bodyBlocks.length > 0 ? (
                         bodyBlocks.map((block, index) => {
                           if (block.type === "p") {
                             return (
-                              <p key={index} className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]">
+                              <p
+                                key={index}
+                                className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]"
+                              >
                                 {block.text}
                               </p>
                             );
@@ -1196,7 +1485,10 @@ export default function LifestyleDetailPage({
 
                           if (block.type === "h2") {
                             return (
-                              <h2 key={index} className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                              <h2
+                                key={index}
+                                className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
+                              >
                                 {block.text}
                               </h2>
                             );
@@ -1204,7 +1496,10 @@ export default function LifestyleDetailPage({
 
                           if (block.type === "h3") {
                             return (
-                              <h3 key={index} className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl">
+                              <h3
+                                key={index}
+                                className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl"
+                              >
                                 {block.text}
                               </h3>
                             );
@@ -1212,7 +1507,10 @@ export default function LifestyleDetailPage({
 
                           if (block.type === "h4") {
                             return (
-                              <h4 key={index} className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl">
+                              <h4
+                                key={index}
+                                className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl"
+                              >
                                 {block.text}
                               </h4>
                             );
@@ -1220,7 +1518,10 @@ export default function LifestyleDetailPage({
 
                           if (block.type === "h5") {
                             return (
-                              <h5 key={index} className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]">
+                              <h5
+                                key={index}
+                                className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]"
+                              >
                                 {block.text}
                               </h5>
                             );
@@ -1228,7 +1529,10 @@ export default function LifestyleDetailPage({
 
                           if (block.type === "quote") {
                             return (
-                              <blockquote key={index} className="my-8 rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-lg italic leading-8 text-white">
+                              <blockquote
+                                key={index}
+                                className="my-8 rounded-[24px] border border-white/[0.06] bg-white/5 px-5 py-4 text-lg italic leading-8 text-white"
+                              >
                                 {block.text}
                               </blockquote>
                             );
@@ -1240,7 +1544,7 @@ export default function LifestyleDetailPage({
                                 key={index}
                                 type="button"
                                 onClick={() => openImage(block.url)}
-                                className="group my-8 block w-full overflow-hidden rounded-[24px] border border-white/10 bg-black text-left"
+                                className="group my-8 block w-full overflow-hidden rounded-[24px] border border-white/[0.06] bg-black text-left"
                               >
                                 <img
                                   src={block.url}
@@ -1256,7 +1560,10 @@ export default function LifestyleDetailPage({
                             if (!embed) return null;
                             return (
                               <div key={index} className="my-8">
-                                <InlineEmbed url={block.url} title={article.title} />
+                                <InlineEmbed
+                                  url={block.url}
+                                  title={article.title}
+                                />
                               </div>
                             );
                           }
@@ -1265,7 +1572,9 @@ export default function LifestyleDetailPage({
                         })
                       ) : (
                         <p className="text-base leading-8 text-gray-200">
-                          {article.excerpt || article.subtitle || "Contenido próximamente."}
+                          {article.excerpt ||
+                            article.subtitle ||
+                            "Contenido próximamente."}
                         </p>
                       )}
                     </div>
@@ -1281,7 +1590,10 @@ export default function LifestyleDetailPage({
                           Pieza principal en movimiento
                         </h2>
                       </div>
-                      <InlineEmbed url={article.videoUrl} title={article.title} />
+                      <InlineEmbed
+                        url={article.videoUrl}
+                        title={article.title}
+                      />
                     </div>
                   ) : null}
 
@@ -1306,11 +1618,13 @@ export default function LifestyleDetailPage({
                                 setStandaloneImage(null);
                                 setActiveGalleryIndex(index);
                               }}
-                              className={`group w-[82vw] max-w-[380px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 bg-black text-left sm:w-auto sm:max-w-none sm:shrink sm:min-w-0 ${
+                              className={`group w-[82vw] max-w-[380px] shrink-0 overflow-hidden rounded-[24px] border border-white/[0.06] bg-black text-left sm:w-auto sm:max-w-none sm:shrink sm:min-w-0 ${
                                 index === 0 ? "sm:col-span-2" : ""
                               }`}
                             >
-                              <div className={`relative w-full ${index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
+                              <div
+                                className={`relative w-full ${index === 0 ? "aspect-[16/9]" : "aspect-[4/3]"}`}
+                              >
                                 <img
                                   src={url}
                                   alt={`${article.title} ${index + 1}`}
@@ -1326,7 +1640,7 @@ export default function LifestyleDetailPage({
                 </article>
 
                 <aside className="space-y-6">
-                  <div className="rounded-[28px] border border-white/10 bg-black/25 p-5 backdrop-blur-md">
+                  <div className="rounded-[28px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
                       Nota
                     </p>
@@ -1342,19 +1656,14 @@ export default function LifestyleDetailPage({
                         <p className="mt-1 text-white">Lifestyle</p>
                       </div>
 
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
-                          Categoría
-                        </p>
-                        <p className="mt-1 text-white">{lifestyleLabel}</p>
-                      </div>
-
                       {article.contentType ? (
                         <div>
                           <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
                             Tipo
                           </p>
-                          <p className="mt-1 text-white">{article.contentType}</p>
+                          <p className="mt-1 text-white">
+                            {article.contentType}
+                          </p>
                         </div>
                       ) : null}
 
@@ -1363,7 +1672,9 @@ export default function LifestyleDetailPage({
                           <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
                             Autor
                           </p>
-                          <p className="mt-1 text-white">{article.authorName}</p>
+                          <p className="mt-1 text-white">
+                            {article.authorName}
+                          </p>
                         </div>
                       ) : null}
 
@@ -1372,14 +1683,16 @@ export default function LifestyleDetailPage({
                           <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
                             Publicación
                           </p>
-                          <p className="mt-1 text-white">{formatDate(article.publishedAt)}</p>
+                          <p className="mt-1 text-white">
+                            {formatDate(article.publishedAt)}
+                          </p>
                         </div>
                       ) : null}
                     </div>
                   </div>
 
                   {article.tags?.length ? (
-                    <div className="rounded-[28px] border border-white/10 bg-black/25 p-5 backdrop-blur-md">
+                    <div className="rounded-[28px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md">
                       <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
                         Tags
                       </p>
@@ -1387,7 +1700,7 @@ export default function LifestyleDetailPage({
                         {article.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.14em] text-gray-200"
+                            className="inline-flex items-center rounded-full border border-white/[0.06] bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.14em] text-gray-200"
                           >
                             {tag}
                           </span>
@@ -1403,12 +1716,14 @@ export default function LifestyleDetailPage({
                     editable={adEditVisible}
                     inputRef={billboardInputRef}
                     onToggle={() => void toggleAd("billboard")}
-                    onPick={(files) => void handleAdImagePick("billboard", files)}
+                    onPick={(files) =>
+                      void handleAdImagePick("billboard", files)
+                    }
                     onEditLink={() => void editAdLink("billboard")}
                     onClear={() => void clearAdImage("billboard")}
                   />
 
-                  <div className="rounded-[28px] border border-white/10 bg-black/25 p-5 backdrop-blur-md">
+                  <div className="rounded-[28px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-[#A3FF12]">
                       Últimas publicaciones
                     </p>
@@ -1423,7 +1738,8 @@ export default function LifestyleDetailPage({
                         ))
                       ) : (
                         <div className="rounded-[22px] border border-dashed border-white/12 bg-white/5 p-5 text-sm text-gray-300">
-                          Próximamente aparecerán más publicaciones relacionadas.
+                          Próximamente aparecerán más publicaciones
+                          relacionadas.
                         </div>
                       )}
                     </div>
@@ -1441,8 +1757,8 @@ export default function LifestyleDetailPage({
                   </h2>
                 </div>
 
-                <div className="no-scrollbar overflow-x-auto pb-6">
-                  <div className="flex items-start gap-5 pr-12">
+                <div className="-mx-4 overflow-x-auto px-4 pb-6 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
+                  <div className="flex snap-x snap-mandatory items-start gap-4 md:gap-5 md:pr-12">
                     <ExploreCard
                       title="Tuning"
                       subtitle="Builds, mods, aero, stance y cultura visual."
@@ -1488,7 +1804,7 @@ export default function LifestyleDetailPage({
 
         <footer
           aria-hidden={mobileOpen || isImageModalOpen}
-          className="relative z-10 mt-12 border-t border-mw-line/70 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
+          className="relative z-10 mt-12 border-t border-white/[0.08] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
           <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 xl:px-10 2xl:max-w-[1560px]">
             <div>
@@ -1508,24 +1824,64 @@ export default function LifestyleDetailPage({
             <div>
               <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
-                <li><Link href="/" className="hover:text-white">Inicio</Link></li>
-                <li><Link href="/tuning" className="hover:text-white">Tuning</Link></li>
-                <li><Link href="/noticias/autos" className="hover:text-white">Autos</Link></li>
-                <li><Link href="/noticias/motos" className="hover:text-white">Motos</Link></li>
-                <li><Link href="/deportes" className="hover:text-white">Deportes</Link></li>
-                <li><Link href="/lifestyle" className="hover:text-white">Lifestyle</Link></li>
-                <li><Link href="/comunidad" className="hover:text-white">Comunidad</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contacto</Link></li>
+                <li>
+                  <Link href="/about" className="hover:text-white">
+                    Acerca de
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-white">
+                    Contacto
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terminos" className="hover:text-white">
+                    Términos y condiciones
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacidad" className="hover:text-white">
+                    Política de privacidad
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
-                <a href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">IG</a>
-                <a href="https://www.facebook.com/share/18JRxV8AAu/" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">FB</a>
-                <a href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">TikTok</a>
-                <a href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">YouTube</a>
+                <a
+                  href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  IG
+                </a>
+                <a
+                  href="https://www.facebook.com/share/18JRxV8AAu/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  FB
+                </a>
+                <a
+                  href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  TikTok
+                </a>
+                <a
+                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  YouTube
+                </a>
               </div>
             </div>
           </div>
@@ -1548,8 +1904,16 @@ export default function LifestyleDetailPage({
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(120% 80% at 20% 10%, rgba(0, 0, 0, 0.16) 0%, transparent 60%),
-            radial-gradient(120% 80% at 80% 90%, rgba(0, 0, 0, 0.2) 0%, transparent 60%),
+            radial-gradient(
+              120% 80% at 20% 10%,
+              rgba(0, 0, 0, 0.16) 0%,
+              transparent 60%
+            ),
+            radial-gradient(
+              120% 80% at 80% 90%,
+              rgba(0, 0, 0, 0.2) 0%,
+              transparent 60%
+            ),
             linear-gradient(180deg, rgba(4, 18, 16, 0.9), rgba(4, 18, 16, 0.92));
         }
         .streak-wrap {
@@ -1565,34 +1929,66 @@ export default function LifestyleDetailPage({
           width: 220%;
           height: 100%;
           will-change: transform, opacity;
-          filter: blur(.5px);
+          filter: blur(0.5px);
         }
         @keyframes slide-fwd {
-          0% { transform: translateX(-30%); opacity: 0; }
-          10% { opacity: .9; }
-          100% { transform: translateX(130%); opacity: 0; }
+          0% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
         }
         @keyframes slide-rev {
-          0% { transform: translateX(130%); opacity: 0; }
-          10% { opacity: .9; }
-          100% { transform: translateX(-30%); opacity: 0; }
+          0% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
         }
-        .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
-        .streak.dir-rev { animation: slide-rev 11s linear infinite; }
+        .streak.dir-fwd {
+          animation: slide-fwd 11s linear infinite;
+        }
+        .streak.dir-rev {
+          animation: slide-rev 11s linear infinite;
+        }
         .streak-cool {
-          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(12, 224, 178, 0.95),
+            transparent
+          );
         }
         .streak-warm {
-          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 122, 26, 0.95),
+            transparent
+          );
         }
         .streak-lime {
-          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .85), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(163, 255, 18, 0.85),
+            transparent
+          );
         }
         .prose-reset p:last-child {
           margin-bottom: 0;
-        }
-        .logo-glow {
-          filter: drop-shadow(0 0 18px rgba(12,224,178,.12));
         }
         .no-scrollbar {
           -ms-overflow-style: none;
@@ -1603,7 +1999,7 @@ export default function LifestyleDetailPage({
         }
         .sidebar-scroll {
           scrollbar-width: thin;
-          scrollbar-color: rgba(255,255,255,.18) transparent;
+          scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
         }
         .sidebar-scroll::-webkit-scrollbar {
           width: 8px;
@@ -1612,15 +2008,17 @@ export default function LifestyleDetailPage({
           background: transparent;
         }
         .sidebar-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,.18);
+          background: rgba(255, 255, 255, 0.18);
           border-radius: 999px;
         }
+
         @media (prefers-reduced-motion: reduce) {
           .streak {
             animation: none !important;
-            opacity: .35;
+            opacity: 0.35;
           }
         }
+
         @supports (content-visibility: auto) {
           main > section {
             content-visibility: auto;
@@ -1731,7 +2129,12 @@ export const getServerSideProps: GetServerSideProps = async ({
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "publishedAt": coalesce(publishedAt, _createdAt),
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
+      "section": coalesce(section, ""),
+      "category": coalesce(category, ""),
+      "subcategory": coalesce(subcategory, ""),
+      "categories": coalesce(categories, []),
+      "tags": coalesce(tags, [])
     }
   `;
 
@@ -1748,14 +2151,19 @@ export const getServerSideProps: GetServerSideProps = async ({
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "publishedAt": coalesce(publishedAt, _createdAt),
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
+      "section": coalesce(section, ""),
+      "category": coalesce(category, ""),
+      "subcategory": coalesce(subcategory, ""),
+      "categories": coalesce(categories, []),
+      "tags": coalesce(tags, [])
     }
   `;
 
-  const lifestyleSettingsQuery = /* groq */ `
+  const globalSlugAdsQuery = /* groq */ `
     *[
       _type in ["homeSettings", "sitePageSettings", "pageSettings"] &&
-      pageKey == "lifestyle"
+      pageKey in ["globalSlugAds", "globalslugads"]
     ][0]{
       "ads": {
         "leaderboard": {
@@ -1797,7 +2205,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       )
     ]
     | order(coalesce(publishedAt, _createdAt) desc)[0]{
-      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+      "image": coalesce(mainImageUrl, coverImage.asset->url, "")
     }
   `;
 
@@ -1814,7 +2222,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       )
     ]
     | order(coalesce(publishedAt, _createdAt) desc)[0]{
-      "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
+      "image": coalesce(mainImageUrl, coverImage.asset->url, "")
     }
   `;
 
@@ -1822,7 +2230,7 @@ export const getServerSideProps: GetServerSideProps = async ({
     article,
     relatedLifestyleArticles,
     recentSitewideArticles,
-    lifestyleSettingsRaw,
+    globalSlugAdsRaw,
     sectionSettingsRaw,
     autosFallback,
     motosFallback,
@@ -1830,7 +2238,7 @@ export const getServerSideProps: GetServerSideProps = async ({
     sanityReadClient.fetch(articleQuery, { slug }),
     sanityReadClient.fetch(relatedLifestyleQuery, { slug }).catch(() => []),
     sanityReadClient.fetch(recentSitewideQuery, { slug }).catch(() => []),
-    sanityReadClient.fetch(lifestyleSettingsQuery).catch(() => null),
+    sanityReadClient.fetch(globalSlugAdsQuery).catch(() => null),
     sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
     sanityReadClient.fetch(autosFallbackQuery).catch(() => null),
     sanityReadClient.fetch(motosFallbackQuery).catch(() => null),
@@ -1846,13 +2254,18 @@ export const getServerSideProps: GetServerSideProps = async ({
   ];
 
   const seen = new Set<string>();
-  const latestArticles = mergedLatest.filter((item) => {
-    const id = String(item?.id || "");
-    const itemSlug = String(item?.slug || "");
-    if (!id || !itemSlug || itemSlug === slug || seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
+  const latestArticles = mergedLatest
+    .filter((item) => {
+      const id = String(item?.id || "");
+      const itemSlug = String(item?.slug || "");
+      if (!id || !itemSlug || itemSlug === slug || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
+    .map((item) => ({
+      ...item,
+      href: hrefFromRelatedPost(item),
+    }));
 
   const settingsMap = new Map<string, string>();
   if (Array.isArray(sectionSettingsRaw)) {
@@ -1877,12 +2290,12 @@ export const getServerSideProps: GetServerSideProps = async ({
       ...(await serverSideTranslations(
         locale ?? "es",
         ["home"],
-        nextI18NextConfig
+        nextI18NextConfig,
       )),
       year: new Date().getFullYear(),
       article,
       latestArticles,
-      lifestyleSettings: sanitizeLifestyleSettings(lifestyleSettingsRaw),
+      lifestyleSettings: sanitizeLifestyleSettings(globalSlugAdsRaw),
       sectionHeroImages,
     },
   };
