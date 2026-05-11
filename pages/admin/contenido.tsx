@@ -8,24 +8,28 @@ const nextI18NextConfig = require("../../next-i18next.config.js");
 
 const LOCALSTORAGE_KEY = "mw_admin_user";
 
-/* ---------- Botón estilo MotorWelt (igual que otros panels) ---------- */
+/* ---------- Botón estilo MotorWelt (homologado con el sitio) ---------- */
 type Variant = "cyan" | "pink" | "ghost";
+
+const getButtonClasses = (variant: Variant = "cyan", className = "") => {
+  const base =
+    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const styles: Record<Variant, string> = {
+    cyan: "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#0CE0B2]/35",
+    pink: "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(255,122,26,.24),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.34),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
+    ghost:
+      "border border-white/10 bg-white/[0.025] text-gray-200 shadow-[0_0_16px_rgba(255,255,255,.06),inset_0_0_0_1px_rgba(255,255,255,.025)] hover:bg-white/5 hover:border-white/15 focus-visible:ring-[#FF7A1A]/30",
+  };
+
+  return `${base} ${styles[variant]} ${className}`.trim();
+};
 
 const Button: React.FC<
   React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }
 > = ({ className = "", children, variant = "cyan", ...props }) => {
-  const base =
-    "inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 disabled:opacity-60 disabled:cursor-not-allowed";
-  const map: Record<Variant, string> = {
-    cyan:
-      "text-white border-2 border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.35),inset_0_0_0_1px_rgba(12,224,178,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(12,224,178,.55),inset_0_0_0_1px_rgba(12,224,178,.18)] focus-visible:ring-[#0CE0B2]/40",
-    pink:
-      "text-white border-2 border-[#FF7A1A] shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus-visible:ring-[#FF7A1A]/40",
-    ghost:
-      "text-gray-200 border border-white/15 hover:border-white/35 hover:bg-white/5 focus-visible:ring-[#FF7A1A]/40",
-  };
   return (
-    <button {...props} className={`${base} ${map[variant]} ${className}`}>
+    <button {...props} className={getButtonClasses(variant, className)}>
       {children}
     </button>
   );
@@ -37,7 +41,7 @@ function getCookie(name: string) {
 
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const match = document.cookie.match(
-    new RegExp("(^| )" + escaped + "=([^;]+)")
+    new RegExp("(^| )" + escaped + "=([^;]+)"),
   );
 
   return match ? decodeURIComponent(match[2]) : null;
@@ -76,16 +80,15 @@ type ContentStatus = "borrador" | "revision" | "publicado";
 
 type NoteSubcategory =
   | ""
-  | "autos_lanzamientos"
-  | "autos_pruebas"
-  | "autos_industria"
+  | "autos_gasolina"
+  | "autos_hibridos"
   | "autos_electricos"
-  | "autos_clasicos"
-  | "motos_lanzamientos"
-  | "motos_pruebas"
-  | "motos_rutas"
-  | "motos_industria"
-  | "motos_cultura"
+  | "autos_prueba_manejo"
+  | "motos_doble_proposito"
+  | "motos_pista"
+  | "motos_off_road"
+  | "motos_electricas"
+  | "motos_prueba_manejo"
   | "f1"
   | "nascar"
   | "motogp"
@@ -146,22 +149,41 @@ type SocialCopyPack = {
   cta?: string;
 };
 
+const SECTION_OPTIONS: { value: SectionSlug; label: string }[] = [
+  { value: "noticias_autos", label: "Autos" },
+  { value: "noticias_motos", label: "Motos" },
+  { value: "deportes", label: "Deportes" },
+  { value: "lifestyle", label: "Lifestyle" },
+];
+
+const SECTION_LABELS: Record<SectionSlug, string> = {
+  noticias_autos: "Autos",
+  noticias_motos: "Motos",
+  deportes: "Deportes",
+  lifestyle: "Lifestyle",
+  comunidad: "Comunidad",
+  tuning: "Tuning",
+};
+
+type ListSectionFilter = "all" | SectionSlug;
+type ListSubcategoryFilter =
+  | "all"
+  | "__general__"
+  | Exclude<NoteSubcategory, "">;
+
 const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
   noticias_autos: [
-    { value: "", label: "General Autos" },
-    { value: "autos_lanzamientos", label: "Lanzamientos" },
-    { value: "autos_pruebas", label: "Pruebas / Reviews" },
-    { value: "autos_industria", label: "Industria" },
-    { value: "autos_electricos", label: "Eléctricos / Híbridos" },
-    { value: "autos_clasicos", label: "Clásicos" },
+    { value: "autos_gasolina", label: "Gasolina" },
+    { value: "autos_hibridos", label: "Híbridos" },
+    { value: "autos_electricos", label: "Eléctricos" },
+    { value: "autos_prueba_manejo", label: "Prueba de manejo" },
   ],
   noticias_motos: [
-    { value: "", label: "General Motos" },
-    { value: "motos_lanzamientos", label: "Lanzamientos" },
-    { value: "motos_pruebas", label: "Pruebas / Reviews" },
-    { value: "motos_rutas", label: "Rutas" },
-    { value: "motos_industria", label: "Industria" },
-    { value: "motos_cultura", label: "Cultura moto" },
+    { value: "motos_doble_proposito", label: "Doble propósito" },
+    { value: "motos_pista", label: "Pista" },
+    { value: "motos_off_road", label: "Off road" },
+    { value: "motos_electricas", label: "Eléctricas" },
+    { value: "motos_prueba_manejo", label: "Prueba de manejo" },
   ],
   deportes: [
     { value: "f1", label: "F1" },
@@ -174,10 +196,9 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
     { value: "lifestyle_moda", label: "Moda" },
     { value: "lifestyle_relojeria", label: "Relojería" },
     { value: "lifestyle_fuera_del_volante", label: "Fuera del volante" },
-    { value: "lifestyle_cine", label: "Cine automovilístico" },
+    { value: "lifestyle_cine", label: "Cine" },
   ],
   comunidad: [
-    { value: "", label: "General Comunidad" },
     { value: "comunidad_eventos", label: "Eventos" },
     { value: "comunidad_meets", label: "Meets" },
     { value: "comunidad_rutas", label: "Rutas" },
@@ -185,7 +206,6 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
     { value: "comunidad_garage", label: "Garage / Proyectos" },
   ],
   tuning: [
-    { value: "", label: "General Tuning" },
     { value: "tuning_builds", label: "Builds" },
     { value: "tuning_mods", label: "Mods" },
     { value: "tuning_stance", label: "Stance" },
@@ -194,28 +214,87 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
   ],
 };
 
-function getDefaultSubcategoryForSection(section: SectionSlug): NoteSubcategory {
+const LEGACY_SUBCATEGORY_LABELS: Record<string, string> = {
+  autos_lanzamientos: "Lanzamientos",
+  autos_pruebas: "Pruebas / Reviews",
+  autos_industria: "Industria",
+  autos_electricos: "Eléctricos / Híbridos",
+  autos_clasicos: "Clásicos",
+  motos_lanzamientos: "Lanzamientos",
+  motos_pruebas: "Pruebas / Reviews",
+  motos_rutas: "Rutas",
+  motos_industria: "Industria",
+  motos_cultura: "Cultura moto",
+};
+
+function getDefaultSubcategoryForSection(
+  section: SectionSlug,
+): NoteSubcategory {
   return SECTION_NOTE_SUBCATEGORIES[section]?.[0]?.value || "";
 }
 
 function isSubcategoryValidForSection(
   section: SectionSlug,
-  subcategory?: string
+  subcategory?: string,
 ) {
   return SECTION_NOTE_SUBCATEGORIES[section].some(
-    (item) => item.value === subcategory
+    (item) => item.value === subcategory,
   );
 }
 
 function normalizeSubcategoryForSection(
   section: SectionSlug,
-  subcategory?: string
+  subcategory?: string,
 ): NoteSubcategory {
   if (isSubcategoryValidForSection(section, subcategory)) {
     return subcategory as NoteSubcategory;
   }
 
   return getDefaultSubcategoryForSection(section);
+}
+
+function labelForSection(section?: SectionSlug) {
+  return section ? SECTION_LABELS[section] || "Sin sección" : "Sin sección";
+}
+
+function labelForSubcategory(
+  section?: SectionSlug,
+  subcategory?: NoteSubcategory,
+) {
+  if (!section) return "General";
+  if (!subcategory) return "General";
+  return (
+    SECTION_NOTE_SUBCATEGORIES[section]?.find(
+      (item) => item.value === subcategory,
+    )?.label ||
+    LEGACY_SUBCATEGORY_LABELS[String(subcategory)] ||
+    String(subcategory).replace(/_/g, " ")
+  );
+}
+
+function getListSubcategoryOptions(
+  sectionFilter: ListSectionFilter,
+): SubcategoryOption[] {
+  if (sectionFilter !== "all") {
+    return SECTION_NOTE_SUBCATEGORIES[sectionFilter] || [];
+  }
+
+  const allOptions = SECTION_OPTIONS.flatMap((sectionItem) =>
+    (SECTION_NOTE_SUBCATEGORIES[sectionItem.value] || []).map(
+      (subcategoryItem) => ({
+        ...subcategoryItem,
+        label: `${sectionItem.label} · ${subcategoryItem.label}`,
+      }),
+    ),
+  );
+
+  const seen = new Set<string>();
+  return allOptions.filter((item) => {
+    const key = `${item.value || "__general__"}-${item.label}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /* Helper para etiqueta bonita de la plataforma */
@@ -268,8 +347,8 @@ function normalizeGalleryUrls(input: string): string[] {
       (input || "")
         .split(/\n|,/)
         .map((s) => s.trim())
-        .filter(Boolean)
-    )
+        .filter(Boolean),
+    ),
   );
 }
 
@@ -382,7 +461,7 @@ const AdminContentEditorPage: React.FC = () => {
   const [subtitle, setSubtitle] = useState("");
   const [section, setSection] = useState<SectionSlug>("noticias_autos");
   const [subcategory, setSubcategory] = useState<NoteSubcategory>(
-    getDefaultSubcategoryForSection("noticias_autos")
+    getDefaultSubcategoryForSection("noticias_autos"),
   );
   const [contentType, setContentType] = useState<ContentType>("noticia");
   const [status, setStatus] = useState<ContentStatus>("borrador");
@@ -413,11 +492,11 @@ const AdminContentEditorPage: React.FC = () => {
   // ✅ Upload imágenes para el cuerpo / galería
   const [uploadingInlineImages, setUploadingInlineImages] = useState(false);
   const [inlineUploadError, setInlineUploadError] = useState<string | null>(
-    null
+    null,
   );
   const [uploadingGalleryImages, setUploadingGalleryImages] = useState(false);
   const [galleryUploadError, setGalleryUploadError] = useState<string | null>(
-    null
+    null,
   );
 
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
@@ -529,7 +608,9 @@ const AdminContentEditorPage: React.FC = () => {
       const urls = uploaded.map((u) => u.url);
       insertMarkdownImages(urls);
     } catch (err: any) {
-      setInlineUploadError(err?.message || "No se pudieron subir las imágenes.");
+      setInlineUploadError(
+        err?.message || "No se pudieron subir las imágenes.",
+      );
     } finally {
       setUploadingInlineImages(false);
       if (inlineImagesInputRef.current) inlineImagesInputRef.current.value = "";
@@ -548,15 +629,18 @@ const AdminContentEditorPage: React.FC = () => {
 
       setGallery((prev) => {
         const merged = Array.from(
-          new Set([...normalizeGalleryUrls(prev), ...urls])
+          new Set([...normalizeGalleryUrls(prev), ...urls]),
         );
         return merged.join("\n");
       });
     } catch (err: any) {
-      setGalleryUploadError(err?.message || "No se pudieron subir las imágenes.");
+      setGalleryUploadError(
+        err?.message || "No se pudieron subir las imágenes.",
+      );
     } finally {
       setUploadingGalleryImages(false);
-      if (galleryImagesInputRef.current) galleryImagesInputRef.current.value = "";
+      if (galleryImagesInputRef.current)
+        galleryImagesInputRef.current.value = "";
     }
   };
 
@@ -566,7 +650,7 @@ const AdminContentEditorPage: React.FC = () => {
   const [seoDescription, setSeoDescription] = useState("");
 
   const [savingState, setSavingState] = useState<"idle" | "saving" | "saved">(
-    "idle"
+    "idle",
   );
 
   // IA (artículo / SEO)
@@ -574,7 +658,9 @@ const AdminContentEditorPage: React.FC = () => {
     null | "correct" | "seo" | "title" | "meta"
   >(null);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [aiSeoInsights, setAiSeoInsights] = useState<AiSeoInsights | null>(null);
+  const [aiSeoInsights, setAiSeoInsights] = useState<AiSeoInsights | null>(
+    null,
+  );
 
   // IA Copys redes
   const [socialTone, setSocialTone] = useState<SocialTone>("editorial");
@@ -585,7 +671,7 @@ const AdminContentEditorPage: React.FC = () => {
   const [socialLoading, setSocialLoading] = useState(false);
   const [socialError, setSocialError] = useState<string | null>(null);
   const [socialCopies, setSocialCopies] = useState<SocialCopyPack[] | null>(
-    null
+    null,
   );
 
   /* ---------- ✅ Listado de notas (para editar) ---------- */
@@ -594,8 +680,11 @@ const AdminContentEditorPage: React.FC = () => {
   const [myNotes, setMyNotes] = useState<ContentListItem[]>([]);
   const [listQuery, setListQuery] = useState("");
   const [listStatus, setListStatus] = useState<"all" | ContentStatus>(
-    "publicado"
+    "publicado",
   );
+  const [listSection, setListSection] = useState<ListSectionFilter>("all");
+  const [listSubcategory, setListSubcategory] =
+    useState<ListSubcategoryFilter>("all");
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
@@ -613,6 +702,31 @@ const AdminContentEditorPage: React.FC = () => {
         ?.label || "General"
     );
   }, [activeSubcategoryOptions, subcategory]);
+
+  const listSubcategoryOptions = useMemo(() => {
+    return getListSubcategoryOptions(listSection);
+  }, [listSection]);
+
+  const filteredMyNotes = useMemo(() => {
+    return myNotes.filter((item) => {
+      if (listSection !== "all" && item.section !== listSection) return false;
+
+      if (listSubcategory !== "all") {
+        if (listSubcategory === "__general__") {
+          return !item.subcategory;
+        }
+
+        return item.subcategory === listSubcategory;
+      }
+
+      return true;
+    });
+  }, [myNotes, listSection, listSubcategory]);
+
+  const handleListSectionChange = (nextSection: ListSectionFilter) => {
+    setListSection(nextSection);
+    setListSubcategory("all");
+  };
 
   const handleSectionChange = (nextSection: SectionSlug) => {
     setSection(nextSection);
@@ -668,8 +782,15 @@ const AdminContentEditorPage: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: listStatus === "all" ? undefined : listStatus,
+          section: listSection === "all" ? undefined : listSection,
+          subcategory:
+            listSubcategory === "all"
+              ? undefined
+              : listSubcategory === "__general__"
+                ? ""
+                : listSubcategory,
           q: listQuery || undefined,
-          limit: 30,
+          limit: 100,
         }),
       });
 
@@ -711,7 +832,7 @@ const AdminContentEditorPage: React.FC = () => {
       const nextSection = (doc.section as SectionSlug) || "noticias_autos";
       const nextSubcategory = normalizeSubcategoryForSection(
         nextSection,
-        doc.subcategory
+        doc.subcategory,
       );
 
       setDocId(doc.id);
@@ -749,7 +870,9 @@ const AdminContentEditorPage: React.FC = () => {
       }
 
       if (Array.isArray(doc.galleryUrls) && doc.galleryUrls.length > 0) {
-        setGallery(Array.from(new Set(doc.galleryUrls.filter(Boolean))).join("\n"));
+        setGallery(
+          Array.from(new Set(doc.galleryUrls.filter(Boolean))).join("\n"),
+        );
       } else {
         setGallery("");
       }
@@ -763,7 +886,8 @@ const AdminContentEditorPage: React.FC = () => {
       setGalleryUploadError(null);
 
       if (inlineImagesInputRef.current) inlineImagesInputRef.current.value = "";
-      if (galleryImagesInputRef.current) galleryImagesInputRef.current.value = "";
+      if (galleryImagesInputRef.current)
+        galleryImagesInputRef.current.value = "";
       if (mainImageInputRef.current) mainImageInputRef.current.value = "";
     } catch (err: any) {
       setAiError(err?.message || "No se pudo cargar la nota.");
@@ -777,7 +901,7 @@ const AdminContentEditorPage: React.FC = () => {
       typeof window === "undefined"
         ? false
         : window.confirm(
-            "¿Seguro que quieres eliminar esta nota? Esta acción no se puede deshacer."
+            "¿Seguro que quieres eliminar esta nota? Esta acción no se puede deshacer.",
           );
 
     if (!ok) return;
@@ -820,7 +944,7 @@ const AdminContentEditorPage: React.FC = () => {
     if (!authReady) return;
     fetchMyNotes().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listStatus]);
+  }, [listStatus, listSection, listSubcategory]);
 
   /* ---------- Protección de ruta ---------- */
   useEffect(() => {
@@ -848,7 +972,7 @@ const AdminContentEditorPage: React.FC = () => {
             JSON.stringify({
               ...cookieUser,
               loggedAt: new Date().toISOString(),
-            })
+            }),
           );
         } catch {}
 
@@ -926,14 +1050,14 @@ const AdminContentEditorPage: React.FC = () => {
             ...cleanTags,
             ...(subcategory ? [subcategory] : []),
             ...(subcategoryLabel ? [subcategoryLabel] : []),
-          ])
+          ]),
         ),
 
         videoUrl: videoUrl || undefined,
         reelUrl: reelUrl || undefined,
         useVideoAsHero,
 
-        seoTitle: (seoTitle || title) || undefined,
+        seoTitle: seoTitle || title || undefined,
         seoDescription: seoDescription || undefined,
 
         authorName: currentUser?.name || "MotorWelt",
@@ -998,7 +1122,7 @@ const AdminContentEditorPage: React.FC = () => {
   /* ---------- ✅ Status REAL (PATCH) ---------- */
 
   const updateStatusReal = async (
-    nextStatus: ContentStatus
+    nextStatus: ContentStatus,
   ): Promise<UpdateStatusResponse> => {
     const id = await saveDraftReal();
 
@@ -1099,7 +1223,7 @@ const AdminContentEditorPage: React.FC = () => {
     } catch (err) {
       console.error(err);
       setAiError(
-        "No se pudo corregir el texto con IA. Verifica el endpoint /api/ai/correct-article."
+        "No se pudo corregir el texto con IA. Verifica el endpoint /api/ai/correct-article.",
       );
     } finally {
       setAiLoading(null);
@@ -1109,7 +1233,7 @@ const AdminContentEditorPage: React.FC = () => {
   const handleAiSeoOptimize = async () => {
     if (!title.trim() && !body.trim()) {
       setAiError(
-        "Necesitas al menos título o cuerpo para generar sugerencias SEO."
+        "Necesitas al menos título o cuerpo para generar sugerencias SEO.",
       );
       return;
     }
@@ -1154,7 +1278,7 @@ const AdminContentEditorPage: React.FC = () => {
     } catch (err) {
       console.error(err);
       setAiError(
-        "No se pudo generar el análisis SEO con IA. Verifica el endpoint /api/ai/seo-insights."
+        "No se pudo generar el análisis SEO con IA. Verifica el endpoint /api/ai/seo-insights.",
       );
     } finally {
       setAiLoading(null);
@@ -1164,7 +1288,7 @@ const AdminContentEditorPage: React.FC = () => {
   const handleAiSuggestSeoTitleOnly = async () => {
     if (!title.trim() && !body.trim()) {
       setAiError(
-        "Necesitas al menos título o cuerpo para sugerir un título SEO."
+        "Necesitas al menos título o cuerpo para sugerir un título SEO.",
       );
       return;
     }
@@ -1195,7 +1319,7 @@ const AdminContentEditorPage: React.FC = () => {
     } catch (err) {
       console.error(err);
       setAiError(
-        "No se pudo sugerir título SEO. Verifica el endpoint /api/ai/seo-insights."
+        "No se pudo sugerir título SEO. Verifica el endpoint /api/ai/seo-insights.",
       );
     } finally {
       setAiLoading(null);
@@ -1205,7 +1329,7 @@ const AdminContentEditorPage: React.FC = () => {
   const handleAiSuggestSeoMetaOnly = async () => {
     if (!title.trim() && !body.trim()) {
       setAiError(
-        "Necesitas al menos título o cuerpo para sugerir una meta descripción."
+        "Necesitas al menos título o cuerpo para sugerir una meta descripción.",
       );
       return;
     }
@@ -1236,7 +1360,7 @@ const AdminContentEditorPage: React.FC = () => {
     } catch (err) {
       console.error(err);
       setAiError(
-        "No se pudo sugerir meta descripción. Verifica el endpoint /api/ai/seo-insights."
+        "No se pudo sugerir meta descripción. Verifica el endpoint /api/ai/seo-insights.",
       );
     } finally {
       setAiLoading(null);
@@ -1248,7 +1372,7 @@ const AdminContentEditorPage: React.FC = () => {
   const handleGenerateSocialCopy = async () => {
     if (!title.trim() && !body.trim()) {
       setSocialError(
-        "Escribe al menos un título o parte del cuerpo para generar copys."
+        "Escribe al menos un título o parte del cuerpo para generar copys.",
       );
       return;
     }
@@ -1292,13 +1416,13 @@ const AdminContentEditorPage: React.FC = () => {
         setSocialCopies(data.platforms);
       } else {
         setSocialError(
-          "La IA no devolvió copys aprovechables. Intenta ajustar el texto o las opciones."
+          "La IA no devolvió copys aprovechables. Intenta ajustar el texto o las opciones.",
         );
       }
     } catch (err) {
       console.error(err);
       setSocialError(
-        "No se pudieron generar copys para redes. Verifica el endpoint /api/ai/social-copy."
+        "No se pudieron generar copys para redes. Verifica el endpoint /api/ai/social-copy.",
       );
     } finally {
       setSocialLoading(false);
@@ -1324,7 +1448,7 @@ const AdminContentEditorPage: React.FC = () => {
         description="Editor unificado para crear y actualizar contenido de todas las secciones de MotorWelt."
       />
 
-      <main className="min-h-screen bg-mw-surface/95 pt-20 pb-16">
+      <main className="min-h-screen bg-[#041210] pt-20 pb-16">
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
           <section className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -1400,15 +1524,15 @@ const AdminContentEditorPage: React.FC = () => {
                     status === "borrador"
                       ? "bg-slate-500/10 text-slate-200"
                       : status === "revision"
-                      ? "bg-amber-500/10 text-amber-300"
-                      : "bg-emerald-500/10 text-emerald-300",
+                        ? "bg-amber-500/10 text-amber-300"
+                        : "bg-emerald-500/10 text-emerald-300",
                   ].join(" ")}
                 >
                   {status === "borrador"
                     ? "Borrador"
                     : status === "revision"
-                    ? "En revisión"
-                    : "Publicado"}
+                      ? "En revisión"
+                      : "Publicado"}
                 </span>
               </span>
 
@@ -1450,10 +1574,10 @@ const AdminContentEditorPage: React.FC = () => {
                   {aiLoading === "correct"
                     ? "corrección de texto…"
                     : aiLoading === "seo"
-                    ? "análisis SEO…"
-                    : aiLoading === "title"
-                    ? "título SEO…"
-                    : "meta descripción…"}
+                      ? "análisis SEO…"
+                      : aiLoading === "title"
+                        ? "título SEO…"
+                        : "meta descripción…"}
                 </span>
               )}
               {aiError && (
@@ -1573,12 +1697,11 @@ const AdminContentEditorPage: React.FC = () => {
                         }
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       >
-                        <option value="noticias_autos">Autos</option>
-                        <option value="noticias_motos">Motos</option>
-                        <option value="deportes">Deportes</option>
-                        <option value="lifestyle">Lifestyle</option>
-                        <option value="comunidad">Comunidad</option>
-                        <option value="tuning">Tuning</option>
+                        {SECTION_OPTIONS.map((item) => (
+                          <option key={item.value} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -1598,7 +1721,10 @@ const AdminContentEditorPage: React.FC = () => {
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       >
                         {activeSubcategoryOptions.map((item) => (
-                          <option key={item.value || "general"} value={item.value}>
+                          <option
+                            key={item.value || "general"}
+                            value={item.value}
+                          >
                             {item.label}
                           </option>
                         ))}
@@ -1625,7 +1751,9 @@ const AdminContentEditorPage: React.FC = () => {
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       >
                         <option value="noticia">Noticia</option>
-                        <option value="review">Review / Prueba</option>
+                        <option value="review">
+                          Prueba de manejo / Review
+                        </option>
                         <option value="entrevista">Entrevista</option>
                       </select>
                     </div>
@@ -1666,7 +1794,8 @@ const AdminContentEditorPage: React.FC = () => {
                       className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                     />
                     <p className="mt-1 text-[10px] text-gray-500">
-                      Si la dejas vacía, la fecha seguirá automática al publicar.
+                      Si la dejas vacía, la fecha seguirá automática al
+                      publicar.
                     </p>
                   </div>
                 </div>
@@ -1764,7 +1893,7 @@ const AdminContentEditorPage: React.FC = () => {
                     onClick={() => {
                       if (typeof window === "undefined") return;
                       const url = window.prompt(
-                        "Pega la URL del video (YouTube/Vimeo). Se insertará en el texto donde está el cursor:"
+                        "Pega la URL del video (YouTube/Vimeo). Se insertará en el texto donde está el cursor:",
                       );
                       if (!url) return;
                       insertVideoEmbed(url);
@@ -1843,7 +1972,7 @@ const AdminContentEditorPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <div className="space-y-1">
                     <label className="text-xs text-gray-300">Buscar</label>
                     <input
@@ -1853,6 +1982,52 @@ const AdminContentEditorPage: React.FC = () => {
                       className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                     />
                   </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-300">Sección</label>
+                    <select
+                      value={listSection}
+                      onChange={(e) =>
+                        handleListSectionChange(
+                          e.target.value as ListSectionFilter,
+                        )
+                      }
+                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                    >
+                      <option value="all">Todas las secciones</option>
+                      {SECTION_OPTIONS.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-300">
+                      Sección de nota
+                    </label>
+                    <select
+                      value={listSubcategory}
+                      onChange={(e) =>
+                        setListSubcategory(
+                          e.target.value as ListSubcategoryFilter,
+                        )
+                      }
+                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                    >
+                      <option value="all">Todas</option>
+                      {listSubcategoryOptions.map((item) => (
+                        <option
+                          key={`${item.label}-${item.value || "general"}`}
+                          value={item.value || "__general__"}
+                        >
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="space-y-1">
                     <label className="text-xs text-gray-300">Status</label>
                     <select
@@ -1876,15 +2051,31 @@ const AdminContentEditorPage: React.FC = () => {
                     </span>
                     .
                   </p>
-                  <Button
-                    type="button"
-                    variant="pink"
-                    className="text-xs"
-                    onClick={() => fetchMyNotes()}
-                    disabled={listLoading}
-                  >
-                    {listLoading ? "Buscando…" : "Aplicar filtros"}
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-2 justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-xs"
+                      onClick={() => {
+                        setListQuery("");
+                        setListStatus("publicado");
+                        setListSection("all");
+                        setListSubcategory("all");
+                      }}
+                      disabled={listLoading}
+                    >
+                      Limpiar filtros
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="pink"
+                      className="text-xs"
+                      onClick={() => fetchMyNotes()}
+                      disabled={listLoading}
+                    >
+                      {listLoading ? "Buscando…" : "Aplicar filtros"}
+                    </Button>
+                  </div>
                 </div>
 
                 {listError && (
@@ -1893,23 +2084,28 @@ const AdminContentEditorPage: React.FC = () => {
                   </div>
                 )}
 
+                <p className="text-[10px] text-gray-500">
+                  Mostrando {filteredMyNotes.length} de {myNotes.length} notas
+                  cargadas.
+                </p>
+
                 <div className="rounded-2xl border border-white/10 bg-black/25 p-3 max-h-[420px] overflow-auto">
-                  {listLoading && myNotes.length === 0 ? (
+                  {listLoading && filteredMyNotes.length === 0 ? (
                     <p className="text-[11px] text-gray-400">Cargando…</p>
-                  ) : myNotes.length === 0 ? (
+                  ) : filteredMyNotes.length === 0 ? (
                     <p className="text-[11px] text-gray-400">
                       No hay notas para mostrar.
                     </p>
                   ) : (
                     <div className="space-y-2">
-                      {myNotes.map((it) => {
+                      {filteredMyNotes.map((it) => {
                         const st = it.status || "borrador";
                         const badge =
                           st === "publicado"
                             ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
                             : st === "revision"
-                            ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
-                            : "bg-slate-500/10 text-slate-200 border-slate-500/30";
+                              ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                              : "bg-slate-500/10 text-slate-200 border-slate-500/30";
 
                         const date = it.publishedAt || it.updatedAt;
 
@@ -1925,11 +2121,14 @@ const AdminContentEditorPage: React.FC = () => {
                                 </p>
                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-gray-400">
                                   <span className="rounded-full border border-white/10 bg-black/30 px-2 py-0.5">
-                                    {it.section || "—"}
+                                    {labelForSection(it.section)}
                                   </span>
                                   {it.subcategory ? (
                                     <span className="rounded-full border border-[#0CE0B2]/20 bg-[#0CE0B2]/10 px-2 py-0.5 text-[#7CFFE2]">
-                                      {it.subcategory}
+                                      {labelForSubcategory(
+                                        it.section,
+                                        it.subcategory,
+                                      )}
                                     </span>
                                   ) : null}
                                   <span className="rounded-full border border-white/10 bg-black/30 px-2 py-0.5">
@@ -1941,8 +2140,8 @@ const AdminContentEditorPage: React.FC = () => {
                                     {st === "publicado"
                                       ? "Publicado"
                                       : st === "revision"
-                                      ? "Revisión"
-                                      : "Borrador"}
+                                        ? "Revisión"
+                                        : "Borrador"}
                                   </span>
                                   {date && (
                                     <span className="text-gray-500">
@@ -2035,7 +2234,7 @@ const AdminContentEditorPage: React.FC = () => {
                           setMainImage(uploaded.url);
                         } catch (err: any) {
                           setUploadError(
-                            err?.message || "No se pudo subir la imagen"
+                            err?.message || "No se pudo subir la imagen",
                           );
                         } finally {
                           setUploadingMainImage(false);
@@ -2112,7 +2311,9 @@ const AdminContentEditorPage: React.FC = () => {
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={(e) => handleGalleryImagesPick(e.target.files)}
+                        onChange={(e) =>
+                          handleGalleryImagesPick(e.target.files)
+                        }
                         disabled={uploadingGalleryImages}
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100"
                       />
@@ -2216,7 +2417,10 @@ const AdminContentEditorPage: React.FC = () => {
 
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label htmlFor="seo-title" className="text-xs text-gray-300">
+                    <label
+                      htmlFor="seo-title"
+                      className="text-xs text-gray-300"
+                    >
                       Título SEO (opcional)
                     </label>
                     <div className="flex gap-2">
@@ -2484,7 +2688,9 @@ const AdminContentEditorPage: React.FC = () => {
                                 type="button"
                                 variant="ghost"
                                 className="text-[10px] px-3 py-1"
-                                onClick={() => handleCopyToClipboard(blockToCopy)}
+                                onClick={() =>
+                                  handleCopyToClipboard(blockToCopy)
+                                }
                               >
                                 Copiar todo
                               </Button>
@@ -2499,30 +2705,31 @@ const AdminContentEditorPage: React.FC = () => {
                               </p>
                             </div>
 
-                            {pack.variaciones && pack.variaciones.length > 0 && (
-                              <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-1">
-                                <p className="text-[11px] text-gray-400">
-                                  Variaciones:
-                                </p>
-                                {pack.variaciones.map((v, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex items-start justify-between gap-2"
-                                  >
-                                    <p className="text-[11px] text-gray-200 flex-1 whitespace-pre-line">
-                                      {idx + 1}. {v}
-                                    </p>
-                                    <button
-                                      type="button"
-                                      className="text-[10px] text-[#0CE0B2] hover:text-[#7CFFE2] shrink-0"
-                                      onClick={() => handleCopyToClipboard(v)}
+                            {pack.variaciones &&
+                              pack.variaciones.length > 0 && (
+                                <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-1">
+                                  <p className="text-[11px] text-gray-400">
+                                    Variaciones:
+                                  </p>
+                                  {pack.variaciones.map((v, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-start justify-between gap-2"
                                     >
-                                      Copiar
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                                      <p className="text-[11px] text-gray-200 flex-1 whitespace-pre-line">
+                                        {idx + 1}. {v}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        className="text-[10px] text-[#0CE0B2] hover:text-[#7CFFE2] shrink-0"
+                                        onClick={() => handleCopyToClipboard(v)}
+                                      >
+                                        Copiar
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
 
                             {(pack.hashtags && pack.hashtags.length > 0) ||
                             pack.cta ? (
@@ -2566,7 +2773,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       ...(await serverSideTranslations(
         locale ?? "es",
         ["home"],
-        nextI18NextConfig
+        nextI18NextConfig,
       )),
     },
   };

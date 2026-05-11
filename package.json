@@ -16,6 +16,8 @@
     "dotenv": "^17.2.3",
     "formidable": "^3.5.4",
     "framer-motion": "^12.23.12",
+    "googleapis": "^171.4.0",
+    "html2canvas": "^1.4.1",
     "i18next": "^22.5.1",
     "next": "14.0.0",
     "next-i18next": "^13.3.0",

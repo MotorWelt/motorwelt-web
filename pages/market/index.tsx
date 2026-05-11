@@ -1,528 +1,495 @@
 // pages/market/index.tsx
-import React from "react";
+import React, { useMemo, useState } from "react";
+import type { GetServerSideProps } from "next";
 import Link from "next/link";
 import Seo from "../../components/Seo";
+import ProfileButton from "../../components/ProfileButton";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+
 const nextI18NextConfig = require("../../next-i18next.config.js");
 
-/* ---------- Botón estilo MotorWelt (sobrio) ---------- */
-type Variant = "primary" | "secondary" | "ghost";
-
-const Button: React.FC<
-  React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }
-> = ({ className = "", children, variant = "primary", ...props }) => {
-  const base =
-    "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0";
-  const map: Record<Variant, string> = {
-    primary:
-      "text-black bg-[#0CE0B2] border border-[#0CE0B2] hover:bg-[#11f0c0] hover:border-[#11f0c0] focus-visible:ring-[#0CE0B2]/40",
-    secondary:
-      "text-white border border-white/20 bg-white/5 hover:bg-white/10 focus-visible:ring-white/30",
-    ghost:
-      "text-gray-200 border border-transparent hover:border-white/20 hover:bg-white/5 focus-visible:ring-white/20",
-  };
-
-  return (
-    <button {...props} className={`${base} ${map[variant]} ${className}`}>
-      {children}
-    </button>
-  );
-};
-
-/* ---------- Tipos y datos demo ---------- */
-
-type VehicleType = "auto" | "moto";
+type VehicleType = "Todos" | "Autos" | "Motos";
+type FuelType = "Todos" | "Gasolina" | "Híbridos" | "Eléctricos";
+type BodyType = "Todos" | "SUV" | "Sedán" | "Coupé" | "Hatchback" | "Moto";
+type MarketTag = "Todos" | "Premium" | "Performance" | "Collector" | "Importación";
 
 type Vehicle = {
-  id: number;
+  id: string;
   title: string;
-  subtitle?: string;
-  type: VehicleType;
-  year: number;
+  type: Exclude<VehicleType, "Todos">;
+  fuel: Exclude<FuelType, "Todos">;
+  body: Exclude<BodyType, "Todos">;
+  tag: Exclude<MarketTag, "Todos">;
   price: string;
   location: string;
-  status: "disponible" | "reservado" | "vendido";
-  highlight?: "coleccionable" | "track" | "rareza" | "daily";
-  imageUrl: string;
+  year: string;
+  mileage: string;
+  description: string;
+  featured?: boolean;
 };
 
-const featuredVehicles: Vehicle[] = [
+const vehicles: Vehicle[] = [
   {
-    id: 1,
-    title: "Porsche 911 GT3 (992)",
-    subtitle: "Especificación pista · Bajo kilometraje",
-    type: "auto",
-    year: 2023,
-    price: "MXN 6,950,000",
-    location: "CDMX, México",
-    status: "disponible",
-    highlight: "track",
-    imageUrl: "/images/market/demo-gt3.jpg", // luego sustituyes por fotos reales
+    id: "porsche-911-carrera",
+    title: "Porsche 911 Carrera",
+    type: "Autos",
+    fuel: "Gasolina",
+    body: "Coupé",
+    tag: "Premium",
+    price: "Precio bajo solicitud",
+    location: "CDMX",
+    year: "2022",
+    mileage: "18,000 km",
+    description: "Unidad premium con enfoque performance y configuración aspiracional.",
+    featured: true,
   },
   {
-    id: 2,
-    title: "BMW M2 (G87) Individual",
-    subtitle: "Paquete carbono · Configuración entusiasta",
-    type: "auto",
-    year: 2024,
-    price: "MXN 1,890,000",
-    location: "Guadalajara, Jal.",
-    status: "disponible",
-    highlight: "daily",
-    imageUrl: "/images/market/demo-m2.jpg",
+    id: "bmw-m2-competition",
+    title: "BMW M2 Competition",
+    type: "Autos",
+    fuel: "Gasolina",
+    body: "Coupé",
+    tag: "Performance",
+    price: "Deal destacado",
+    location: "México",
+    year: "2021",
+    mileage: "24,500 km",
+    description: "Auto ideal para entusiastas que buscan manejo, carácter y presencia.",
+    featured: true,
   },
   {
-    id: 3,
-    title: "Nissan GT-R R35 Track Edition",
-    subtitle: "Preparación ligera · Stage 1",
-    type: "auto",
-    year: 2018,
-    price: "USD 145,000",
-    location: "Monterrey, N.L.",
-    status: "reservado",
-    highlight: "rareza",
-    imageUrl: "/images/market/demo-gtr.jpg",
+    id: "audi-rs3",
+    title: "Audi RS3",
+    type: "Autos",
+    fuel: "Gasolina",
+    body: "Sedán",
+    tag: "Performance",
+    price: "Disponible pronto",
+    location: "CDMX",
+    year: "2023",
+    mileage: "12,000 km",
+    description: "Daily performance con tracción quattro y carácter deportivo.",
   },
   {
-    id: 4,
-    title: "BMW R nineT Custom",
-    subtitle: "Proyecto café racer curado",
-    type: "moto",
-    year: 2021,
-    price: "MXN 420,000",
-    location: "CDMX, México",
-    status: "disponible",
-    highlight: "coleccionable",
-    imageUrl: "/images/market/demo-rninet.jpg",
+    id: "range-rover-sport",
+    title: "Range Rover Sport",
+    type: "Autos",
+    fuel: "Híbridos",
+    body: "SUV",
+    tag: "Premium",
+    price: "Oportunidad privada",
+    location: "Monterrey",
+    year: "2024",
+    mileage: "8,000 km",
+    description: "SUV premium con presencia, confort y tecnología para uso diario.",
+  },
+  {
+    id: "tesla-model-y",
+    title: "Tesla Model Y",
+    type: "Autos",
+    fuel: "Eléctricos",
+    body: "SUV",
+    tag: "Premium",
+    price: "Disponible",
+    location: "CDMX",
+    year: "2023",
+    mileage: "15,000 km",
+    description: "SUV eléctrico con enfoque tecnológico y experiencia moderna.",
+  },
+  {
+    id: "nissan-skyline-gtr",
+    title: "Nissan Skyline GT-R",
+    type: "Autos",
+    fuel: "Gasolina",
+    body: "Coupé",
+    tag: "Importación",
+    price: "Japón / USA",
+    location: "Importación potencial",
+    year: "Por confirmar",
+    mileage: "Por confirmar",
+    description: "Unidad JDM pensada para una futura operación de importación curada.",
+    featured: true,
+  },
+  {
+    id: "ducati-panigale-v4",
+    title: "Ducati Panigale V4",
+    type: "Motos",
+    fuel: "Gasolina",
+    body: "Moto",
+    tag: "Performance",
+    price: "Precio bajo solicitud",
+    location: "México",
+    year: "2022",
+    mileage: "5,500 km",
+    description: "Superbike de alto desempeño para perfiles track y premium.",
+  },
+  {
+    id: "bmw-r-1250-gs",
+    title: "BMW R 1250 GS",
+    type: "Motos",
+    fuel: "Gasolina",
+    body: "Moto",
+    tag: "Premium",
+    price: "Disponible pronto",
+    location: "Guadalajara",
+    year: "2021",
+    mileage: "19,000 km",
+    description: "Moto adventure premium para viajes, ruta y experiencias.",
   },
 ];
 
-function StatusPill({ status }: { status: Vehicle["status"] }) {
-  const map: Record<Vehicle["status"], string> = {
-    disponible: "bg-emerald-500/10 text-emerald-300",
-    reservado: "bg-amber-500/10 text-amber-300",
-    vendido: "bg-red-500/10 text-red-300",
-  };
-  const label: Record<Vehicle["status"], string> = {
-    disponible: "Disponible",
-    reservado: "Reservado",
-    vendido: "Vendido",
-  };
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${map[status]}`}
-    >
-      {label[status]}
-    </span>
-  );
-}
+const vehicleTypes: VehicleType[] = ["Todos", "Autos", "Motos"];
+const fuelTypes: FuelType[] = ["Todos", "Gasolina", "Híbridos", "Eléctricos"];
+const bodyTypes: BodyType[] = ["Todos", "SUV", "Sedán", "Coupé", "Hatchback", "Moto"];
+const marketTags: MarketTag[] = ["Todos", "Premium", "Performance", "Collector", "Importación"];
 
-function HighlightPill({
-  highlight,
-  type,
-}: {
-  highlight?: Vehicle["highlight"];
-  type: Vehicle["type"];
-}) {
-  if (!highlight) return null;
+export default function MotorWeltMarket() {
+  const [vehicleType, setVehicleType] = useState<VehicleType>("Todos");
+  const [fuelType, setFuelType] = useState<FuelType>("Todos");
+  const [bodyType, setBodyType] = useState<BodyType>("Todos");
+  const [marketTag, setMarketTag] = useState<MarketTag>("Todos");
 
-  const text =
-    highlight === "coleccionable"
-      ? "Coleccionable"
-      : highlight === "track"
-      ? "Track-ready"
-      : highlight === "rareza"
-      ? "Rareza"
-      : "Daily especial";
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((vehicle) => {
+      const matchType = vehicleType === "Todos" || vehicle.type === vehicleType;
+      const matchFuel = fuelType === "Todos" || vehicle.fuel === fuelType;
+      const matchBody = bodyType === "Todos" || vehicle.body === bodyType;
+      const matchTag = marketTag === "Todos" || vehicle.tag === marketTag;
 
-  return (
-    <span className="inline-flex items-center rounded-full border border-white/15 bg-black/40 px-2.5 py-0.5 text-[11px] font-medium text-gray-200">
-      <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
-      {type === "moto" ? "Moto" : "Auto"} · {text}
-    </span>
-  );
-}
+      return matchType && matchFuel && matchBody && matchTag;
+    });
+  }, [vehicleType, fuelType, bodyType, marketTag]);
 
-/* ============================================================================= */
+  const featuredVehicles = vehicles.filter((vehicle) => vehicle.featured);
 
-const MarketIndexPage: React.FC = () => {
   return (
     <>
       <Seo
-        title="MotorWelt Market | Autos y motos seleccionadas"
-        description="Compra-venta curada de autos y motos de alto perfil. MotorWelt Market ofrece selección, asesoría e inspección para entusiastas que buscan algo más que un clasificado."
+        title="MotorWelt Market | Autos, motos y oportunidades premium"
+        description="MotorWelt Market: autos, motos, eléctricos, híbridos, SUVs, performance e importaciones curadas para entusiastas."
       />
 
-      <main className="min-h-screen bg-mw-surface/95 pt-20 pb-20">
-        <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          {/* Hero premium */}
-          <section className="mb-14 grid gap-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400">
-                MotorWelt Market
-              </p>
-              <h1 className="mt-3 font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
-                Compra-venta seleccionada
-                <span className="block text-gray-300">
-                  de autos y motos con criterio de entusiasta.
-                </span>
-              </h1>
-              <p className="mt-4 text-sm sm:text-base text-gray-300 max-w-xl">
-                No es una lista infinita de clasificados. Es un{" "}
-                <span className="font-semibold text-gray-100">
-                  espacio curado
-                </span>{" "}
-                donde cada vehículo pasó un filtro editorial, de historia y de
-                coherencia con la cultura MotorWelt.
-              </p>
+      <main className="min-h-screen overflow-x-hidden bg-[#050509] text-white">
+        <section className="relative overflow-hidden border-b border-white/10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,118,69,0.24),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(30,191,239,0.16),transparent_36%)]" />
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Link href="#inventario">
-                  <Button variant="primary">Ver vehículos disponibles</Button>
-                </Link>
-                <Link href="#servicios">
-                  <Button variant="secondary">
-                    Quiero publicar mi auto o moto
-                  </Button>
-                </Link>
-              </div>
+          <header className="relative mx-auto flex w-full max-w-[1180px] items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
+            <Link href="/" className="text-sm font-black tracking-[0.32em]">
+              MOTORWELT
+            </Link>
+            <ProfileButton />
+          </header>
 
-              <div className="mt-6 flex flex-wrap items-center gap-4 text-[11px] text-gray-400">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                  Vehículos filtrados por MotorWelt
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-white/50" />
-                  Opción de inspección física y asesoría
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-white/30" />
-                  Esquema transparente de fee + comisión
-                </div>
-              </div>
-            </div>
-
-            {/* Tarjeta lateral sobria */}
-            <div className="rounded-3xl border border-white/10 bg-black/40 p-5 sm:p-6 lg:p-7">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                ¿Qué hace distinto a MotorWelt Market?
-              </p>
-              <div className="mt-4 space-y-4 text-sm text-gray-200">
-                <p>
-                  <span className="font-semibold text-white">
-                    Curaduría antes que volumen.
-                  </span>{" "}
-                  Publicamos solo vehículos que tengan lógica para un entusiasta:
-                  historia, preparación, rareza o configuración especial.
-                </p>
-                <p>
-                  <span className="font-semibold text-white">
-                    Asesoría y acompañamiento.
-                  </span>{" "}
-                  Puedes apoyarte en nuestro equipo para definir precio,
-                  revisar legitimidad y preparar el vehículo para venta.
-                </p>
-                <p>
-                  <span className="font-semibold text-white">
-                    Exposición editorial y en redes.
-                  </span>{" "}
-                  Algunas unidades se integrarán en{" "}
-                  <span className="italic">stories</span>, notas y piezas de
-                  contenido MotorWelt para llegar al público correcto.
-                </p>
-              </div>
-              <div className="mt-5 rounded-2xl border border-[#0CE0B2]/25 bg-[#0CE0B2]/5 px-3 py-3 text-[11px] text-gray-200">
-                <p className="font-semibold text-[#0CE0B2] mb-1">
-                  Próximo paso: IA para valoración inicial
-                </p>
-                <p>
-                  Más adelante, MotorWelt AI podrá sugerir un rango de precio
-                  objetivo y detectar si tu anuncio está muy por encima o debajo
-                  del mercado, antes de publicarlo.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Qué es / pilares */}
-          <section className="mb-14 border-y border-white/10 py-10">
-            <div className="grid gap-8 md:grid-cols-3">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">
-                  Filosofía
-                </p>
-                <h2 className="mt-2 text-lg font-semibold text-white">
-                  Más que clasificados. Un filtro de criterio.
-                </h2>
-                <p className="mt-3 text-sm text-gray-300">
-                  MotorWelt Market pretende ser{" "}
-                  <span className="font-semibold">
-                    el lugar donde confiarías tu auto o moto especial
-                  </span>{" "}
-                  sin perder el control del proceso, ni caer en la informalidad.
-                </p>
-              </div>
-              <div className="space-y-2 text-sm text-gray-300">
-                <p className="font-semibold text-gray-100">
-                  1. Selección curada
-                </p>
-                <p>
-                  No buscamos tener “todo”. Solo lo que realmente valga la pena:
-                  piezas de colección, proyectos bien ejecutados, builds
-                  coherentes, unidades con buena historia y documentación.
-                </p>
-              </div>
-              <div className="space-y-2 text-sm text-gray-300">
-                <p className="font-semibold text-gray-100">
-                  2. Transparencia y acompañamiento
-                </p>
-                <p>
-                  Esquema claro de fee por publicación y comisión sobre venta,
-                  más servicios opcionales como revisión física, sesión de fotos
-                  y asesoría para cerrar el trato.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Inventario destacado */}
-          <section id="inventario" className="mb-14">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">
-                  Inventario
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-white">
-                  Vehículos destacados
-                </h2>
-                <p className="mt-2 text-sm text-gray-300 max-w-xl">
-                  Esta es una vista preliminar con unidades demo. Más adelante
-                  se conectará a la base de datos y filtros reales por{" "}
-                  <span className="font-semibold">
-                    tipo, rango de precio, ubicación y rareza
-                  </span>
-                  .
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
-                <span className="inline-flex items-center rounded-full border border-white/15 bg-black/40 px-2.5 py-1">
-                  Autos &amp; motos
-                </span>
-                <span className="inline-flex items-center rounded-full border border-white/15 bg-black/40 px-2.5 py-1">
-                  Curaduría MotorWelt
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredVehicles.map((v) => (
-                <article
-                  key={v.id}
-                  className="group flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/35 transition hover:border-[#0CE0B2]/60 hover:bg-black/60"
-                >
-                  {/* Placeholder visual simple (sin Image de Next para mantenerlo genérico) */}
-                  <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-white/10 via-white/5 to-black/60">
-                    <div className="absolute inset-0 flex items-center justify-center text-xs uppercase tracking-[0.25em] text-gray-400">
-                      Foto del vehículo
-                    </div>
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition" />
-                  </div>
-
-                  <div className="flex flex-1 flex-col px-4 py-4 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <StatusPill status={v.status} />
-                      <HighlightPill highlight={v.highlight} type={v.type} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-white">
-                        {v.title}
-                      </h3>
-                      {v.subtitle && (
-                        <p className="mt-1 text-[11px] text-gray-400">
-                          {v.subtitle}
-                        </p>
-                      )}
-                    </div>
-                    <div className="mt-1 text-xs text-gray-300">
-                      <p>
-                        {v.year} · {v.location}
-                      </p>
-                      <p className="mt-1 text-base font-semibold text-white">
-                        {v.price}
-                      </p>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between text-[11px] text-gray-400">
-                      <span>
-                        Tipo: {v.type === "auto" ? "Auto" : "Moto"}
-                      </span>
-                      <button
-                        type="button"
-                        className="text-[#0CE0B2] hover:text-[#7CFFE2]"
-                      >
-                        Ver ficha (próximamente)
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <p className="mt-4 text-[11px] text-gray-500">
-              Más adelante, esta sección se conectará a un backend donde podrás
-              cargar unidades, gestionar estatus y aplicar filtros avanzados.
+          <div className="relative mx-auto w-full max-w-[1180px] px-4 pb-10 pt-8 sm:px-6 lg:px-8 lg:pb-14">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-orange-300">
+              MotorWelt Market
             </p>
-          </section>
 
-          {/* Cómo funciona / servicios para vendedores */}
-          <section
-            id="servicios"
-            className="mb-14 grid gap-10 lg:grid-cols-[1.1fr_1fr]"
-          >
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">
-                Para vendedores
-              </p>
-              <h2 className="mt-1 text-xl font-semibold text-white">
-                Publica tu auto o moto con un proceso claro.
-              </h2>
-              <p className="mt-2 text-sm text-gray-300 max-w-xl">
-                La idea es que publicar en MotorWelt Market se sienta tan
-                profesional como llevar tu auto a un taller de confianza: sabes
-                qué se hará, cuánto cuesta y qué puedes esperar.
-              </p>
-
-              <div className="mt-5 space-y-4 text-sm text-gray-200">
-                <div>
-                  <p className="font-semibold text-white">
-                    1. Aplicación de publicación (online)
-                  </p>
-                  <p className="text-gray-300 text-sm">
-                    Rellenas un formulario con datos clave: versión, historial,
-                    modificaciones, documentación y precio objetivo. Más
-                    adelante, la IA te ayudará a ajustar el rango de precio.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-white">
-                    2. Curaduría &amp; preaprobación
-                  </p>
-                  <p className="text-gray-300 text-sm">
-                    Revisamos que la unidad tenga sentido para el Market. Si
-                    aplica, sugerimos ajustes en precio, enfoque del anuncio o
-                    servicios adicionales (sesión de fotos, inspección, etc.).
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-white">
-                    3. Publicación y difusión segmentada
-                  </p>
-                  <p className="text-gray-300 text-sm">
-                    Publicamos el anuncio con fotos, ficha técnica y narrativa
-                    clara. Algunas unidades pasarán además por contenido
-                    especial en el sitio y redes de MotorWelt.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-white">
-                    4. Fee + comisión transparente
-                  </p>
-                  <p className="text-gray-300 text-sm">
-                    El modelo será{" "}
-                    <span className="font-semibold">
-                      fee por publicación + comisión sobre venta
-                    </span>{" "}
-                    (por definir contigo). Todo con contrato claro y pasos
-                    bien definidos.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="rounded-3xl border border-white/10 bg-black/40 p-5">
-                <h3 className="text-sm font-semibold text-white">
-                  Servicios adicionales (plan a futuro)
-                </h3>
-                <ul className="mt-3 space-y-2 text-sm text-gray-300">
-                  <li>· Inspección física de la unidad (condición + legitimidad).</li>
-                  <li>· Reporte visual (fotos, detalles, checklist).</li>
-                  <li>· Producción de contenido premium para ciertas unidades.</li>
-                  <li>· Asesoría para negociación y cierre seguro.</li>
-                </ul>
-                <p className="mt-3 text-[11px] text-gray-500">
-                  Estos servicios se podrán contratar aparte y se integrarán a
-                  la ficha del vehículo para dar confianza al comprador.
-                </p>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5">
-                <h3 className="text-sm font-semibold text-white">
-                  MotorWelt AI en el Market (idea conceptual)
-                </h3>
-                <p className="mt-2 text-xs text-gray-300">
-                  Más adelante, la IA podrá:
-                </p>
-                <ul className="mt-2 space-y-1 text-xs text-gray-300">
-                  <li>· Sugerir rango de precio objetivo por modelo y año.</li>
-                  <li>· Detectar descripciones pobres y proponer una mejor.</li>
-                  <li>
-                    · Generar copies para redes sociales a partir de la ficha.
-                  </li>
-                  <li>
-                    · Señalar banderas rojas típicas que habría que aclarar en
-                    el anuncio.
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* Cierre / llamada a la acción suave */}
-          <section className="border-t border-white/10 pt-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
               <div>
-                <h2 className="text-lg font-semibold text-white">
-                  Construyamos un marketplace a la altura de la comunidad.
-                </h2>
-                <p className="mt-2 text-sm text-gray-300 max-w-xl">
-                  MotorWelt Market todavía es una idea en construcción, pero ya
-                  tiene claro su objetivo: ser{" "}
-                  <span className="font-semibold">
-                    el punto de encuentro más confiable
-                  </span>{" "}
-                  para comprar y vender autos y motos especiales en México (y
-                  más adelante, fuera).
+                <h1 className="max-w-4xl text-4xl font-black leading-tight sm:text-5xl md:text-6xl">
+                  Compra, venta y oportunidades curadas para entusiastas.
+                </h1>
+                <p className="mt-5 max-w-2xl text-base leading-7 text-white/70 md:text-lg">
+                  Un market premium para autos, motos, SUVs, híbridos, eléctricos,
+                  performance e importaciones potenciales. Menos clasificados
+                  genéricos. Más selección, confianza y comunidad.
                 </p>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a
+                    href="#inventario"
+                    className="rounded-full bg-white px-5 py-3 text-sm font-black text-black transition hover:bg-orange-200"
+                  >
+                    Ver inventario
+                  </a>
+                  <a
+                    href="#vender"
+                    className="rounded-full border border-white/15 px-5 py-3 text-sm font-black text-white/85 transition hover:bg-white hover:text-black"
+                  >
+                    Publicar vehículo
+                  </a>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Link href="/contacto">
-                  <Button variant="primary">
-                    Quiero hablar sobre publicar mi vehículo
-                  </Button>
-                </Link>
-                <Link href="/">
-                  <Button variant="ghost">Volver a MotorWelt</Button>
-                </Link>
+
+              <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-200">
+                  Base funcional
+                </p>
+                <h2 className="mt-3 text-2xl font-black">
+                  Market premium, no marketplace masivo.
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-white/65">
+                  Esta página queda lista como base: filtros, destacados, inventario
+                  y estructura para conectar después con perfiles, Sanity, pagos o
+                  dealers.
+                </p>
+
+                <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+                  <Stat value={`${vehicles.length}`} label="Unidades" />
+                  <Stat value="5" label="Filtros" />
+                  <Stat value="1" label="Market" />
+                </div>
               </div>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
+
+        <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+          <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr]">
+            <aside className="space-y-6">
+              <Card eyebrow="Filtros" title="Buscar por categoría">
+                <FilterGroup label="Tipo" items={vehicleTypes} active={vehicleType} onChange={setVehicleType} />
+                <FilterGroup label="Energía" items={fuelTypes} active={fuelType} onChange={setFuelType} />
+                <FilterGroup label="Formato" items={bodyTypes} active={bodyType} onChange={setBodyType} />
+                <FilterGroup label="Selección" items={marketTags} active={marketTag} onChange={setMarketTag} />
+
+                <button
+                  onClick={() => {
+                    setVehicleType("Todos");
+                    setFuelType("Todos");
+                    setBodyType("Todos");
+                    setMarketTag("Todos");
+                  }}
+                  className="mt-5 w-full rounded-full border border-white/15 px-4 py-2.5 text-sm font-black text-white/75 transition hover:bg-white hover:text-black"
+                >
+                  Limpiar filtros
+                </button>
+              </Card>
+
+              <Card eyebrow="Modelo" title="Cómo funcionará">
+                <div className="space-y-3 text-sm leading-6 text-white/65">
+                  <p>✓ Autos y motos curados por MotorWelt</p>
+                  <p>✓ Filtros por tipo, energía y categoría</p>
+                  <p>✓ Oportunidades privadas para miembros</p>
+                  <p>✓ Posibles importaciones desde USA/Japón</p>
+                  <p>✓ Base futura para dealers y consignación</p>
+                </div>
+              </Card>
+
+              <Card eyebrow="Para vendedores" title="Publica con MotorWelt">
+                <p className="text-sm leading-6 text-white/65">
+                  El siguiente paso será crear un flujo para subir unidad, validar
+                  información, cargar fotos, revisar estado y conectar con compradores
+                  calificados.
+                </p>
+
+                <a
+                  id="vender"
+                  href="#"
+                  className="mt-5 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-black text-black"
+                >
+                  Solicitar evaluación
+                </a>
+              </Card>
+            </aside>
+
+            <div className="min-w-0 space-y-6">
+              <Card eyebrow="Destacados" title="Selección MotorWelt">
+                <HorizontalScroller>
+                  {featuredVehicles.map((vehicle) => (
+                    <VehicleCard key={vehicle.id} vehicle={vehicle} featured />
+                  ))}
+                </HorizontalScroller>
+              </Card>
+
+              <section id="inventario" className="scroll-mt-24">
+                <Card
+                  eyebrow="Inventario"
+                  title={`${filteredVehicles.length} unidades encontradas`}
+                >
+                  {filteredVehicles.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {filteredVehicles.map((vehicle) => (
+                        <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-3xl border border-white/10 bg-black/25 p-6">
+                      <h3 className="text-xl font-black">
+                        No hay unidades con estos filtros.
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-white/60">
+                        Ajusta la búsqueda o limpia los filtros para ver todo el
+                        inventario preview.
+                      </p>
+                    </div>
+                  )}
+                </Card>
+              </section>
+
+              <Card eyebrow="Próxima fase" title="Market conectado al perfil">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Feature
+                    title="Autos guardados"
+                    text="Los usuarios podrán guardar unidades desde su perfil privado."
+                  />
+                  <Feature
+                    title="Recomendaciones"
+                    text="El market podrá sugerir autos según intereses y comportamiento."
+                  />
+                  <Feature
+                    title="Deals privados"
+                    text="Marcas, dealers o contactos podrán destacar oportunidades premium."
+                  />
+                </div>
+              </Card>
+            </div>
+          </div>
+        </section>
       </main>
     </>
   );
-};
-
-export default MarketIndexPage;
-
-export async function getServerSideProps({ locale }: { locale: string }) {
-  return {
-    props: {
-      ...(await serverSideTranslations(
-        locale ?? "es",
-        ["home"],
-        nextI18NextConfig
-      )),
-    },
-  };
 }
+
+function VehicleCard({
+  vehicle,
+  featured = false,
+}: {
+  vehicle: Vehicle;
+  featured?: boolean;
+}) {
+  return (
+    <article
+      className={`min-w-0 rounded-3xl border bg-black/25 p-4 ${
+        featured
+          ? "w-[280px] shrink-0 border-orange-300/20 sm:w-[310px] lg:w-auto"
+          : "border-white/10"
+      }`}
+    >
+      <div className="mb-4 flex aspect-[16/10] items-end rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 via-black to-orange-500/20 p-4">
+        <span className="rounded-full bg-black/60 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-orange-200 backdrop-blur">
+          {vehicle.tag}
+        </span>
+      </div>
+
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">
+        {vehicle.type} · {vehicle.fuel} · {vehicle.body}
+      </p>
+
+      <h3 className="mt-2 text-xl font-black">{vehicle.title}</h3>
+      <p className="mt-2 text-sm font-bold text-orange-200">{vehicle.price}</p>
+      <p className="mt-1 text-sm text-white/50">{vehicle.location}</p>
+
+      <p className="mt-4 text-sm leading-6 text-white/60">
+        {vehicle.description}
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Pill>{vehicle.year}</Pill>
+        <Pill>{vehicle.mileage}</Pill>
+      </div>
+
+      <div className="mt-5 flex gap-2">
+        <Link
+          href={`/market/${vehicle.id}`}
+          className="rounded-full bg-white px-4 py-2 text-xs font-black text-black"
+        >
+          Ver detalle
+        </Link>
+        <button className="rounded-full border border-white/15 px-4 py-2 text-xs font-black text-white/80">
+          Guardar
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function FilterGroup<T extends string>({
+  label,
+  items,
+  active,
+  onChange,
+}: {
+  label: string;
+  items: T[];
+  active: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="mb-5">
+      <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-white/40">
+        {label}
+      </p>
+      <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:overflow-visible lg:pb-0">
+        {items.map((item) => (
+          <button
+            key={item}
+            onClick={() => onChange(item)}
+            className={`shrink-0 rounded-full border px-4 py-2 text-sm font-black transition ${
+              active === item
+                ? "border-orange-300 bg-orange-400/20 text-orange-100"
+                : "border-white/10 bg-white/[0.04] text-white/65 hover:bg-white/10"
+            }`}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Card({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-0 rounded-[1.7rem] border border-white/10 bg-white/[0.045] p-4 shadow-xl backdrop-blur sm:rounded-[2rem] sm:p-5">
+      <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-orange-300/80">
+        {eyebrow}
+      </p>
+      <h2 className="mb-5 text-xl font-black">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function HorizontalScroller({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:-mx-5 sm:px-5 lg:mx-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:px-0 lg:pb-0 xl:grid-cols-3">
+      {children}
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-2xl bg-black/35 p-3 sm:p-4">
+      <p className="text-xl font-black sm:text-2xl">{value}</p>
+      <p className="text-[11px] text-white/50 sm:text-xs">{label}</p>
+    </div>
+  );
+}
+
+function Feature({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-black/25 p-5">
+      <h3 className="font-black">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-white/60">{text}</p>
+    </div>
+  );
+}
+
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/60">
+      {children}
+    </span>
+  );
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(
+      locale ?? "es",
+      ["common"],
+      nextI18NextConfig
+    )),
+  },
+});

@@ -1,18 +1,35 @@
 // pages/_app.tsx
-import "../styles/globals.css";              // ① Asegura Tailwind y estilos globales
+import "../styles/globals.css";
 import type { AppProps } from "next/app";
-import { appWithTranslation } from "next-i18next"; // ② Provee contexto i18n a toda la app
+import Script from "next/script";
+import { appWithTranslation } from "next-i18next";
 const nextI18NextConfig = require("../next-i18next.config.js");
 
 import GlobalBackground from "../components/GlobalBackground";
 
+const GA_MEASUREMENT_ID = "G-D12X1MB13Z";
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
-      {/* Fondo global en TODAS las páginas */}
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        strategy="afterInteractive"
+      />
+
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_MEASUREMENT_ID}', {
+            page_path: window.location.pathname,
+          });
+        `}
+      </Script>
+
       <GlobalBackground />
 
-      {/* Contenido del sitio por encima del fondo */}
       <div className="relative z-[1] min-h-screen">
         <Component {...pageProps} />
       </div>
@@ -20,5 +37,4 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
 }
 
-// Exporta envuelto para que funcionen las traducciones en todas las páginas
 export default appWithTranslation(MyApp, nextI18NextConfig);
