@@ -190,6 +190,7 @@ function sectionLabel(section: string) {
   if (section === "deportes") return "Deportes";
   if (section === "lifestyle") return "Lifestyle";
   if (section === "tuning") return "Tuning";
+  if (section === "comunidad") return "Comunidad";
   return "MotorWelt";
 }
 
@@ -203,7 +204,7 @@ function readCookie(name: string) {
 }
 
 function detailHref(
-  section: "tuning" | "deportes" | "lifestyle",
+  section: "tuning" | "deportes" | "lifestyle" | "comunidad",
   slug?: string | null,
 ) {
   const cleanSlug = String(slug || "").trim();
@@ -229,6 +230,7 @@ export default function HomePage({
   sportsItems = [],
   lifestyleItems = [],
   tuningItems = [],
+  communityItems = [],
   initialHomeSettings,
 }: {
   year: number;
@@ -236,6 +238,7 @@ export default function HomePage({
   sportsItems: HomeNewsItem[];
   lifestyleItems: HomeNewsItem[];
   tuningItems: HomeNewsItem[];
+  communityItems: HomeNewsItem[];
   initialHomeSettings?: HomeSettings;
 }) {
   const router = useRouter();
@@ -250,6 +253,14 @@ export default function HomePage({
   );
   const [savingHome, setSavingHome] = useState(false);
   const [homeError, setHomeError] = useState<string | null>(null);
+  const [contactForm, setContactForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    subject: "",
+  });
+  const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [contactMessage, setContactMessage] = useState("");
 
   const heroInputRef = useRef<HTMLInputElement | null>(null);
   const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
@@ -265,9 +276,11 @@ export default function HomePage({
 
   const lifestyleDesktopItems = lifestyleItems.slice(0, 5);
   const tuningDesktopItems = tuningItems.slice(0, 5);
+  const communityDesktopItems = communityItems.slice(0, 5);
 
   const tuningDesktopColumns = splitFiveItemLayout(tuningDesktopItems);
   const lifestyleDesktopColumns = splitFiveItemLayout(lifestyleDesktopItems);
+  const communityDesktopColumns = splitFiveItemLayout(communityDesktopItems);
 
   const heroSectionCards: HomeSectionCard[] = useMemo(
     () => [
@@ -283,28 +296,28 @@ export default function HomePage({
         href: "/noticias/motos",
         accent: "from-[#43A1AD]/45 via-[#43A1AD]/15 to-transparent",
         accentDot: "bg-[#43A1AD]",
-        subtitle: "Dos ruedas, estilo y carácter",
+        subtitle: "Motociclismo, velocidad y aventura",
       },
       {
         title: "Tuning",
         href: "/tuning",
         accent: "from-[#FF7A1A]/45 via-[#FF7A1A]/15 to-transparent",
         accentDot: "bg-[#FF7A1A]",
-        subtitle: "Builds, mods y garage culture",
+        subtitle: "Tuning, performance y garage",
       },
       {
         title: "Deportes",
         href: "/deportes",
         accent: "from-[#A3FF12]/35 via-[#A3FF12]/10 to-transparent",
         accentDot: "bg-[#A3FF12]",
-        subtitle: "Pista, rally, racing y adrenalina",
+        subtitle: "F1, WRC, MotoGP y más",
       },
       {
         title: "Lifestyle",
         href: "/lifestyle",
         accent: "from-[#E2A24C]/45 via-[#E2A24C]/15 to-transparent",
         accentDot: "bg-[#E2A24C]",
-        subtitle: "Diseño, estilo y cultura visual",
+        subtitle: "Moda, tecnología, cine, fuera del volante y más",
       },
       {
         title: "Comunidad",
@@ -559,6 +572,53 @@ export default function HomePage({
       undefined,
       { shallow: true },
     );
+  }
+
+  async function handleContactSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const fullName = contactForm.fullName.trim();
+    const email = contactForm.email.trim();
+    const phone = contactForm.phone.trim();
+    const subject = contactForm.subject.trim();
+
+    if (!fullName || !email || !phone || !subject) return;
+
+    setContactStatus("sending");
+    setContactMessage("");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          phone,
+          subject,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo enviar el mensaje.");
+      }
+
+      setContactStatus("success");
+      setContactMessage("Mensaje enviado correctamente. Te responderemos muy pronto.");
+      setContactForm({
+        fullName: "",
+        email: "",
+        phone: "",
+        subject: "",
+      });
+    } catch (err: any) {
+      setContactStatus("error");
+      setContactMessage(err?.message || "No se pudo enviar el mensaje. Intenta de nuevo.");
+    }
   }
 
   function renderEditableAd(kind: AdKind, className = "") {
@@ -894,7 +954,7 @@ export default function HomePage({
   return (
     <>
       <Seo
-        title="MotorWelt — Noticias, cultura y comunidad automotriz"
+        title="MotorWelt — Built for enthusiasts"
         description="Autos, motos, tuning, motorsport y lifestyle en un solo lugar."
         image={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
       />
@@ -1036,7 +1096,7 @@ export default function HomePage({
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">MotorWelt</p>
                   <h3 className="mt-1 text-2xl font-semibold text-white">Contacto</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-300">Déjanos tus datos y el asunto. El mensaje llegará directo al correo de MotorWelt.</p>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-300">Déjanos tus datos y el asunto. El mensaje llegará directo a contacto@motorwelt.mx.</p>
                 </div>
                 <button type="button" onClick={() => setContactOpen(false)} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/5 text-white hover:bg-white/[0.08]" aria-label="Cerrar contacto">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -1045,12 +1105,77 @@ export default function HomePage({
                 </button>
               </div>
 
-              <form action="/api/contact" method="POST" className="space-y-4 p-5 sm:p-6">
-                <input type="hidden" name="to" value="gabriel@motorwelt.mx" />
-                <input name="name" required placeholder="Nombre" className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50" />
-                <input name="email" type="email" required placeholder="Correo" className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50" />
-                <input name="subject" required placeholder="Asunto" className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50" />
-                <button type="submit" className="inline-flex w-full items-center justify-center rounded-2xl border border-white/[0.08] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] transition hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40">Enviar</button>
+              <form onSubmit={handleContactSubmit} className="space-y-4 p-5 sm:p-6">
+                <input
+                  name="fullName"
+                  required
+                  placeholder="Nombre completo"
+                  value={contactForm.fullName}
+                  onChange={(e) => {
+                    setContactStatus("idle");
+                    setContactMessage("");
+                    setContactForm((prev) => ({ ...prev, fullName: e.target.value }));
+                  }}
+                  className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
+                />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="Correo"
+                  value={contactForm.email}
+                  onChange={(e) => {
+                    setContactStatus("idle");
+                    setContactMessage("");
+                    setContactForm((prev) => ({ ...prev, email: e.target.value }));
+                  }}
+                  className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
+                />
+                <input
+                  name="phone"
+                  type="tel"
+                  required
+                  placeholder="Teléfono"
+                  value={contactForm.phone}
+                  onChange={(e) => {
+                    setContactStatus("idle");
+                    setContactMessage("");
+                    setContactForm((prev) => ({ ...prev, phone: e.target.value }));
+                  }}
+                  className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
+                />
+                <input
+                  name="subject"
+                  required
+                  placeholder="Asunto"
+                  value={contactForm.subject}
+                  onChange={(e) => {
+                    setContactStatus("idle");
+                    setContactMessage("");
+                    setContactForm((prev) => ({ ...prev, subject: e.target.value }));
+                  }}
+                  className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
+                />
+
+                {contactMessage ? (
+                  <div
+                    className={`rounded-2xl border px-4 py-3 text-sm ${
+                      contactStatus === "success"
+                        ? "border-[#0CE0B2]/30 bg-[#0CE0B2]/10 text-[#B9FFF0]"
+                        : "border-red-400/30 bg-red-500/10 text-red-200"
+                    }`}
+                  >
+                    {contactMessage}
+                  </div>
+                ) : null}
+
+                <button
+                  type="submit"
+                  disabled={contactStatus === "sending"}
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-white/[0.08] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] transition hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A1A]/40 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {contactStatus === "sending" ? "Enviando…" : "Enviar"}
+                </button>
               </form>
             </div>
           </div>
@@ -1077,7 +1202,7 @@ export default function HomePage({
                 </div>
               )}
 
-              <div className="relative z-10 w-full px-4 pb-16 pt-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
+              <div className="relative z-10 w-full px-4 pb-36 pt-16 sm:px-6 sm:pb-40 lg:px-8 lg:pb-44">
                 <div className="mx-auto flex w-full max-w-[1440px] justify-center xl:px-10 2xl:max-w-[1560px]">
                   <div className="w-full max-w-5xl text-center">
                     <div className="flex justify-center">
@@ -1087,13 +1212,16 @@ export default function HomePage({
                       </div>
                     </div>
 
-                    <h1 className="mx-auto mt-5 max-w-[980px] font-display text-[2.75rem] font-black leading-[0.9] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.85rem] lg:text-[5.45rem] xl:text-[5.85rem]">
-                      <span className="glow-cool block">MotorWelt</span>
-                      <span className="block text-white/95">Noticias, cultura y</span>
-                      <span className="block text-white/95">comunidad automotriz</span>
-                    </h1>
+                    <h1 className="mx-auto mt-10 max-w-[980px] font-display text-[2.75rem] font-black leading-[0.82] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.85rem] lg:text-[5.45rem] xl:text-[5.85rem]">
+  <span className="glow-cool block text-[1.3em] tracking-[0.1em]">
+    MotorWelt
+  </span>
+  <span className="mt-5 block text-[0.30em] font-semibold uppercase tracking-[0.42em] text-white/75">
+    Built for enthusiasts
+  </span>
+</h1>
 
-                    <p className="mx-auto mt-6 max-w-[760px] text-base leading-relaxed text-gray-200 sm:text-lg md:text-[1.08rem]">
+                    <p className="mx-auto mt-10 max-w-[760px] text-base leading-relaxed text-gray-200 sm:text-lg md:text-[1.08rem]">
                       Autos, motos, tuning, motorsport y lifestyle en un solo lugar.
                     </p>
                   </div>
@@ -1142,10 +1270,10 @@ export default function HomePage({
                   <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A] sm:w-28" />
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+                <div className="grid gap-6 lg:grid-cols-[1.28fr_1fr]">
                   <Card className="overflow-hidden hover:shadow-[0_0_26px_rgba(12,224,178,.2)]">
                     <div className="relative h-[210px] w-full sm:h-[260px] md:h-[305px]">
-                      <Image src={heroMixed.img} alt={heroMixed.title} fill sizes="(max-width: 1024px) 100vw, 58vw" style={{ objectFit: "cover" }} priority />
+                      <Image src={heroMixed.img} alt={heroMixed.title} fill sizes="(max-width: 1024px) 100vw, 52vw" style={{ objectFit: "cover" }} priority />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-transparent" />
                     </div>
                     <CardContent className="p-5 sm:p-6">
@@ -1308,9 +1436,9 @@ export default function HomePage({
               </div>
 
               {lifestyleDesktopItems.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="grid gap-6">{lifestyleDesktopColumns.left.map((item, index) => renderStackedFeatureCard(item, index === 0))}</div>
-                  <div className="grid gap-6">{lifestyleDesktopColumns.right.map((item) => renderStackedFeatureCard(item))}</div>
+                <div className="grid items-start gap-6 md:grid-cols-[0.85fr_1fr]">
+                  <div className="grid content-start gap-6">{lifestyleDesktopColumns.left.map((item, index) => renderStackedFeatureCard(item, index === 0))}</div>
+                  <div className="grid content-start gap-6">{lifestyleDesktopColumns.right.map((item) => renderStackedFeatureCard(item))}</div>
                 </div>
               ) : (
                 renderEmptySectionNotice("Lifestyle en preparación", "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días.")
@@ -1328,14 +1456,55 @@ export default function HomePage({
             </div>
           </section>
 
-          <section className="py-12 sm:py-16">
+          {communityDesktopItems.length > 0 ? (
+            renderMobileCardsRail(
+              "Comunidad",
+              "bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]",
+              communityDesktopItems,
+              "/comunidad",
+              "Entrar a Comunidad",
+              "pink",
+            )
+          ) : (
+            <section className="py-12 sm:py-16 md:hidden">
+              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+                <div className="mb-8 text-center">
+                  <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Comunidad</h2>
+                  <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
+                </div>
+
+                {renderEmptySectionNotice("Próximas publicaciones", "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt.")}
+
+                <div className="mt-8 text-center">
+                  <LinkButton href="/comunidad" variant="pink">Entrar a Comunidad</LinkButton>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section className="hidden py-12 sm:py-16 md:block">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <div className="mb-8 text-center">
                 <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Comunidad</h2>
                 <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
               </div>
 
-              {renderEmptySectionNotice("Próximas publicaciones", "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt. La sección ya está lista para arrancar en cuanto empecemos a publicar.")}
+              {communityDesktopItems.length > 0 ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="grid gap-6">
+                    {communityDesktopColumns.left.map((item, index) =>
+                      renderStackedFeatureCard(item, index === 0),
+                    )}
+                  </div>
+                  <div className="grid gap-6">
+                    {communityDesktopColumns.right.map((item) =>
+                      renderStackedFeatureCard(item),
+                    )}
+                  </div>
+                </div>
+              ) : (
+                renderEmptySectionNotice("Próximas publicaciones", "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt.")
+              )}
 
               <div className="mt-8 text-center">
                 <LinkButton href="/comunidad" variant="pink">Entrar a Comunidad</LinkButton>
@@ -1396,8 +1565,8 @@ export default function HomePage({
             <div>
               <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
-                <li><Link href="/about" className="hover:text-white">Acerca de</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contacto</Link></li>
+                <li><Link href="/perfil" className="hover:text-white">Acerca de</Link></li>
+                <li><button type="button" onClick={() => setContactOpen(true)} className="hover:text-white">Contacto</button></li>
                 <li><Link href="/terminos" className="hover:text-white">Términos y condiciones</Link></li>
                 <li><Link href="/privacidad" className="hover:text-white">Política de privacidad</Link></li>
               </ul>
@@ -1614,6 +1783,30 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     }
   `;
 
+  const communityQuery = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
+      (
+        section == "comunidad" ||
+        lower(category) == "comunidad" ||
+        "comunidad" in categories[] ||
+        "community" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...5]{
+      "id": _id,
+      "title": coalesce(title, ""),
+      "excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
+      "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "slug": slug.current,
+      "publishedAt": publishedAt,
+      "_createdAt": _createdAt,
+      "authorName": coalesce(authorName, author->name, "")
+    }
+  `;
+
   const homeSettingsQuery = `
     *[_type == "homeSettings" && _id == "homeSettings_main"][0]{
       "heroImageUrl": coalesce(heroImageUrl, ""),
@@ -1646,12 +1839,13 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     }
   `;
 
-  const [mixedRaw, sportsRaw, lifestyleRaw, tuningRaw, homeSettingsRaw] =
+  const [mixedRaw, sportsRaw, lifestyleRaw, tuningRaw, communityRaw, homeSettingsRaw] =
     await Promise.all([
       sanityReadClient.fetch(mixedQuery),
       sanityReadClient.fetch(sportsQuery),
       sanityReadClient.fetch(lifestyleQuery),
       sanityReadClient.fetch(tuningQuery),
+      sanityReadClient.fetch(communityQuery),
       sanityReadClient.fetch(homeSettingsQuery),
     ]);
 
@@ -1725,6 +1919,18 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     authorName: String(it?.authorName || "MotorWelt"),
   }));
 
+  const communityItems: HomeNewsItem[] = (communityRaw ?? []).map((it: any) => ({
+    id: String(it?.id || ""),
+    title: String(it?.title || ""),
+    excerpt: String(it?.excerpt || ""),
+    img: String(it?.img || "/images/noticia-1.jpg"),
+    href: detailHref("comunidad", it?.slug),
+    sectionLabel: "Comunidad",
+    typeLabel: "noticia",
+    when: formatWhen(it?.publishedAt || it?._createdAt),
+    authorName: String(it?.authorName || "MotorWelt"),
+  }));
+
   const initialHomeSettings: HomeSettings = {
     heroImageUrl: String(homeSettingsRaw?.heroImageUrl || "").trim() || DEFAULT_HOME_SETTINGS.heroImageUrl,
     ads: {
@@ -1764,6 +1970,7 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
       sportsItems,
       lifestyleItems,
       tuningItems,
+      communityItems,
       initialHomeSettings,
     },
   };

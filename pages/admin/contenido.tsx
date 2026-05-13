@@ -80,15 +80,19 @@ type ContentStatus = "borrador" | "revision" | "publicado";
 
 type NoteSubcategory =
   | ""
+  | "autos_noticias"
   | "autos_gasolina"
   | "autos_hibridos"
   | "autos_electricos"
   | "autos_prueba_manejo"
+  | "motos_noticias"
   | "motos_doble_proposito"
   | "motos_pista"
   | "motos_off_road"
   | "motos_electricas"
   | "motos_prueba_manejo"
+  | "motos_urbanas"
+  | "motos_touring"
   | "f1"
   | "nascar"
   | "motogp"
@@ -98,11 +102,14 @@ type NoteSubcategory =
   | "lifestyle_relojeria"
   | "lifestyle_fuera_del_volante"
   | "lifestyle_cine"
-  | "comunidad_eventos"
+  | "comunidad_eventos_nacionales"
+  | "comunidad_eventos_internacionales"
   | "comunidad_meets"
-  | "comunidad_rutas"
   | "comunidad_clubes"
+  | "comunidad_eventos"
+  | "comunidad_rutas"
   | "comunidad_garage"
+  | "tuning_noticias"
   | "tuning_builds"
   | "tuning_mods"
   | "tuning_stance"
@@ -154,6 +161,8 @@ const SECTION_OPTIONS: { value: SectionSlug; label: string }[] = [
   { value: "noticias_motos", label: "Motos" },
   { value: "deportes", label: "Deportes" },
   { value: "lifestyle", label: "Lifestyle" },
+  { value: "comunidad", label: "Comunidad" },
+  { value: "tuning", label: "Tuning" },
 ];
 
 const SECTION_LABELS: Record<SectionSlug, string> = {
@@ -173,17 +182,21 @@ type ListSubcategoryFilter =
 
 const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
   noticias_autos: [
+    { value: "autos_noticias", label: "Noticias" },
     { value: "autos_gasolina", label: "Gasolina" },
     { value: "autos_hibridos", label: "Híbridos" },
     { value: "autos_electricos", label: "Eléctricos" },
     { value: "autos_prueba_manejo", label: "Prueba de manejo" },
   ],
   noticias_motos: [
+    { value: "motos_noticias", label: "Noticias" },
     { value: "motos_doble_proposito", label: "Doble propósito" },
     { value: "motos_pista", label: "Pista" },
     { value: "motos_off_road", label: "Off road" },
     { value: "motos_electricas", label: "Eléctricas" },
     { value: "motos_prueba_manejo", label: "Prueba de manejo" },
+    { value: "motos_urbanas", label: "Urbanas" },
+    { value: "motos_touring", label: "Touring" },
   ],
   deportes: [
     { value: "f1", label: "F1" },
@@ -199,19 +212,15 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
     { value: "lifestyle_cine", label: "Cine" },
   ],
   comunidad: [
-    { value: "comunidad_eventos", label: "Eventos" },
+    { value: "comunidad_eventos_nacionales", label: "Eventos nacionales" },
+    {
+      value: "comunidad_eventos_internacionales",
+      label: "Eventos internacionales",
+    },
     { value: "comunidad_meets", label: "Meets" },
-    { value: "comunidad_rutas", label: "Rutas" },
     { value: "comunidad_clubes", label: "Clubes" },
-    { value: "comunidad_garage", label: "Garage / Proyectos" },
   ],
-  tuning: [
-    { value: "tuning_builds", label: "Builds" },
-    { value: "tuning_mods", label: "Mods" },
-    { value: "tuning_stance", label: "Stance" },
-    { value: "tuning_performance", label: "Performance" },
-    { value: "tuning_cultura", label: "Cultura tuning" },
-  ],
+  tuning: [{ value: "tuning_noticias", label: "Noticias" }],
 };
 
 const LEGACY_SUBCATEGORY_LABELS: Record<string, string> = {
@@ -225,6 +234,14 @@ const LEGACY_SUBCATEGORY_LABELS: Record<string, string> = {
   motos_rutas: "Rutas",
   motos_industria: "Industria",
   motos_cultura: "Cultura moto",
+  comunidad_eventos: "Eventos",
+  comunidad_rutas: "Rutas",
+  comunidad_garage: "Garage / Proyectos",
+  tuning_builds: "Builds",
+  tuning_mods: "Mods",
+  tuning_stance: "Stance",
+  tuning_performance: "Performance",
+  tuning_cultura: "Cultura tuning",
 };
 
 function getDefaultSubcategoryForSection(
@@ -237,7 +254,7 @@ function isSubcategoryValidForSection(
   section: SectionSlug,
   subcategory?: string,
 ) {
-  return SECTION_NOTE_SUBCATEGORIES[section].some(
+  return (SECTION_NOTE_SUBCATEGORIES[section] || []).some(
     (item) => item.value === subcategory,
   );
 }
@@ -264,7 +281,7 @@ function labelForSubcategory(
   if (!section) return "General";
   if (!subcategory) return "General";
   return (
-    SECTION_NOTE_SUBCATEGORIES[section]?.find(
+    (SECTION_NOTE_SUBCATEGORIES[section] || []).find(
       (item) => item.value === subcategory,
     )?.label ||
     LEGACY_SUBCATEGORY_LABELS[String(subcategory)] ||
@@ -1640,303 +1657,877 @@ const AdminContentEditorPage: React.FC = () => {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2.1fr_1.4fr]">
-            <section className="space-y-6">
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
-                <h2 className="text-lg font-semibold text-white">
-                  Metadatos de la nota
-                </h2>
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-white">
+                Metadatos de la nota
+              </h2>
 
-                <div className="space-y-3">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label
+                    htmlFor="content-title"
+                    className="text-xs text-gray-300"
+                  >
+                    Título
+                  </label>
+                  <input
+                    id="content-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Ej. BMW M2 x Mexico City nights"
+                    className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label
+                    htmlFor="content-subtitle"
+                    className="text-xs text-gray-300"
+                  >
+                    Bajada / Subtítulo
+                  </label>
+                  <textarea
+                    id="content-subtitle"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="Una línea que resuma el ángulo de la historia."
+                    rows={2}
+                    className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                  />
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <div className="space-y-1">
                     <label
-                      htmlFor="content-title"
+                      htmlFor="content-section"
                       className="text-xs text-gray-300"
                     >
-                      Título
+                      Sección
                     </label>
-                    <input
-                      id="content-title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Ej. BMW M2 x Mexico City nights"
-                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="content-subtitle"
-                      className="text-xs text-gray-300"
-                    >
-                      Bajada / Subtítulo
-                    </label>
-                    <textarea
-                      id="content-subtitle"
-                      value={subtitle}
-                      onChange={(e) => setSubtitle(e.target.value)}
-                      placeholder="Una línea que resuma el ángulo de la historia."
-                      rows={2}
-                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                    />
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="content-section"
-                        className="text-xs text-gray-300"
-                      >
-                        Sección
-                      </label>
-                      <select
-                        id="content-section"
-                        value={section}
-                        onChange={(e) =>
-                          handleSectionChange(e.target.value as SectionSlug)
-                        }
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      >
-                        {SECTION_OPTIONS.map((item) => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="content-subcategory"
-                        className="text-xs text-gray-300"
-                      >
-                        Sección de nota
-                      </label>
-                      <select
-                        id="content-subcategory"
-                        value={subcategory}
-                        onChange={(e) =>
-                          setSubcategory(e.target.value as NoteSubcategory)
-                        }
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      >
-                        {activeSubcategoryOptions.map((item) => (
-                          <option
-                            key={item.value || "general"}
-                            value={item.value}
-                          >
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-[10px] text-gray-500">
-                        Esta subcategoría conecta con las divisiones visibles de
-                        cada página.
-                      </p>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="content-type"
-                        className="text-xs text-gray-300"
-                      >
-                        Tipo de nota
-                      </label>
-                      <select
-                        id="content-type"
-                        value={contentType}
-                        onChange={(e) =>
-                          setContentType(e.target.value as ContentType)
-                        }
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      >
-                        <option value="noticia">Noticia</option>
-                        <option value="review">
-                          Prueba de manejo / Review
-                        </option>
-                        <option value="entrevista">Entrevista</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="content-tags"
-                        className="text-xs text-gray-300"
-                      >
-                        Tags / Etiquetas
-                      </label>
-                      <input
-                        id="content-tags"
-                        value={tags}
-                        onChange={(e) => setTags(e.target.value)}
-                        placeholder="BMW, M2, CDMX, Trackday"
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      />
-                      <p className="mt-1 text-[10px] text-gray-500">
-                        Separa con comas. La subcategoría también se guarda para
-                        facilitar filtros.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="content-published-at"
-                      className="text-xs text-gray-300"
-                    >
-                      Fecha de publicación
-                    </label>
-                    <input
-                      id="content-published-at"
-                      type="datetime-local"
-                      value={publishedAtInput}
-                      onChange={(e) => setPublishedAtInput(e.target.value)}
+                    <select
+                      id="content-section"
+                      value={section}
+                      onChange={(e) =>
+                        handleSectionChange(e.target.value as SectionSlug)
+                      }
                       className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                    >
+                      {SECTION_OPTIONS.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="content-subcategory"
+                      className="text-xs text-gray-300"
+                    >
+                      Sección de nota
+                    </label>
+                    <select
+                      id="content-subcategory"
+                      value={subcategory}
+                      onChange={(e) =>
+                        setSubcategory(e.target.value as NoteSubcategory)
+                      }
+                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                    >
+                      {activeSubcategoryOptions.map((item) => (
+                        <option
+                          key={item.value || "general"}
+                          value={item.value}
+                        >
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      Esta subcategoría conecta con las divisiones visibles de
+                      cada página.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="content-type"
+                      className="text-xs text-gray-300"
+                    >
+                      Tipo de nota
+                    </label>
+                    <select
+                      id="content-type"
+                      value={contentType}
+                      onChange={(e) =>
+                        setContentType(e.target.value as ContentType)
+                      }
+                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                    >
+                      <option value="noticia">Noticia</option>
+                      <option value="review">Prueba de manejo / Review</option>
+                      <option value="entrevista">Entrevista</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="content-tags"
+                      className="text-xs text-gray-300"
+                    >
+                      Tags / Etiquetas
+                    </label>
+                    <input
+                      id="content-tags"
+                      value={tags}
+                      onChange={(e) => setTags(e.target.value)}
+                      placeholder="BMW, M2, CDMX, Trackday"
+                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                     />
                     <p className="mt-1 text-[10px] text-gray-500">
-                      Si la dejas vacía, la fecha seguirá automática al
-                      publicar.
+                      Separa con comas. La subcategoría también se guarda para
+                      facilitar filtros.
                     </p>
                   </div>
                 </div>
-              </div>
 
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">
-                      Cuerpo del artículo
-                    </h2>
-                    <p className="text-[11px] text-gray-400">
-                      Luego esto puede migrar a un editor de bloques (Sanity,
-                      MDX, etc.).
-                    </p>
+                <div className="space-y-1">
+                  <label
+                    htmlFor="content-published-at"
+                    className="text-xs text-gray-300"
+                  >
+                    Fecha de publicación
+                  </label>
+                  <input
+                    id="content-published-at"
+                    type="datetime-local"
+                    value={publishedAtInput}
+                    onChange={(e) => setPublishedAtInput(e.target.value)}
+                    className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                  />
+                  <p className="mt-1 text-[10px] text-gray-500">
+                    Si la dejas vacía, la fecha seguirá automática al publicar.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.55fr_.95fr]">
+              <section className="space-y-6">
+                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">
+                        Cuerpo del artículo
+                      </h2>
+                      <p className="text-[11px] text-gray-400">
+                        Luego esto puede migrar a un editor de bloques (Sanity,
+                        MDX, etc.).
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-[11px] px-3 py-1.5"
+                        onClick={handleAiCorrectArticle}
+                        disabled={aiLoading === "correct"}
+                      >
+                        {aiLoading === "correct"
+                          ? "Corrigiendo…"
+                          : "Corregir texto (IA)"}
+                      </Button>
+                    </div>
                   </div>
+
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       type="button"
                       variant="ghost"
                       className="text-[11px] px-3 py-1.5"
-                      onClick={handleAiCorrectArticle}
-                      disabled={aiLoading === "correct"}
+                      onClick={() => insertHeading(2)}
+                      title="Insertar H2"
                     >
-                      {aiLoading === "correct"
-                        ? "Corrigiendo…"
-                        : "Corregir texto (IA)"}
+                      H2
                     </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5"
+                      onClick={() => insertHeading(3)}
+                      title="Insertar H3"
+                    >
+                      H3
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5"
+                      onClick={() => insertHeading(4)}
+                      title="Insertar H4"
+                    >
+                      H4
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5"
+                      onClick={() => insertHeading(5)}
+                      title="Insertar H5"
+                    >
+                      H5
+                    </Button>
+
+                    <span className="mx-1 h-5 w-px bg-white/10" />
+
+                    <input
+                      ref={inlineImagesInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleInlineImagesPick(e.target.files)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5"
+                      onClick={() => inlineImagesInputRef.current?.click()}
+                      disabled={uploadingInlineImages}
+                      title="Subir imágenes e insertarlas en el texto (donde esté el cursor)"
+                    >
+                      {uploadingInlineImages ? "Subiendo…" : "Imagen"}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5"
+                      onClick={() => {
+                        if (typeof window === "undefined") return;
+                        const url = window.prompt(
+                          "Pega la URL del video (YouTube/Vimeo). Se insertará en el texto donde está el cursor:",
+                        );
+                        if (!url) return;
+                        insertVideoEmbed(url);
+                      }}
+                      title="Insertar video en el texto: @[video](url)"
+                    >
+                      Video
+                    </Button>
+
+                    <p className="text-[10px] text-gray-500">
+                      (Imágenes:{" "}
+                      <code className="mx-1 rounded bg-black/60 px-1">
+                        ![imagen](url)
+                      </code>
+                      · Video:{" "}
+                      <code className="mx-1 rounded bg-black/60 px-1">
+                        @[video](url)
+                      </code>
+                      )
+                    </p>
                   </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-[11px] px-3 py-1.5"
-                    onClick={() => insertHeading(2)}
-                    title="Insertar H2"
-                  >
-                    H2
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-[11px] px-3 py-1.5"
-                    onClick={() => insertHeading(3)}
-                    title="Insertar H3"
-                  >
-                    H3
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-[11px] px-3 py-1.5"
-                    onClick={() => insertHeading(4)}
-                    title="Insertar H4"
-                  >
-                    H4
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-[11px] px-3 py-1.5"
-                    onClick={() => insertHeading(5)}
-                    title="Insertar H5"
-                  >
-                    H5
-                  </Button>
-
-                  <span className="mx-1 h-5 w-px bg-white/10" />
-
-                  <input
-                    ref={inlineImagesInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleInlineImagesPick(e.target.files)}
+                  <textarea
+                    ref={bodyRef}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    placeholder={`Puedes escribir aquí el texto completo: párrafos, subtítulos (H2/H3/H4/H5) y notas.\n\nTambién puedes intercalar imágenes con el botón "Imagen" y videos con el botón "Video".`}
+                    rows={16}
+                    className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40 font-mono"
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-[11px] px-3 py-1.5"
-                    onClick={() => inlineImagesInputRef.current?.click()}
-                    disabled={uploadingInlineImages}
-                    title="Subir imágenes e insertarlas en el texto (donde esté el cursor)"
-                  >
-                    {uploadingInlineImages ? "Subiendo…" : "Imagen"}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-[11px] px-3 py-1.5"
-                    onClick={() => {
-                      if (typeof window === "undefined") return;
-                      const url = window.prompt(
-                        "Pega la URL del video (YouTube/Vimeo). Se insertará en el texto donde está el cursor:",
-                      );
-                      if (!url) return;
-                      insertVideoEmbed(url);
-                    }}
-                    title="Insertar video en el texto: @[video](url)"
-                  >
-                    Video
-                  </Button>
-
-                  <p className="text-[10px] text-gray-500">
-                    (Imágenes:{" "}
+                  <p className="text-[11px] text-gray-500">
+                    Tip: si quieres, puedes ir estructurando con marcas tipo
                     <code className="mx-1 rounded bg-black/60 px-1">
-                      ![imagen](url)
+                      ## Subtítulo
                     </code>
-                    · Video:{" "}
+                    ,
                     <code className="mx-1 rounded bg-black/60 px-1">
-                      @[video](url)
-                    </code>
-                    )
+                      &gt; Cita
+                    </code>{" "}
+                    para que en el futuro podamos parsear esto a bloques.
                   </p>
                 </div>
+              </section>
 
-                <textarea
-                  ref={bodyRef}
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder={`Puedes escribir aquí el texto completo: párrafos, subtítulos (H2/H3/H4/H5) y notas.\n\nTambién puedes intercalar imágenes con el botón "Imagen" y videos con el botón "Video".`}
-                  rows={16}
-                  className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40 font-mono"
-                />
-                <p className="text-[11px] text-gray-500">
-                  Tip: si quieres, puedes ir estructurando con marcas tipo
-                  <code className="mx-1 rounded bg-black/60 px-1">
-                    ## Subtítulo
-                  </code>
-                  ,
-                  <code className="mx-1 rounded bg-black/60 px-1">
-                    &gt; Cita
-                  </code>{" "}
-                  para que en el futuro podamos parsear esto a bloques.
-                </p>
-              </div>
+              <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
+                  <h2 className="text-lg font-semibold text-white">Medios</h2>
 
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-gray-300">
+                        Imagen principal
+                      </label>
+
+                      <input
+                        ref={mainImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          setUploadError(null);
+                          setUploadingMainImage(true);
+                          try {
+                            const uploaded = await uploadImageToSanity(file);
+                            setMainImageAsset({
+                              assetId: uploaded.assetId,
+                              url: uploaded.url,
+                            });
+                            setMainImage(uploaded.url);
+                          } catch (err: any) {
+                            setUploadError(
+                              err?.message || "No se pudo subir la imagen",
+                            );
+                          } finally {
+                            setUploadingMainImage(false);
+                            if (mainImageInputRef.current) {
+                              mainImageInputRef.current.value = "";
+                            }
+                          }
+                        }}
+                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100"
+                      />
+
+                      <p className="mt-1 text-[10px] text-gray-500">
+                        Esto sube la imagen a Sanity (CDN). Ya no necesitas
+                        pegar una URL manual.
+                      </p>
+
+                      {mainImageAsset?.url && (
+                        <div className="mt-2 rounded-2xl border border-white/10 bg-black/40 p-2">
+                          <p className="text-[11px] text-gray-400 mb-2">
+                            Subida OK:
+                          </p>
+                          <img
+                            src={mainImageAsset.url}
+                            alt="Preview"
+                            className="w-full rounded-xl border border-white/10"
+                          />
+                          <p className="mt-2 text-[10px] text-gray-500 break-all">
+                            {mainImageAsset.url}
+                          </p>
+                        </div>
+                      )}
+
+                      {uploadError && (
+                        <p className="text-[11px] text-red-300">
+                          {uploadError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2">
+                      <p className="text-xs font-semibold text-white">
+                        Imágenes para el cuerpo (intercaladas)
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        Sube fotos y se insertan en el texto donde tengas el
+                        cursor (como en Facebook).
+                      </p>
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => handleInlineImagesPick(e.target.files)}
+                        disabled={uploadingInlineImages}
+                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100"
+                      />
+
+                      {inlineUploadError && (
+                        <p className="text-[11px] text-red-300">
+                          {inlineUploadError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="content-gallery"
+                        className="text-xs text-gray-300"
+                      >
+                        Galería (una URL por línea o separadas por comas)
+                      </label>
+
+                      <div className="flex flex-col gap-2">
+                        <input
+                          ref={galleryImagesInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) =>
+                            handleGalleryImagesPick(e.target.files)
+                          }
+                          disabled={uploadingGalleryImages}
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100"
+                        />
+                        <p className="text-[10px] text-gray-500">
+                          Sube varias y se agregan automáticamente aquí abajo.
+                        </p>
+                      </div>
+
+                      <textarea
+                        id="content-gallery"
+                        value={gallery}
+                        onChange={(e) => setGallery(e.target.value)}
+                        placeholder={`/images/noticia-1.jpg\n/images/noticia-2.jpg\nhttps://cdn.motorwelt.com/fotos/xyz.jpg`}
+                        rows={4}
+                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                      />
+
+                      {galleryUploadError && (
+                        <p className="text-[11px] text-red-300">
+                          {galleryUploadError}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="content-video"
+                        className="text-xs text-gray-300"
+                      >
+                        Video (YouTube, Vimeo, etc.)
+                      </label>
+                      <input
+                        id="content-video"
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=XXXXXX"
+                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                      />
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-gray-400">
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={useVideoAsHero}
+                            onChange={(e) =>
+                              setUseVideoAsHero(e.target.checked)
+                            }
+                            className="h-3.5 w-3.5 rounded border border-white/30 bg-black/60 text-[#0CE0B2]"
+                          />
+                          <span>Usar el video como hero en la nota</span>
+                        </label>
+                      </div>
+
+                      <p className="mt-2 text-[10px] text-gray-500">
+                        Para meter un video dentro del texto usa el botón{" "}
+                        <span className="text-gray-300 font-semibold">
+                          Video
+                        </span>{" "}
+                        arriba del editor (se inserta como{" "}
+                        <code className="mx-1 rounded bg-black/60 px-1">
+                          @[video](url)
+                        </code>
+                        ).
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="content-reel"
+                        className="text-xs text-gray-300"
+                      >
+                        Reel / short format (Instagram, TikTok, Shorts)
+                      </label>
+                      <input
+                        id="content-reel"
+                        value={reelUrl}
+                        onChange={(e) => setReelUrl(e.target.value)}
+                        placeholder="https://www.instagram.com/reel/... o https://www.tiktok.com/..."
+                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                      />
+                      <p className="mt-1 text-[10px] text-gray-500">
+                        Este campo alimentará la sección de reels en Tuning. Por
+                        ahora será por link externo.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <section className="space-y-6">
+                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold text-white">SEO</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-[11px] px-3 py-1.5"
+                        onClick={handleAiSeoOptimize}
+                        disabled={aiLoading === "seo"}
+                      >
+                        {aiLoading === "seo"
+                          ? "Analizando SEO…"
+                          : "Optimizar con IA"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="seo-title"
+                        className="text-xs text-gray-300"
+                      >
+                        Título SEO (opcional)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          id="seo-title"
+                          value={seoTitle}
+                          onChange={(e) => setSeoTitle(e.target.value)}
+                          placeholder="Si lo dejas vacío, usaremos el título principal."
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-[11px] px-3 py-1.5 shrink-0"
+                          onClick={handleAiSuggestSeoTitleOnly}
+                          disabled={aiLoading === "title"}
+                        >
+                          {aiLoading === "title" ? "IA…" : "Sugerir"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="seo-description"
+                        className="text-xs text-gray-300"
+                      >
+                        Meta descripción
+                      </label>
+                      <div className="flex gap-2">
+                        <textarea
+                          id="seo-description"
+                          value={seoDescription}
+                          onChange={(e) => setSeoDescription(e.target.value)}
+                          placeholder="Descripción corta (140–160 caracteres) para buscadores y redes."
+                          rows={3}
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-[11px] px-3 py-1.5 h-fit shrink-0"
+                          onClick={handleAiSuggestSeoMetaOnly}
+                          disabled={aiLoading === "meta"}
+                        >
+                          {aiLoading === "meta" ? "IA…" : "Sugerir"}
+                        </Button>
+                      </div>
+                      <p className="mt-1 text-[10px] text-gray-500">
+                        Tip: incluye palabras clave (marca, modelo, evento) pero
+                        sin sonar forzado.
+                      </p>
+                    </div>
+                  </div>
+
+                  {aiSeoInsights && (
+                    <div className="mt-4 rounded-2xl border border-white/15 bg-black/40 p-3 text-[11px] text-gray-200 space-y-2">
+                      <p className="font-semibold text-white text-xs">
+                        Insights SEO (IA)
+                      </p>
+                      {aiSeoInsights.primaryKeyword && (
+                        <p>
+                          <span className="text-gray-400">
+                            Palabra clave principal:{" "}
+                          </span>
+                          <span className="font-semibold text-[#0CE0B2]">
+                            {aiSeoInsights.primaryKeyword}
+                          </span>
+                        </p>
+                      )}
+                      {aiSeoInsights.secondaryKeywords &&
+                        aiSeoInsights.secondaryKeywords.length > 0 && (
+                          <p>
+                            <span className="text-gray-400">Secundarias: </span>
+                            {aiSeoInsights.secondaryKeywords.join(", ")}
+                          </p>
+                        )}
+                      {typeof aiSeoInsights.score === "number" && (
+                        <p>
+                          <span className="text-gray-400">
+                            Puntuación general:{" "}
+                          </span>
+                          <span className="font-semibold">
+                            {aiSeoInsights.score}/100
+                          </span>
+                        </p>
+                      )}
+                      {aiSeoInsights.suggestions &&
+                        aiSeoInsights.suggestions.length > 0 && (
+                          <ul className="list-disc pl-4 space-y-1 mt-1">
+                            {aiSeoInsights.suggestions.map((s, i) => (
+                              <li key={i} className="text-gray-300">
+                                {s}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section className="space-y-6">
+                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">
+                        Copys para redes (IA)
+                      </h2>
+                      <p className="text-sm text-gray-300">
+                        Genera sugerencias de texto para Instagram, TikTok, X y
+                        YouTube en función de esta nota.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col items-start gap-1 text-[11px] text-gray-400">
+                      {socialLoading && (
+                        <span className="text-[#0CE0B2]">
+                          Generando copys con IA…
+                        </span>
+                      )}
+                      {!socialLoading && socialCopies && (
+                        <span>
+                          Copys generados para {socialCopies.length} plataforma
+                          {socialCopies.length > 1 ? "s" : ""}.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/40 p-4 space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      Parámetros rápidos
+                    </p>
+
+                    <div className="grid gap-3 md:grid-cols-4">
+                      <div className="space-y-1">
+                        <label className="text-xs text-gray-300">Tono</label>
+                        <select
+                          value={socialTone}
+                          onChange={(e) =>
+                            setSocialTone(e.target.value as SocialTone)
+                          }
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        >
+                          <option value="editorial">Neutro editorial</option>
+                          <option value="emocional">Emocional</option>
+                          <option value="tecnico">Técnico / nerd</option>
+                          <option value="cotorro">Cotorro / lifestyle</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-gray-300">
+                          Longitud
+                        </label>
+                        <select
+                          value={socialLength}
+                          onChange={(e) =>
+                            setSocialLength(e.target.value as SocialLength)
+                          }
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        >
+                          <option value="corto">Corto (1–2 líneas)</option>
+                          <option value="medio">Medio</option>
+                          <option value="largo">Largo</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-gray-300">Idioma</label>
+                        <select
+                          value={socialLanguage}
+                          onChange={(e) =>
+                            setSocialLanguage(e.target.value as SocialLanguage)
+                          }
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        >
+                          <option value="es">Español</option>
+                          <option value="en">Inglés</option>
+                          <option value="bi">Bilingüe (ES/EN)</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-gray-300">Extras</label>
+                        <div className="flex flex-col gap-1 text-xs text-gray-200">
+                          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={socialIncludeHashtags}
+                              onChange={(e) =>
+                                setSocialIncludeHashtags(e.target.checked)
+                              }
+                              className="h-3.5 w-3.5 rounded border border-white/30 bg-black/60 text-[#0CE0B2]"
+                            />
+                            <span>Incluir hashtags sugeridos</span>
+                          </label>
+                          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={socialIncludeCta}
+                              onChange={(e) =>
+                                setSocialIncludeCta(e.target.checked)
+                              }
+                              className="h-3.5 w-3.5 rounded border border-white/30 bg-black/60 text-[#0CE0B2]"
+                            />
+                            <span>Incluir CTA (call to action)</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {socialError && (
+                      <div className="mt-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-200">
+                        {socialError}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                      <p className="text-[11px] text-gray-500 max-w-md">
+                        Tip: entre mejor esté trabajado el título, bajada y los
+                        primeros párrafos, más precisos serán los copys.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="pink"
+                        className="text-xs"
+                        onClick={handleGenerateSocialCopy}
+                        disabled={socialLoading}
+                      >
+                        {socialLoading
+                          ? "Generando copys…"
+                          : "Generar copys con IA"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {socialCopies && socialCopies.length > 0 && (
+                    <div className="mt-4 space-y-4">
+                      <p className="text-xs text-gray-400">
+                        Copys sugeridos para RRSS — selecciona y copia los que
+                        te sirvan.
+                      </p>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {socialCopies.map((pack) => {
+                          const hashtagsText =
+                            pack.hashtags && pack.hashtags.length > 0
+                              ? pack.hashtags.join(" ")
+                              : "";
+                          const blockToCopy = [
+                            pack.copyPrincipal,
+                            pack.cta ? `\n\n${pack.cta}` : "",
+                            hashtagsText ? `\n\n${hashtagsText}` : "",
+                          ]
+                            .join("")
+                            .trim();
+
+                          return (
+                            <div
+                              key={pack.platform}
+                              className="rounded-2xl border border-white/10 bg-black/35 p-4 flex flex-col gap-2"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs font-semibold text-white">
+                                  {labelForPlatform(pack.platform)}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="text-[10px] px-3 py-1"
+                                  onClick={() =>
+                                    handleCopyToClipboard(blockToCopy)
+                                  }
+                                >
+                                  Copiar todo
+                                </Button>
+                              </div>
+
+                              <div className="rounded-2xl border border-white/10 bg-black/50 p-3">
+                                <p className="text-[11px] text-gray-400 mb-1">
+                                  Copy principal:
+                                </p>
+                                <p className="text-xs text-gray-100 whitespace-pre-line">
+                                  {pack.copyPrincipal}
+                                </p>
+                              </div>
+
+                              {pack.variaciones &&
+                                pack.variaciones.length > 0 && (
+                                  <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-1">
+                                    <p className="text-[11px] text-gray-400">
+                                      Variaciones:
+                                    </p>
+                                    {pack.variaciones.map((v, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="flex items-start justify-between gap-2"
+                                      >
+                                        <p className="text-[11px] text-gray-200 flex-1 whitespace-pre-line">
+                                          {idx + 1}. {v}
+                                        </p>
+                                        <button
+                                          type="button"
+                                          className="text-[10px] text-[#0CE0B2] hover:text-[#7CFFE2] shrink-0"
+                                          onClick={() =>
+                                            handleCopyToClipboard(v)
+                                          }
+                                        >
+                                          Copiar
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                              {(pack.hashtags && pack.hashtags.length > 0) ||
+                              pack.cta ? (
+                                <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-1">
+                                  {pack.cta && (
+                                    <p className="text-[11px] text-gray-200">
+                                      <span className="text-gray-400">
+                                        CTA:{" "}
+                                      </span>
+                                      {pack.cta}
+                                    </p>
+                                  )}
+                                  {pack.hashtags &&
+                                    pack.hashtags.length > 0 && (
+                                      <p className="text-[11px] text-gray-200 break-words">
+                                        <span className="text-gray-400">
+                                          Hashtags:
+                                        </span>{" "}
+                                        {pack.hashtags.join(" ")}
+                                      </p>
+                                    )}
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            <section className="space-y-6">
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -2202,560 +2793,6 @@ const AdminContentEditorPage: React.FC = () => {
                   </code>
                   .
                 </p>
-              </div>
-            </section>
-
-            <section className="space-y-6">
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
-                <h2 className="text-lg font-semibold text-white">Medios</h2>
-
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-300">
-                      Imagen principal
-                    </label>
-
-                    <input
-                      ref={mainImageInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-
-                        setUploadError(null);
-                        setUploadingMainImage(true);
-                        try {
-                          const uploaded = await uploadImageToSanity(file);
-                          setMainImageAsset({
-                            assetId: uploaded.assetId,
-                            url: uploaded.url,
-                          });
-                          setMainImage(uploaded.url);
-                        } catch (err: any) {
-                          setUploadError(
-                            err?.message || "No se pudo subir la imagen",
-                          );
-                        } finally {
-                          setUploadingMainImage(false);
-                          if (mainImageInputRef.current) {
-                            mainImageInputRef.current.value = "";
-                          }
-                        }
-                      }}
-                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100"
-                    />
-
-                    <p className="mt-1 text-[10px] text-gray-500">
-                      Esto sube la imagen a Sanity (CDN). Ya no necesitas pegar
-                      una URL manual.
-                    </p>
-
-                    {mainImageAsset?.url && (
-                      <div className="mt-2 rounded-2xl border border-white/10 bg-black/40 p-2">
-                        <p className="text-[11px] text-gray-400 mb-2">
-                          Subida OK:
-                        </p>
-                        <img
-                          src={mainImageAsset.url}
-                          alt="Preview"
-                          className="w-full rounded-xl border border-white/10"
-                        />
-                        <p className="mt-2 text-[10px] text-gray-500 break-all">
-                          {mainImageAsset.url}
-                        </p>
-                      </div>
-                    )}
-
-                    {uploadError && (
-                      <p className="text-[11px] text-red-300">{uploadError}</p>
-                    )}
-                  </div>
-
-                  <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-2">
-                    <p className="text-xs font-semibold text-white">
-                      Imágenes para el cuerpo (intercaladas)
-                    </p>
-                    <p className="text-[11px] text-gray-400">
-                      Sube fotos y se insertan en el texto donde tengas el
-                      cursor (como en Facebook).
-                    </p>
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e) => handleInlineImagesPick(e.target.files)}
-                      disabled={uploadingInlineImages}
-                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100"
-                    />
-
-                    {inlineUploadError && (
-                      <p className="text-[11px] text-red-300">
-                        {inlineUploadError}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="content-gallery"
-                      className="text-xs text-gray-300"
-                    >
-                      Galería (una URL por línea o separadas por comas)
-                    </label>
-
-                    <div className="flex flex-col gap-2">
-                      <input
-                        ref={galleryImagesInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) =>
-                          handleGalleryImagesPick(e.target.files)
-                        }
-                        disabled={uploadingGalleryImages}
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100"
-                      />
-                      <p className="text-[10px] text-gray-500">
-                        Sube varias y se agregan automáticamente aquí abajo.
-                      </p>
-                    </div>
-
-                    <textarea
-                      id="content-gallery"
-                      value={gallery}
-                      onChange={(e) => setGallery(e.target.value)}
-                      placeholder={`/images/noticia-1.jpg\n/images/noticia-2.jpg\nhttps://cdn.motorwelt.com/fotos/xyz.jpg`}
-                      rows={4}
-                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                    />
-
-                    {galleryUploadError && (
-                      <p className="text-[11px] text-red-300">
-                        {galleryUploadError}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="content-video"
-                      className="text-xs text-gray-300"
-                    >
-                      Video (YouTube, Vimeo, etc.)
-                    </label>
-                    <input
-                      id="content-video"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=XXXXXX"
-                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                    />
-                    <div className="mt-1 flex items-center gap-2 text-[11px] text-gray-400">
-                      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={useVideoAsHero}
-                          onChange={(e) => setUseVideoAsHero(e.target.checked)}
-                          className="h-3.5 w-3.5 rounded border border-white/30 bg-black/60 text-[#0CE0B2]"
-                        />
-                        <span>Usar el video como hero en la nota</span>
-                      </label>
-                    </div>
-
-                    <p className="mt-2 text-[10px] text-gray-500">
-                      Para meter un video dentro del texto usa el botón{" "}
-                      <span className="text-gray-300 font-semibold">Video</span>{" "}
-                      arriba del editor (se inserta como{" "}
-                      <code className="mx-1 rounded bg-black/60 px-1">
-                        @[video](url)
-                      </code>
-                      ).
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="content-reel"
-                      className="text-xs text-gray-300"
-                    >
-                      Reel / short format (Instagram, TikTok, Shorts)
-                    </label>
-                    <input
-                      id="content-reel"
-                      value={reelUrl}
-                      onChange={(e) => setReelUrl(e.target.value)}
-                      placeholder="https://www.instagram.com/reel/... o https://www.tiktok.com/..."
-                      className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                    />
-                    <p className="mt-1 text-[10px] text-gray-500">
-                      Este campo alimentará la sección de reels en Tuning. Por
-                      ahora será por link externo.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-semibold text-white">SEO</h2>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="text-[11px] px-3 py-1.5"
-                      onClick={handleAiSeoOptimize}
-                      disabled={aiLoading === "seo"}
-                    >
-                      {aiLoading === "seo"
-                        ? "Analizando SEO…"
-                        : "Optimizar con IA"}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="seo-title"
-                      className="text-xs text-gray-300"
-                    >
-                      Título SEO (opcional)
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        id="seo-title"
-                        value={seoTitle}
-                        onChange={(e) => setSeoTitle(e.target.value)}
-                        placeholder="Si lo dejas vacío, usaremos el título principal."
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-[11px] px-3 py-1.5 shrink-0"
-                        onClick={handleAiSuggestSeoTitleOnly}
-                        disabled={aiLoading === "title"}
-                      >
-                        {aiLoading === "title" ? "IA…" : "Sugerir"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="seo-description"
-                      className="text-xs text-gray-300"
-                    >
-                      Meta descripción
-                    </label>
-                    <div className="flex gap-2">
-                      <textarea
-                        id="seo-description"
-                        value={seoDescription}
-                        onChange={(e) => setSeoDescription(e.target.value)}
-                        placeholder="Descripción corta (140–160 caracteres) para buscadores y redes."
-                        rows={3}
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-[11px] px-3 py-1.5 h-fit shrink-0"
-                        onClick={handleAiSuggestSeoMetaOnly}
-                        disabled={aiLoading === "meta"}
-                      >
-                        {aiLoading === "meta" ? "IA…" : "Sugerir"}
-                      </Button>
-                    </div>
-                    <p className="mt-1 text-[10px] text-gray-500">
-                      Tip: incluye palabras clave (marca, modelo, evento) pero
-                      sin sonar forzado.
-                    </p>
-                  </div>
-                </div>
-
-                {aiSeoInsights && (
-                  <div className="mt-4 rounded-2xl border border-white/15 bg-black/40 p-3 text-[11px] text-gray-200 space-y-2">
-                    <p className="font-semibold text-white text-xs">
-                      Insights SEO (IA)
-                    </p>
-                    {aiSeoInsights.primaryKeyword && (
-                      <p>
-                        <span className="text-gray-400">
-                          Palabra clave principal:{" "}
-                        </span>
-                        <span className="font-semibold text-[#0CE0B2]">
-                          {aiSeoInsights.primaryKeyword}
-                        </span>
-                      </p>
-                    )}
-                    {aiSeoInsights.secondaryKeywords &&
-                      aiSeoInsights.secondaryKeywords.length > 0 && (
-                        <p>
-                          <span className="text-gray-400">Secundarias: </span>
-                          {aiSeoInsights.secondaryKeywords.join(", ")}
-                        </p>
-                      )}
-                    {typeof aiSeoInsights.score === "number" && (
-                      <p>
-                        <span className="text-gray-400">
-                          Puntuación general:{" "}
-                        </span>
-                        <span className="font-semibold">
-                          {aiSeoInsights.score}/100
-                        </span>
-                      </p>
-                    )}
-                    {aiSeoInsights.suggestions &&
-                      aiSeoInsights.suggestions.length > 0 && (
-                        <ul className="list-disc pl-4 space-y-1 mt-1">
-                          {aiSeoInsights.suggestions.map((s, i) => (
-                            <li key={i} className="text-gray-300">
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">
-                      Copys para redes (IA)
-                    </h2>
-                    <p className="text-sm text-gray-300">
-                      Genera sugerencias de texto para Instagram, TikTok, X y
-                      YouTube en función de esta nota.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col items-start gap-1 text-[11px] text-gray-400">
-                    {socialLoading && (
-                      <span className="text-[#0CE0B2]">
-                        Generando copys con IA…
-                      </span>
-                    )}
-                    {!socialLoading && socialCopies && (
-                      <span>
-                        Copys generados para {socialCopies.length} plataforma
-                        {socialCopies.length > 1 ? "s" : ""}.
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/40 p-4 space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    Parámetros rápidos
-                  </p>
-
-                  <div className="grid gap-3 md:grid-cols-4">
-                    <div className="space-y-1">
-                      <label className="text-xs text-gray-300">Tono</label>
-                      <select
-                        value={socialTone}
-                        onChange={(e) =>
-                          setSocialTone(e.target.value as SocialTone)
-                        }
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      >
-                        <option value="editorial">Neutro editorial</option>
-                        <option value="emocional">Emocional</option>
-                        <option value="tecnico">Técnico / nerd</option>
-                        <option value="cotorro">Cotorro / lifestyle</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs text-gray-300">Longitud</label>
-                      <select
-                        value={socialLength}
-                        onChange={(e) =>
-                          setSocialLength(e.target.value as SocialLength)
-                        }
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      >
-                        <option value="corto">Corto (1–2 líneas)</option>
-                        <option value="medio">Medio</option>
-                        <option value="largo">Largo</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs text-gray-300">Idioma</label>
-                      <select
-                        value={socialLanguage}
-                        onChange={(e) =>
-                          setSocialLanguage(e.target.value as SocialLanguage)
-                        }
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2 text-xs text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                      >
-                        <option value="es">Español</option>
-                        <option value="en">Inglés</option>
-                        <option value="bi">Bilingüe (ES/EN)</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs text-gray-300">Extras</label>
-                      <div className="flex flex-col gap-1 text-xs text-gray-200">
-                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={socialIncludeHashtags}
-                            onChange={(e) =>
-                              setSocialIncludeHashtags(e.target.checked)
-                            }
-                            className="h-3.5 w-3.5 rounded border border-white/30 bg-black/60 text-[#0CE0B2]"
-                          />
-                          <span>Incluir hashtags sugeridos</span>
-                        </label>
-                        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={socialIncludeCta}
-                            onChange={(e) =>
-                              setSocialIncludeCta(e.target.checked)
-                            }
-                            className="h-3.5 w-3.5 rounded border border-white/30 bg-black/60 text-[#0CE0B2]"
-                          />
-                          <span>Incluir CTA (call to action)</span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {socialError && (
-                    <div className="mt-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-[11px] text-red-200">
-                      {socialError}
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                    <p className="text-[11px] text-gray-500 max-w-md">
-                      Tip: entre mejor esté trabajado el título, bajada y los
-                      primeros párrafos, más precisos serán los copys.
-                    </p>
-                    <Button
-                      type="button"
-                      variant="pink"
-                      className="text-xs"
-                      onClick={handleGenerateSocialCopy}
-                      disabled={socialLoading}
-                    >
-                      {socialLoading
-                        ? "Generando copys…"
-                        : "Generar copys con IA"}
-                    </Button>
-                  </div>
-                </div>
-
-                {socialCopies && socialCopies.length > 0 && (
-                  <div className="mt-4 space-y-4">
-                    <p className="text-xs text-gray-400">
-                      Copys sugeridos para RRSS — selecciona y copia los que te
-                      sirvan.
-                    </p>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      {socialCopies.map((pack) => {
-                        const hashtagsText =
-                          pack.hashtags && pack.hashtags.length > 0
-                            ? pack.hashtags.join(" ")
-                            : "";
-                        const blockToCopy = [
-                          pack.copyPrincipal,
-                          pack.cta ? `\n\n${pack.cta}` : "",
-                          hashtagsText ? `\n\n${hashtagsText}` : "",
-                        ]
-                          .join("")
-                          .trim();
-
-                        return (
-                          <div
-                            key={pack.platform}
-                            className="rounded-2xl border border-white/10 bg-black/35 p-4 flex flex-col gap-2"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-xs font-semibold text-white">
-                                {labelForPlatform(pack.platform)}
-                              </p>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="text-[10px] px-3 py-1"
-                                onClick={() =>
-                                  handleCopyToClipboard(blockToCopy)
-                                }
-                              >
-                                Copiar todo
-                              </Button>
-                            </div>
-
-                            <div className="rounded-2xl border border-white/10 bg-black/50 p-3">
-                              <p className="text-[11px] text-gray-400 mb-1">
-                                Copy principal:
-                              </p>
-                              <p className="text-xs text-gray-100 whitespace-pre-line">
-                                {pack.copyPrincipal}
-                              </p>
-                            </div>
-
-                            {pack.variaciones &&
-                              pack.variaciones.length > 0 && (
-                                <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-1">
-                                  <p className="text-[11px] text-gray-400">
-                                    Variaciones:
-                                  </p>
-                                  {pack.variaciones.map((v, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex items-start justify-between gap-2"
-                                    >
-                                      <p className="text-[11px] text-gray-200 flex-1 whitespace-pre-line">
-                                        {idx + 1}. {v}
-                                      </p>
-                                      <button
-                                        type="button"
-                                        className="text-[10px] text-[#0CE0B2] hover:text-[#7CFFE2] shrink-0"
-                                        onClick={() => handleCopyToClipboard(v)}
-                                      >
-                                        Copiar
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                            {(pack.hashtags && pack.hashtags.length > 0) ||
-                            pack.cta ? (
-                              <div className="rounded-2xl border border-white/10 bg-black/40 p-3 space-y-1">
-                                {pack.cta && (
-                                  <p className="text-[11px] text-gray-200">
-                                    <span className="text-gray-400">CTA: </span>
-                                    {pack.cta}
-                                  </p>
-                                )}
-                                {pack.hashtags && pack.hashtags.length > 0 && (
-                                  <p className="text-[11px] text-gray-200 break-words">
-                                    <span className="text-gray-400">
-                                      Hashtags:
-                                    </span>{" "}
-                                    {pack.hashtags.join(" ")}
-                                  </p>
-                                )}
-                              </div>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
             </section>
           </div>

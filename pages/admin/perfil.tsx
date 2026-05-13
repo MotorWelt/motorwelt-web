@@ -1186,7 +1186,7 @@ export async function getServerSideProps(ctx: { locale?: string; req: any }) {
       updatedAt: formatWhen(it?.updatedAt, true),
       slug,
       authorName: String(it?.authorName ?? "Sin autor"),
-      authorEmail: it?.authorEmail ? String(it.authorEmail) : undefined,
+      authorEmail: String(it?.authorEmail ?? ""),
       href: hrefForNote(sectionKey, slug),
     };
   });

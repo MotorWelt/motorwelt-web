@@ -2413,7 +2413,7 @@ export default function TuningPage({
 
                     <h1 className="mt-5 font-display text-[2.8rem] font-black leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.4rem]">
                       <span className="glow-cool block">Tuning</span>
-                      <span className="block text-white/95">Builds & Culture</span>
+                      <span className="block text-white/95">& performance</span>
                     </h1>
 
                     <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
@@ -2436,7 +2436,7 @@ export default function TuningPage({
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               <div className="mb-8">
                 <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
-                  Tuning — Builds & Culture
+                  Noticias
                 </h2>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]" />
               </div>
@@ -2519,8 +2519,8 @@ export default function TuningPage({
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               <SectionHeader
                 eyebrow="Visual Library"
-                title="Fotos, videos y formato corto con más presencia"
-                description="Separamos el lenguaje visual en tres bloques para que la experiencia respire mejor: frames, piezas de video y formato vertical con preview inmersivo y apertura a pantalla completa."
+                title="Galerías, videos y más"
+                description="Los detalles son los que hacen el auto"
                 accent="cool"
                 action={
                   editControlsVisible ? (
@@ -2542,7 +2542,7 @@ export default function TuningPage({
                       Photos
                     </p>
                     <h3 className="mt-1 text-2xl font-semibold text-white">
-                      Frames con postura, detalle y atmósfera
+                      Galería 
                     </h3>
                   </div>
 
@@ -2689,7 +2689,7 @@ export default function TuningPage({
                       Videos
                     </p>
                     <h3 className="mt-1 text-2xl font-semibold text-white">
-                      Piezas con movimiento y energía editorial
+                      Videos 
                     </h3>
                     {editControlsVisible ? (
                       <div className="mt-4">
@@ -2866,7 +2866,7 @@ export default function TuningPage({
                       Formato corto
                     </p>
                     <h3 className="mt-1 text-2xl font-semibold text-white">
-                      Formato corto para impacto rápido
+                      Shorts
                     </h3>
                     {editControlsVisible ? (
                       <div className="mt-4">
@@ -3053,7 +3053,7 @@ export default function TuningPage({
               <SectionHeader
                 eyebrow="Últimas publicaciones"
                 title="Lo más reciente en MotorWelt"
-                description="Una selección actualizada con las publicaciones más nuevas de todas las secciones."
+                description=""
                 accent="cool"
               />
 
