@@ -2727,8 +2727,8 @@ export default function TuningPage({
                         ? "Da clic en la foto principal para verla en pantalla completa."
                         : activeMedia.mediaUrl &&
                             isPlayableVideoUrl(activeMedia.mediaUrl)
-                          ? "Este preview permite reproducirse dentro del mismo modal sin salir del flujo visual de la sección."
-                          : "Esta vista se mantiene como preview editorial fija, pero el botón inferior te lleva al video original."}
+                          ? " "
+                          : " "}
                     </p>
                   </div>
 
