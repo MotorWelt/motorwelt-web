@@ -33,6 +33,17 @@ type PhotoGalleryEntry = {
   when: string;
 };
 
+type VideoEntry = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  coverImageUrl?: string;
+  mediaUrl?: string;
+  videoUrl?: string;
+  when?: string;
+};
+
 type HomeSettingsPayload = {
   heroImageUrl: string;
   ads: {
@@ -50,6 +61,7 @@ type TuningSettingsPayload = {
     billboard: AdConfig;
   };
   photoGalleries?: PhotoGalleryEntry[];
+  videoEntries?: VideoEntry[];
 };
 
 type StandardPageSettingsPayload = {
@@ -107,6 +119,27 @@ function normalizePhotoGalleries(photoGalleries?: PhotoGalleryEntry[]) {
   }));
 }
 
+function normalizeVideoEntries(videoEntries?: VideoEntry[]) {
+  if (!Array.isArray(videoEntries)) return [];
+
+  return videoEntries.map((video, index) => {
+    const id = video.id || `video-${index}`;
+    const mediaUrl = video.mediaUrl || video.videoUrl || "";
+
+    return {
+      _key: id,
+      id,
+      title: video.title || `Video ${index + 1}`,
+      subtitle: video.subtitle || video.description || "",
+      description: video.description || video.subtitle || "",
+      coverImageUrl: video.coverImageUrl || "",
+      mediaUrl,
+      videoUrl: mediaUrl,
+      when: video.when || "",
+    };
+  });
+}
+
 function normalizePageKey(pageKey: string) {
   const clean = String(pageKey || "home").trim();
   const lower = clean.toLowerCase();
@@ -150,7 +183,7 @@ function getDocIdForPage(pageKey: string) {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   try {
     console.log("SETTINGS SAVE ENV CHECK", {
@@ -237,6 +270,7 @@ export default async function handler(
           billboard: normalizeAdConfig(tuning.ads?.billboard),
         },
         photoGalleries: normalizePhotoGalleries(tuning.photoGalleries),
+        videoEntries: normalizeVideoEntries(tuning.videoEntries),
       };
     } else if (
       pageKey === "deportes" ||

@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useTranslation } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import Seo from "../components/Seo";
 import Image from "next/image";
@@ -18,10 +17,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
 };
 
-const getButtonClasses = (
-  variant: ButtonVariant = "cyan",
-  className = ""
-) => {
+const getButtonClasses = (variant: ButtonVariant = "cyan", className = "") => {
   const base =
     "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold transition focus:outline-none focus-visible:ring-2";
 
@@ -31,8 +27,7 @@ const getButtonClasses = (
   const styles: Record<ButtonVariant, string> = {
     cyan: sharedButtonStyle,
     pink: sharedButtonStyle,
-    link:
-      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
+    link: "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
   };
 
   return `${base} ${styles[variant]} ${className}`.trim();
@@ -104,7 +99,7 @@ type LatestArticleData = {
   sectionLabel: string;
 };
 
-type VisualMediaKind = "photo" | "video" | "reel";
+type VisualMediaKind = "photo" | "video";
 type MediaPlatform = "youtube" | "instagram" | "tiktok" | "unknown";
 
 type VisualMediaItem = {
@@ -157,7 +152,7 @@ type TuningPageSettings = {
   };
   photoGalleries: PhotoGalleryEntry[];
   videoEntries: MediaEntry[];
-  reelEntries: MediaEntry[];
+  reelEntries?: MediaEntry[];
 };
 
 type SectionHeroImages = {
@@ -199,29 +194,6 @@ const DEFAULT_SECTION_HERO_IMAGES: SectionHeroImages = {
   comunidad: "/images/comunidad.jpg",
 };
 
-function fallbackItem(
-  id: string,
-  title: string,
-  excerpt: string,
-  img: string,
-  href: string,
-  typeLabel = "Build"
-): TuningItem {
-  return {
-    id,
-    title,
-    excerpt,
-    img,
-    href,
-    when: "",
-    typeLabel,
-    authorName: "MotorWelt",
-    galleryUrls: [],
-    videoUrl: "",
-    reelUrl: "",
-  };
-}
-
 async function uploadAssetToSanity(file: File) {
   const fd = new FormData();
   fd.append("file", file);
@@ -251,7 +223,7 @@ function readCookie(name: string) {
   if (typeof document === "undefined") return "";
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const match = document.cookie.match(
-    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
+    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)"),
   );
   return match ? decodeURIComponent(match[2]) : "";
 }
@@ -269,7 +241,6 @@ function detailHref(slug?: string | null) {
   return `/tuning/${cleanSlug}`;
 }
 
-
 function getSlugValue(slug?: string | { current?: string } | null) {
   if (!slug) return "";
   if (typeof slug === "string") return slug;
@@ -278,7 +249,8 @@ function getSlugValue(slug?: string | { current?: string } | null) {
 
 function normalizeText(value: unknown) {
   if (!value) return "";
-  if (Array.isArray(value)) return value.map(normalizeText).join(" ").toLowerCase();
+  if (Array.isArray(value))
+    return value.map(normalizeText).join(" ").toLowerCase();
   if (typeof value === "object") {
     const item = value as Record<string, unknown>;
     return String(item.title || item.name || item.label || item.value || "")
@@ -288,27 +260,70 @@ function normalizeText(value: unknown) {
   return String(value).trim().toLowerCase();
 }
 
-function getLatestSectionData(post: any): { label: string; hrefBase: string } | null {
-  const blob = [post.section, post.category, post.subcategory, post.categories, post.tags]
+function getLatestSectionData(
+  post: any,
+): { label: string; hrefBase: string } | null {
+  const blob = [
+    post.section,
+    post.category,
+    post.subcategory,
+    post.categories,
+    post.tags,
+  ]
     .map(normalizeText)
     .join(" ");
 
-  if (blob.includes("noticias_autos") || blob.includes("autos") || blob.includes("auto")) {
+  if (
+    blob.includes("noticias_autos") ||
+    blob.includes("autos") ||
+    blob.includes("auto")
+  ) {
     return { label: "Autos", hrefBase: "/noticias/autos" };
   }
-  if (blob.includes("noticias_motos") || blob.includes("motos") || blob.includes("moto")) {
+  if (
+    blob.includes("noticias_motos") ||
+    blob.includes("motos") ||
+    blob.includes("moto")
+  ) {
     return { label: "Motos", hrefBase: "/noticias/motos" };
   }
-  if (blob.includes("tuning") || blob.includes("builds") || blob.includes("mods")) {
+  if (
+    blob.includes("tuning") ||
+    blob.includes("builds") ||
+    blob.includes("mods")
+  ) {
     return { label: "Tuning", hrefBase: "/tuning" };
   }
-  if (blob.includes("deportes") || blob.includes("f1") || blob.includes("nascar") || blob.includes("motogp") || blob.includes("wrc") || blob.includes("drift") || blob.includes("rally")) {
+  if (
+    blob.includes("deportes") ||
+    blob.includes("f1") ||
+    blob.includes("nascar") ||
+    blob.includes("motogp") ||
+    blob.includes("wrc") ||
+    blob.includes("drift") ||
+    blob.includes("rally")
+  ) {
     return { label: "Deportes", hrefBase: "/deportes" };
   }
-  if (blob.includes("lifestyle") || blob.includes("moda") || blob.includes("relojería") || blob.includes("relojeria") || blob.includes("cine") || blob.includes("fuera del volante")) {
+  if (
+    blob.includes("lifestyle") ||
+    blob.includes("moda") ||
+    blob.includes("relojería") ||
+    blob.includes("relojeria") ||
+    blob.includes("cine") ||
+    blob.includes("fuera del volante")
+  ) {
     return { label: "Lifestyle", hrefBase: "/lifestyle" };
   }
-  if (blob.includes("comunidad") || blob.includes("evento") || blob.includes("eventos") || blob.includes("meet") || blob.includes("meets") || blob.includes("rutas") || blob.includes("club")) {
+  if (
+    blob.includes("comunidad") ||
+    blob.includes("evento") ||
+    blob.includes("eventos") ||
+    blob.includes("meet") ||
+    blob.includes("meets") ||
+    blob.includes("rutas") ||
+    blob.includes("club")
+  ) {
     return { label: "Comunidad", hrefBase: "/comunidad" };
   }
   return null;
@@ -317,7 +332,8 @@ function getLatestSectionData(post: any): { label: string; hrefBase: string } | 
 function detectMediaPlatform(url?: string | null): MediaPlatform {
   const value = String(url || "").toLowerCase();
   if (!value) return "unknown";
-  if (value.includes("youtube.com") || value.includes("youtu.be")) return "youtube";
+  if (value.includes("youtube.com") || value.includes("youtu.be"))
+    return "youtube";
   if (value.includes("instagram.com")) return "instagram";
   if (value.includes("tiktok.com")) return "tiktok";
   return "unknown";
@@ -353,14 +369,12 @@ function getYoutubeVideoId(url?: string | null): string {
 
 function getYoutubePreviewImage(url?: string | null): string {
   const id = getYoutubeVideoId(url);
-  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "";
+  return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : "";
 }
 
-function getMediaPreviewImage(url?: string | null): string {
-  const platform = detectMediaPlatform(url);
-  if (platform === "youtube") return getYoutubePreviewImage(url);
-  if (isDirectVideoUrl(url)) return String(url || "").trim();
-  return "";
+function getYoutubeFallbackPreviewImage(url?: string | null): string {
+  const id = getYoutubeVideoId(url);
+  return id ? `https://img.youtube.com/vi/${id}/sddefault.jpg` : "";
 }
 
 function getYoutubeEmbedUrl(url?: string | null): string {
@@ -433,8 +447,11 @@ function getEmbedUrl(kind: VisualMediaKind, url?: string | null): string {
 
   return "";
 }
+
 function isDirectVideoUrl(url?: string | null): boolean {
-  const value = String(url || "").toLowerCase().trim();
+  const value = String(url || "")
+    .toLowerCase()
+    .trim();
   if (!value) return false;
   return /(\.mp4|\.webm|\.mov|\.m4v|\.ogg)(\?|#|$)/.test(value);
 }
@@ -443,7 +460,17 @@ function isPlayableVideoUrl(url?: string | null): boolean {
   return Boolean(getEmbedUrl("video", url) || isDirectVideoUrl(url));
 }
 
-function getMediaPoster(item: { img?: string; mediaUrl?: string; kind?: VisualMediaKind }): string | undefined {
+function getMediaPreviewImage(url?: string | null): string {
+  const platform = detectMediaPlatform(url);
+  if (platform === "youtube") return getYoutubePreviewImage(url);
+  if (isDirectVideoUrl(url)) return String(url || "").trim();
+  return "";
+}
+
+function getMediaPoster(item: {
+  img?: string;
+  mediaUrl?: string;
+}): string | undefined {
   if (item.img && !isDirectVideoUrl(item.img)) return item.img;
   const derivedPreview = getMediaPreviewImage(item.mediaUrl);
   if (derivedPreview) return derivedPreview;
@@ -451,58 +478,14 @@ function getMediaPoster(item: { img?: string; mediaUrl?: string; kind?: VisualMe
   return undefined;
 }
 
-
-function buildVisualItems(
-  items: TuningItem[],
-  kind: VisualMediaKind,
-  fallback: TuningItem[]
-): VisualMediaItem[] {
-  const source = items.length > 0 ? items : fallback;
-
-  return source.map((item, index) => {
-    const mediaUrl =
-      kind === "video" ? item.videoUrl : kind === "reel" ? item.reelUrl : "";
-    const platform = detectMediaPlatform(mediaUrl);
-    const embedUrl = getEmbedUrl(kind, mediaUrl);
-    const previewImage =
-      kind === "photo"
-        ? ""
-        : getMediaPreviewImage(mediaUrl) || item.img || item.galleryUrls?.[0] || "";
-
-    return {
-      id: `${kind}-${item.id || index}`,
-      title: item.title,
-      subtitle:
-        item.excerpt ||
-        (kind === "photo"
-          ? "Frames con fuerza visual, detalle y actitud."
-          : kind === "video"
-          ? "Cortes con movimiento, atmósfera y presencia."
-          : "Formato corto con impacto inmediato y energía visual."),
-      img:
-        kind === "photo"
-          ? item.img || item.galleryUrls?.[0] || "/images/noticia-2.jpg"
-          : previewImage || "/images/noticia-2.jpg",
-      href: item.href || "/tuning",
-      when: item.when || "",
-      kind,
-      mediaUrl,
-      embedUrl,
-      platform,
-    };
-  });
-}
-
 function getKindLabel(kind: VisualMediaKind) {
   if (kind === "photo") return "Fotos";
-  if (kind === "video") return "Video";
-  return "Formato corto";
+  return "Video";
 }
 
 function getKindAccent(kind: VisualMediaKind) {
   if (kind === "photo") return "bg-[#0CE0B2]";
-  if (kind === "video") return "bg-[#FF7A1A]";
-  return "bg-[#A3FF12]";
+  return "bg-[#FF7A1A]";
 }
 
 function getKindBorder(_kind: VisualMediaKind) {
@@ -511,14 +494,26 @@ function getKindBorder(_kind: VisualMediaKind) {
 
 function getPlayGlow(kind: VisualMediaKind) {
   if (kind === "photo") return "shadow-[0_0_18px_rgba(12,224,178,.35)]";
-  if (kind === "video") return "shadow-[0_0_18px_rgba(255,122,26,.35)]";
-  return "shadow-[0_0_18px_rgba(163,255,18,.28)]";
+  return "shadow-[0_0_18px_rgba(255,122,26,.35)]";
 }
 
 function uniqueStrings(values: string[]) {
   return Array.from(
-    new Set(values.filter(Boolean).map((v) => String(v).trim()).filter(Boolean))
+    new Set(
+      values
+        .filter(Boolean)
+        .map((v) => String(v).trim())
+        .filter(Boolean),
+    ),
   );
+}
+
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
 }
 
 function normalizeGalleryEntry(raw: any): PhotoGalleryEntry {
@@ -540,14 +535,18 @@ function normalizeGalleryEntry(raw: any): PhotoGalleryEntry {
   };
 }
 
-function normalizeMediaEntry(raw: any, kind: Exclude<VisualMediaKind, "photo">): MediaEntry {
-  const mediaUrl = String(raw?.mediaUrl || raw?.videoUrl || raw?.reelUrl || raw?.sourceUrl || raw?.href || "").trim();
-  const cover = String(raw?.coverImageUrl || raw?.img || raw?.previewImageUrl || "").trim();
+function normalizeMediaEntry(raw: any): MediaEntry {
+  const mediaUrl = String(
+    raw?.mediaUrl || raw?.videoUrl || raw?.sourceUrl || raw?.href || "",
+  ).trim();
+  const cover = String(
+    raw?.coverImageUrl || raw?.img || raw?.previewImageUrl || "",
+  ).trim();
   const derivedPreview = getMediaPreviewImage(mediaUrl);
 
   return {
-    id: String(raw?.id || `${kind}-${Date.now()}`),
-    title: String(raw?.title || (kind === "video" ? "Nuevo video" : "Nuevo formato corto")),
+    id: String(raw?.id || `video-${Date.now()}`),
+    title: String(raw?.title || "Nuevo video"),
     subtitle: String(raw?.subtitle || raw?.excerpt || ""),
     coverImageUrl: cover || derivedPreview || "",
     mediaUrl,
@@ -557,7 +556,7 @@ function normalizeMediaEntry(raw: any, kind: Exclude<VisualMediaKind, "photo">):
 
 function sanitizeTuningSettings(
   raw?: any,
-  fallbackHero = "/images/noticia-2.jpg"
+  fallbackHero = "/images/noticia-2.jpg",
 ): TuningPageSettings {
   return {
     heroImageUrl:
@@ -586,27 +585,33 @@ function sanitizeTuningSettings(
       ? raw.photoGalleries.map(normalizeGalleryEntry)
       : [],
     videoEntries: Array.isArray(raw?.videoEntries)
-      ? raw.videoEntries.map((entry: any) => normalizeMediaEntry(entry, "video"))
-      : [],
+      ? raw.videoEntries.map((entry: any) => normalizeMediaEntry(entry))
+      : Array.isArray(raw?.videos)
+        ? raw.videos.map((entry: any) => normalizeMediaEntry(entry))
+        : [],
     reelEntries: Array.isArray(raw?.reelEntries)
-      ? raw.reelEntries.map((entry: any) => normalizeMediaEntry(entry, "reel"))
+      ? raw.reelEntries.map((entry: any) => normalizeMediaEntry(entry))
       : [],
   };
 }
 
 function sanitizeSectionHeroImages(
-  raw?: Partial<SectionHeroImages>
+  raw?: Partial<SectionHeroImages>,
 ): SectionHeroImages {
   return {
-    tuning: String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
+    tuning:
+      String(raw?.tuning || "").trim() || DEFAULT_SECTION_HERO_IMAGES.tuning,
     autos: String(raw?.autos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.autos,
     motos: String(raw?.motos || "").trim() || DEFAULT_SECTION_HERO_IMAGES.motos,
     deportes:
-      String(raw?.deportes || "").trim() || DEFAULT_SECTION_HERO_IMAGES.deportes,
+      String(raw?.deportes || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.deportes,
     lifestyle:
-      String(raw?.lifestyle || "").trim() || DEFAULT_SECTION_HERO_IMAGES.lifestyle,
+      String(raw?.lifestyle || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.lifestyle,
     comunidad:
-      String(raw?.comunidad || "").trim() || DEFAULT_SECTION_HERO_IMAGES.comunidad,
+      String(raw?.comunidad || "").trim() ||
+      DEFAULT_SECTION_HERO_IMAGES.comunidad,
   };
 }
 
@@ -621,8 +626,8 @@ const SectionHeader: React.FC<{
     accent === "cool"
       ? "from-[#0CE0B2] via-[#43A1AD] to-[#E2A24C]"
       : accent === "lime"
-      ? "from-[#A3FF12] via-[#0CE0B2] to-[#FF7A1A]"
-      : "from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]";
+        ? "from-[#A3FF12] via-[#0CE0B2] to-[#FF7A1A]"
+        : "from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]";
 
   return (
     <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
@@ -633,7 +638,9 @@ const SectionHeader: React.FC<{
         <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl">
           {title}
         </h2>
-        <div className={`mt-3 h-1 w-28 rounded-full bg-gradient-to-r ${lineClass}`} />
+        <div
+          className={`mt-3 h-1 w-28 rounded-full bg-gradient-to-r ${lineClass}`}
+        />
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
           {description}
         </p>
@@ -797,12 +804,13 @@ function ExploreCard({
   );
 }
 
-
 function PhotoGalleryEditorModal({
   draft,
   setDraft,
   onClose,
   onSave,
+  onDelete,
+  canDelete,
   onUploadCover,
   onUploadImages,
   onRemoveImage,
@@ -813,6 +821,8 @@ function PhotoGalleryEditorModal({
   setDraft: React.Dispatch<React.SetStateAction<PhotoGalleryEntry | null>>;
   onClose: () => void;
   onSave: () => void;
+  onDelete: () => void;
+  canDelete: boolean;
   onUploadCover: (files?: FileList | null) => void;
   onUploadImages: (files?: FileList | null) => void;
   onRemoveImage: (url: string) => void;
@@ -825,7 +835,7 @@ function PhotoGalleryEditorModal({
   if (!draft) return null;
 
   return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[85] flex items-center justify-center p-2 sm:p-4">
       <button
         type="button"
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -833,8 +843,8 @@ function PhotoGalleryEditorModal({
         aria-label="Cerrar editor de galería"
       />
 
-      <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-[28px] border border-white/10 bg-[#071412]/95 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
+      <div className="relative z-10 flex max-h-[calc(100dvh-1rem)] w-full max-w-[min(1180px,calc(100vw-1rem))] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#071412]/95 shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
           <div>
             <div className="text-[11px] uppercase tracking-[0.22em] text-[#0CE0B2]">
               Editor de galería
@@ -850,7 +860,13 @@ function PhotoGalleryEditorModal({
             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
             aria-label="Cerrar editor"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
               <path
                 d="M6 6l12 12M18 6l-12 12"
                 stroke="currentColor"
@@ -861,9 +877,9 @@ function PhotoGalleryEditorModal({
           </button>
         </div>
 
-        <div className="grid gap-0 lg:grid-cols-[1.2fr_.8fr]">
-          <div className="border-b border-white/10 lg:border-b-0 lg:border-r">
-            <div className="relative aspect-[16/10] bg-black">
+        <div className="grid min-h-0 flex-1 gap-0 overflow-y-auto lg:grid-cols-[1.15fr_.85fr]">
+          <div className="min-h-0 border-b border-white/10 lg:border-b-0 lg:border-r">
+            <div className="relative aspect-[16/10] max-h-[46vh] bg-black lg:max-h-[52vh]">
               <img
                 src={
                   draft.coverImageUrl ||
@@ -922,7 +938,7 @@ function PhotoGalleryEditorModal({
                   Galería
                 </p>
 
-                <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                <div className="mt-3 grid max-h-[36vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:max-h-[34vh]">
                   {draft.galleryUrls?.map((url) => {
                     const isCover = url === draft.coverImageUrl;
                     return (
@@ -930,7 +946,7 @@ function PhotoGalleryEditorModal({
                         key={url}
                         className="overflow-hidden rounded-2xl border border-white/10 bg-black/20"
                       >
-                        <div className="relative aspect-[4/5]">
+                        <div className="relative aspect-square">
                           <img
                             src={url}
                             alt={draft.title}
@@ -967,7 +983,7 @@ function PhotoGalleryEditorModal({
             </div>
           </div>
 
-          <div className="p-4 sm:p-6">
+          <div className="min-h-0 p-4 sm:p-6">
             <div className="space-y-4">
               <div>
                 <label className="mb-2 block text-[11px] uppercase tracking-[0.2em] text-gray-400">
@@ -977,7 +993,7 @@ function PhotoGalleryEditorModal({
                   value={draft.title}
                   onChange={(e) =>
                     setDraft((prev) =>
-                      prev ? { ...prev, title: e.target.value } : prev
+                      prev ? { ...prev, title: e.target.value } : prev,
                     )
                   }
                   className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-[#0CE0B2]/50"
@@ -992,7 +1008,7 @@ function PhotoGalleryEditorModal({
                   value={draft.when}
                   onChange={(e) =>
                     setDraft((prev) =>
-                      prev ? { ...prev, when: e.target.value } : prev
+                      prev ? { ...prev, when: e.target.value } : prev,
                     )
                   }
                   placeholder="07 abr 2026"
@@ -1009,17 +1025,27 @@ function PhotoGalleryEditorModal({
                   value={draft.subtitle}
                   onChange={(e) =>
                     setDraft((prev) =>
-                      prev ? { ...prev, subtitle: e.target.value } : prev
+                      prev ? { ...prev, subtitle: e.target.value } : prev,
                     )
                   }
                   className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none transition focus:border-[#0CE0B2]/50"
                 />
               </div>
 
-              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap">
                 <Button variant="pink" onClick={onSave} disabled={saving}>
                   {saving ? "Guardando..." : "Guardar galería"}
                 </Button>
+
+                {canDelete ? (
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    className="inline-flex items-center justify-center rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-200 transition hover:bg-red-500/15"
+                  >
+                    Eliminar galería
+                  </button>
+                ) : null}
 
                 <button
                   type="button"
@@ -1050,12 +1076,12 @@ export default function TuningPage({
   sectionHeroImages?: SectionHeroImages;
   latestItems?: LatestArticleData[];
 }) {
-  const { t } = useTranslation("home");
   const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeMedia, setActiveMedia] = useState<VisualMediaItem | null>(null);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   const [canEditTuning, setCanEditTuning] = useState(false);
   const [spectatorMode, setSpectatorMode] = useState(false);
@@ -1063,25 +1089,21 @@ export default function TuningPage({
     sanitizeTuningSettings(
       initialTuningSettings || DEFAULT_TUNING_SETTINGS,
       initialTuningSettings?.heroImageUrl ||
-        DEFAULT_TUNING_SETTINGS.heroImageUrl
-    )
+        DEFAULT_TUNING_SETTINGS.heroImageUrl,
+    ),
   );
   const [savingTuning, setSavingTuning] = useState(false);
   const [tuningError, setTuningError] = useState<string | null>(null);
 
-  const [editingGallery, setEditingGallery] = useState<PhotoGalleryEntry | null>(
-    null
-  );
+  const [editingGallery, setEditingGallery] =
+    useState<PhotoGalleryEntry | null>(null);
   const [editingVideo, setEditingVideo] = useState<MediaEntry | null>(null);
-  const [editingReel, setEditingReel] = useState<MediaEntry | null>(null);
 
   const heroInputRef = useRef<HTMLInputElement | null>(null);
   const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
   const videoCoverInputRef = useRef<HTMLInputElement | null>(null);
   const videoFileInputRef = useRef<HTMLInputElement | null>(null);
-  const reelCoverInputRef = useRef<HTMLInputElement | null>(null);
-  const reelFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const featured = tuningItems[0] || null;
 
@@ -1109,8 +1131,10 @@ export default function TuningPage({
         ]),
         editableGalleryId: gallery.id,
       })),
-    [tuningSettings.photoGalleries]
+    [tuningSettings.photoGalleries],
   );
+
+  const photoGroups = useMemo(() => chunkItems(photoItems, 5), [photoItems]);
 
   const videoItems = useMemo<VisualMediaItem[]>(
     () =>
@@ -1131,43 +1155,23 @@ export default function TuningPage({
           embedUrl: getEmbedUrl("video", entry.mediaUrl),
           platform: detectMediaPlatform(entry.mediaUrl),
         })),
-    [tuningSettings.videoEntries]
-  );
-
-  const reelItems = useMemo<VisualMediaItem[]>(
-    () =>
-      (tuningSettings.reelEntries || [])
-        .filter((entry) => String(entry.mediaUrl || "").trim())
-        .map((entry) => ({
-          id: entry.id,
-          title: entry.title,
-          subtitle: entry.subtitle,
-          img:
-            entry.coverImageUrl ||
-            getMediaPreviewImage(entry.mediaUrl) ||
-            "/images/noticia-2.jpg",
-          href: "/tuning",
-          when: entry.when,
-          kind: "reel" as const,
-          mediaUrl: entry.mediaUrl,
-          embedUrl: getEmbedUrl("reel", entry.mediaUrl),
-          platform: detectMediaPlatform(entry.mediaUrl),
-        })),
-    [tuningSettings.reelEntries]
+    [tuningSettings.videoEntries],
   );
 
   const mainTuningItems = useMemo(() => tuningItems.slice(0, 5), [tuningItems]);
 
   const tuningDesktopColumns = useMemo(
     () => splitFiveItemLayout(mainTuningItems),
-    [mainTuningItems]
+    [mainTuningItems],
   );
 
   const activePhotoGalleryUrls = useMemo(() => {
     if (!activeMedia || activeMedia.kind !== "photo") return [];
     const gallery = uniqueStrings([
       activeMedia.img,
-      ...(Array.isArray(activeMedia.galleryUrls) ? activeMedia.galleryUrls : []),
+      ...(Array.isArray(activeMedia.galleryUrls)
+        ? activeMedia.galleryUrls
+        : []),
     ]);
     return gallery.length > 0 ? gallery : [activeMedia.img];
   }, [activeMedia]);
@@ -1181,16 +1185,24 @@ export default function TuningPage({
 
   useEffect(() => {
     document.body.style.overflow =
-      mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel ? "hidden" : "";
+      mobileOpen ||
+      !!activeMedia ||
+      !!editingGallery ||
+      !!editingVideo ||
+      !!fullscreenImage
+        ? "hidden"
+        : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [mobileOpen, activeMedia, editingGallery, editingVideo, editingReel]);
+  }, [mobileOpen, activeMedia, editingGallery, editingVideo, fullscreenImage]);
 
   useEffect(() => {
     setMobileOpen(false);
     setActiveMedia(null);
     setEditingGallery(null);
+    setEditingVideo(null);
+    setFullscreenImage(null);
   }, [router.asPath]);
 
   useEffect(() => {
@@ -1221,8 +1233,8 @@ export default function TuningPage({
       sanitizeTuningSettings(
         initialTuningSettings || DEFAULT_TUNING_SETTINGS,
         initialTuningSettings?.heroImageUrl ||
-          DEFAULT_TUNING_SETTINGS.heroImageUrl
-      )
+          DEFAULT_TUNING_SETTINGS.heroImageUrl,
+      ),
     );
   }, [initialTuningSettings]);
 
@@ -1231,34 +1243,234 @@ export default function TuningPage({
   }, [activeMedia?.id]);
 
   const editControlsVisible = canEditTuning && !spectatorMode;
+  const canDeleteEditingGallery = Boolean(
+    editingGallery &&
+    tuningSettings.photoGalleries.some((g) => g.id === editingGallery.id),
+  );
 
   const streaks: Streak[] = useMemo(
     () => [
-      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
-      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
-      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
-      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
-      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
-      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
-      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
-      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
-      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
-      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
-      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
-      { top: "6%", left: "-38%", v: "cool", dir: "rev", delay: "0.6s", dur: "14s", op: 0.55, h: "1px" },
-      { top: "18%", left: "-33%", v: "warm", dir: "fwd", delay: "1.2s", dur: "12.8s", op: 0.55, h: "1px" },
-      { top: "22%", left: "-27%", v: "lime", dir: "rev", delay: "1.8s", dur: "10.8s", op: 0.5, h: "1px" },
-      { top: "34%", left: "-31%", v: "cool", dir: "fwd", delay: "2.4s", dur: "13.6s", op: 0.58, h: "1px" },
-      { top: "42%", left: "-36%", v: "warm", dir: "rev", delay: "3.0s", dur: "12.2s", op: 0.52, h: "1px" },
-      { top: "58%", left: "-21%", v: "lime", dir: "fwd", delay: "3.6s", dur: "11.8s", op: 0.5, h: "1px" },
-      { top: "66%", left: "-29%", v: "cool", dir: "rev", delay: "4.2s", dur: "14.4s", op: 0.55, h: "1px" },
-      { top: "74%", left: "-19%", v: "warm", dir: "fwd", delay: "4.8s", dur: "12.6s", op: 0.5, h: "1px" },
-      { top: "90%", left: "-25%", v: "lime", dir: "rev", delay: "5.4s", dur: "13.8s", op: 0.52, h: "1px" },
-      { top: "14%", left: "-32%", v: "cool", dir: "fwd", delay: ".2s", dur: "11.4s", op: 0.92, h: "3px" },
-      { top: "48%", left: "-35%", v: "warm", dir: "rev", delay: "2.9s", dur: "10.6s", op: 0.88, h: "3px" },
-      { top: "82%", left: "-28%", v: "lime", dir: "fwd", delay: "5.3s", dur: "12.4s", op: 0.86, h: "3px" },
+      {
+        top: "8%",
+        left: "-35%",
+        v: "cool",
+        dir: "fwd",
+        delay: "0s",
+        dur: "12s",
+        op: 0.85,
+      },
+      {
+        top: "12%",
+        left: "-28%",
+        v: "warm",
+        dir: "rev",
+        delay: ".4s",
+        dur: "10.5s",
+        op: 0.75,
+      },
+      {
+        top: "20%",
+        left: "-36%",
+        v: "lime",
+        dir: "fwd",
+        delay: "1.0s",
+        dur: "13s",
+        op: 0.8,
+      },
+      {
+        top: "28%",
+        left: "-22%",
+        v: "cool",
+        dir: "rev",
+        delay: "1.6s",
+        dur: "9.5s",
+        op: 0.9,
+      },
+      {
+        top: "36%",
+        left: "-40%",
+        v: "warm",
+        dir: "fwd",
+        delay: "2.1s",
+        dur: "11.5s",
+        op: 0.7,
+      },
+      {
+        top: "44%",
+        left: "-30%",
+        v: "cool",
+        dir: "rev",
+        delay: "2.7s",
+        dur: "12.5s",
+        op: 0.85,
+      },
+      {
+        top: "52%",
+        left: "-26%",
+        v: "warm",
+        dir: "fwd",
+        delay: "3.2s",
+        dur: "10.2s",
+        op: 0.8,
+      },
+      {
+        top: "60%",
+        left: "-18%",
+        v: "lime",
+        dir: "rev",
+        delay: "3.8s",
+        dur: "12.2s",
+        op: 0.75,
+      },
+      {
+        top: "68%",
+        left: "-34%",
+        v: "cool",
+        dir: "fwd",
+        delay: "4.4s",
+        dur: "11.2s",
+        op: 0.85,
+      },
+      {
+        top: "76%",
+        left: "-24%",
+        v: "warm",
+        dir: "rev",
+        delay: "5.0s",
+        dur: "9.8s",
+        op: 0.72,
+      },
+      {
+        top: "84%",
+        left: "-20%",
+        v: "cool",
+        dir: "fwd",
+        delay: "5.6s",
+        dur: "13.2s",
+        op: 0.82,
+      },
+      {
+        top: "6%",
+        left: "-38%",
+        v: "cool",
+        dir: "rev",
+        delay: "0.6s",
+        dur: "14s",
+        op: 0.55,
+        h: "1px",
+      },
+      {
+        top: "18%",
+        left: "-33%",
+        v: "warm",
+        dir: "fwd",
+        delay: "1.2s",
+        dur: "12.8s",
+        op: 0.55,
+        h: "1px",
+      },
+      {
+        top: "22%",
+        left: "-27%",
+        v: "lime",
+        dir: "rev",
+        delay: "1.8s",
+        dur: "10.8s",
+        op: 0.5,
+        h: "1px",
+      },
+      {
+        top: "34%",
+        left: "-31%",
+        v: "cool",
+        dir: "fwd",
+        delay: "2.4s",
+        dur: "13.6s",
+        op: 0.58,
+        h: "1px",
+      },
+      {
+        top: "42%",
+        left: "-36%",
+        v: "warm",
+        dir: "rev",
+        delay: "3.0s",
+        dur: "12.2s",
+        op: 0.52,
+        h: "1px",
+      },
+      {
+        top: "58%",
+        left: "-21%",
+        v: "lime",
+        dir: "fwd",
+        delay: "3.6s",
+        dur: "11.8s",
+        op: 0.5,
+        h: "1px",
+      },
+      {
+        top: "66%",
+        left: "-29%",
+        v: "cool",
+        dir: "rev",
+        delay: "4.2s",
+        dur: "14.4s",
+        op: 0.55,
+        h: "1px",
+      },
+      {
+        top: "74%",
+        left: "-19%",
+        v: "warm",
+        dir: "fwd",
+        delay: "4.8s",
+        dur: "12.6s",
+        op: 0.5,
+        h: "1px",
+      },
+      {
+        top: "90%",
+        left: "-25%",
+        v: "lime",
+        dir: "rev",
+        delay: "5.4s",
+        dur: "13.8s",
+        op: 0.52,
+        h: "1px",
+      },
+      {
+        top: "14%",
+        left: "-32%",
+        v: "cool",
+        dir: "fwd",
+        delay: ".2s",
+        dur: "11.4s",
+        op: 0.92,
+        h: "3px",
+      },
+      {
+        top: "48%",
+        left: "-35%",
+        v: "warm",
+        dir: "rev",
+        delay: "2.9s",
+        dur: "10.6s",
+        op: 0.88,
+        h: "3px",
+      },
+      {
+        top: "82%",
+        left: "-28%",
+        v: "lime",
+        dir: "fwd",
+        delay: "5.3s",
+        dur: "12.4s",
+        op: 0.86,
+        h: "3px",
+      },
     ],
-    []
+    [],
   );
 
   async function persistTuningSettings(nextSettings: TuningPageSettings) {
@@ -1266,6 +1478,11 @@ export default function TuningPage({
     setTuningError(null);
 
     try {
+      const cleanSettings = sanitizeTuningSettings(
+        nextSettings,
+        nextSettings.heroImageUrl || DEFAULT_TUNING_SETTINGS.heroImageUrl,
+      );
+
       const res = await fetch("/api/ai/admin/home/save", {
         method: "POST",
         credentials: "same-origin",
@@ -1274,7 +1491,7 @@ export default function TuningPage({
         },
         body: JSON.stringify({
           pageKey: "tuning",
-          settings: nextSettings,
+          settings: cleanSettings,
         }),
       });
 
@@ -1283,12 +1500,7 @@ export default function TuningPage({
         throw new Error(data?.error || "No se pudo guardar.");
       }
 
-      setTuningSettings(
-        sanitizeTuningSettings(
-          nextSettings,
-          nextSettings.heroImageUrl || DEFAULT_TUNING_SETTINGS.heroImageUrl
-        )
-      );
+      setTuningSettings(cleanSettings);
     } catch (err: any) {
       setTuningError(err?.message || "No se pudo guardar Tuning Settings.");
     } finally {
@@ -1398,7 +1610,7 @@ export default function TuningPage({
         query: nextQuery,
       },
       undefined,
-      { shallow: true }
+      { shallow: true },
     );
   }
 
@@ -1417,7 +1629,7 @@ export default function TuningPage({
           coverImageUrl: "/images/noticia-2.jpg",
           galleryUrls: ["/images/noticia-2.jpg"],
           when: "",
-        })
+        }),
       );
       return;
     }
@@ -1430,7 +1642,7 @@ export default function TuningPage({
         coverImageUrl: item.img,
         galleryUrls: item.galleryUrls || [item.img],
         when: item.when,
-      })
+      }),
     );
   }
 
@@ -1445,13 +1657,35 @@ export default function TuningPage({
       ...tuningSettings,
       photoGalleries: exists
         ? currentGalleries.map((gallery) =>
-            gallery.id === normalized.id ? normalized : gallery
+            gallery.id === normalized.id ? normalized : gallery,
           )
         : [normalized, ...currentGalleries],
     };
 
     await persistTuningSettings(nextSettings);
     setEditingGallery(null);
+  }
+
+  async function deleteGalleryDraft() {
+    if (!editingGallery) return;
+
+    const ok =
+      typeof window !== "undefined"
+        ? window.confirm("¿Seguro que quieres eliminar esta galería?")
+        : false;
+
+    if (!ok) return;
+
+    const nextSettings: TuningPageSettings = {
+      ...tuningSettings,
+      photoGalleries: (tuningSettings.photoGalleries || []).filter(
+        (gallery) => gallery.id !== editingGallery.id,
+      ),
+    };
+
+    await persistTuningSettings(nextSettings);
+    setEditingGallery(null);
+    setActiveMedia(null);
   }
 
   async function uploadGalleryCover(files?: FileList | null) {
@@ -1462,7 +1696,10 @@ export default function TuningPage({
       const uploaded = await uploadImageToSanity(file);
       setEditingGallery((prev) => {
         if (!prev) return prev;
-        const nextGalleryUrls = uniqueStrings([uploaded.url, ...(prev.galleryUrls || [])]);
+        const nextGalleryUrls = uniqueStrings([
+          uploaded.url,
+          ...(prev.galleryUrls || []),
+        ]);
         return {
           ...prev,
           coverImageUrl: uploaded.url,
@@ -1471,7 +1708,7 @@ export default function TuningPage({
       });
     } catch (err: any) {
       setTuningError(
-        err?.message || "No se pudo subir la portada de la galería."
+        err?.message || "No se pudo subir la portada de la galería.",
       );
     }
   }
@@ -1501,13 +1738,15 @@ export default function TuningPage({
       });
     } catch (err: any) {
       setTuningError(
-        err?.message || "No se pudieron subir las fotos de la galería."
+        err?.message || "No se pudieron subir las fotos de la galería.",
       );
     }
   }
 
   function setGalleryCover(url: string) {
-    setEditingGallery((prev) => (prev ? { ...prev, coverImageUrl: url } : prev));
+    setEditingGallery((prev) =>
+      prev ? { ...prev, coverImageUrl: url } : prev,
+    );
   }
 
   function removeGalleryImage(url: string) {
@@ -1515,11 +1754,11 @@ export default function TuningPage({
       if (!prev) return prev;
       const nextGalleryUrls = prev.galleryUrls.filter((item) => item !== url);
       const safeGalleryUrls =
-        nextGalleryUrls.length > 0 ? nextGalleryUrls : ["/images/noticia-2.jpg"];
+        nextGalleryUrls.length > 0
+          ? nextGalleryUrls
+          : ["/images/noticia-2.jpg"];
       const nextCover =
-        prev.coverImageUrl === url
-          ? safeGalleryUrls[0]
-          : prev.coverImageUrl;
+        prev.coverImageUrl === url ? safeGalleryUrls[0] : prev.coverImageUrl;
 
       return {
         ...prev,
@@ -1529,7 +1768,7 @@ export default function TuningPage({
     });
   }
 
-  function openMediaEditor(kind: "video" | "reel", item?: VisualMediaItem) {
+  function openVideoEditor(item?: VisualMediaItem) {
     const source = item
       ? normalizeMediaEntry({
           id: item.id,
@@ -1538,90 +1777,122 @@ export default function TuningPage({
           coverImageUrl: item.img,
           mediaUrl: item.mediaUrl,
           when: item.when,
-        }, kind)
+        })
       : normalizeMediaEntry({
-          id: `${kind}-${Date.now()}`,
-          title: kind === "video" ? "Nuevo video" : "Nuevo formato corto",
+          id: `video-${Date.now()}`,
+          title: "Nuevo video",
           subtitle: "",
           coverImageUrl: "",
           mediaUrl: "",
           when: "",
-        }, kind);
+        });
 
-    if (kind === "video") setEditingVideo(source);
-    else setEditingReel(source);
+    setEditingVideo(source);
   }
 
-  async function saveMediaDraft(kind: "video" | "reel") {
-    const editingItem = kind === "video" ? editingVideo : editingReel;
-    if (!editingItem) return;
+  async function saveVideoDraft() {
+    if (!editingVideo) return;
 
-    const normalized = normalizeMediaEntry(editingItem, kind);
-    const key = kind === "video" ? "videoEntries" : "reelEntries";
-    const currentEntries = (tuningSettings[key] || []) as MediaEntry[];
+    const normalized = normalizeMediaEntry(editingVideo);
+    if (!String(normalized.mediaUrl || "").trim()) {
+      setTuningError(
+        "Agrega un link o sube un archivo de video antes de guardar.",
+      );
+      return;
+    }
+
+    setTuningError(null);
+    const currentEntries = tuningSettings.videoEntries || [];
     const exists = currentEntries.some((entry) => entry.id === normalized.id);
 
     const nextSettings: TuningPageSettings = {
       ...tuningSettings,
-      [key]: exists
-        ? currentEntries.map((entry) => (entry.id === normalized.id ? normalized : entry))
+      videoEntries: exists
+        ? currentEntries.map((entry) =>
+            entry.id === normalized.id ? normalized : entry,
+          )
         : [normalized, ...currentEntries],
     };
 
     await persistTuningSettings(nextSettings);
-    if (kind === "video") setEditingVideo(null);
-    else setEditingReel(null);
+    setEditingVideo(null);
   }
 
-  async function uploadMediaFile(kind: "video" | "reel", files?: FileList | null) {
+  async function uploadVideoFile(files?: FileList | null) {
     const file = files?.[0];
-    const editingItem = kind === "video" ? editingVideo : editingReel;
-    if (!file || !editingItem) return;
+    if (!file || !editingVideo) return;
 
     try {
       const uploaded = await uploadMediaToSanity(file);
-      updateEditingMedia(kind, (prev) => ({
-        ...prev,
-        mediaUrl: uploaded.url,
-        coverImageUrl: prev.coverImageUrl?.trim()
-          ? prev.coverImageUrl
-          : getMediaPreviewImage(uploaded.url),
-      }));
+      setEditingVideo((prev) =>
+        prev
+          ? {
+              ...prev,
+              mediaUrl: uploaded.url,
+              coverImageUrl: prev.coverImageUrl?.trim()
+                ? prev.coverImageUrl
+                : getMediaPreviewImage(uploaded.url),
+            }
+          : prev,
+      );
     } catch (err: any) {
-      setTuningError(err?.message || `No se pudo subir el ${kind}.`);
+      setTuningError(err?.message || "No se pudo subir el video.");
     }
   }
 
-  async function uploadMediaCover(kind: "video" | "reel", files?: FileList | null) {
+  async function uploadVideoCover(files?: FileList | null) {
     const file = files?.[0];
-    const editingItem = kind === "video" ? editingVideo : editingReel;
-    if (!file || !editingItem) return;
+    if (!file || !editingVideo) return;
 
     try {
       const uploaded = await uploadImageToSanity(file);
-      updateEditingMedia(kind, (prev) => ({ ...prev, coverImageUrl: uploaded.url }));
+      setEditingVideo((prev) =>
+        prev ? { ...prev, coverImageUrl: uploaded.url } : prev,
+      );
     } catch (err: any) {
       setTuningError(err?.message || "No se pudo subir la portada del video.");
     }
   }
 
-  async function removeMediaEntry(kind: "video" | "reel", id: string) {
-    const key = kind === "video" ? "videoEntries" : "reelEntries";
+  async function removeVideoEntry(id: string) {
+    const ok =
+      typeof window !== "undefined"
+        ? window.confirm("¿Seguro que quieres eliminar este video?")
+        : false;
+
+    if (!ok) return;
+
     const nextSettings: TuningPageSettings = {
       ...tuningSettings,
-      [key]: ((tuningSettings[key] || []) as MediaEntry[]).filter((entry) => entry.id !== id),
+      videoEntries: (tuningSettings.videoEntries || []).filter(
+        (entry) => entry.id !== id,
+      ),
     };
 
     await persistTuningSettings(nextSettings);
-    if (kind === "video") setEditingVideo(null);
-    else setEditingReel(null);
+    setEditingVideo(null);
+    setActiveMedia(null);
   }
 
-  function renderMediaVisual(item: VisualMediaItem, _sizes: string, className = "") {
+  function renderMediaVisual(item: VisualMediaItem, className = "") {
     const poster = getMediaPoster(item);
+    const fallbackPoster = getYoutubeFallbackPreviewImage(item.mediaUrl);
 
     if (poster) {
-      return <img src={poster} alt={item.title} className={className} />;
+      return (
+        <img
+          src={poster}
+          alt={item.title}
+          className={className}
+          loading="eager"
+          decoding="async"
+          onError={(e) => {
+            if (fallbackPoster && e.currentTarget.src !== fallbackPoster) {
+              e.currentTarget.src = fallbackPoster;
+            }
+          }}
+        />
+      );
     }
 
     if (item.mediaUrl && isDirectVideoUrl(item.mediaUrl)) {
@@ -1636,106 +1907,226 @@ export default function TuningPage({
       );
     }
 
-    return <img src={item.img} alt={item.title} className={className} />;
+    return (
+      <img
+        src={item.img}
+        alt={item.title}
+        className={className}
+        loading="eager"
+        decoding="async"
+        onError={(e) => {
+          if (fallbackPoster && e.currentTarget.src !== fallbackPoster) {
+            e.currentTarget.src = fallbackPoster;
+          }
+        }}
+      />
+    );
   }
 
-    function updateEditingMedia(kind: "video" | "reel", updater: (prev: MediaEntry) => MediaEntry) {
-    if (kind === "video") {
-      setEditingVideo((prev) => (prev ? updater(prev) : prev));
-      return;
-    }
+  function renderVideoEditor() {
+    if (!editingVideo) return null;
 
-    setEditingReel((prev) => (prev ? updater(prev) : prev));
-  }
-
-  function closeMediaEditor(kind: "video" | "reel") {
-    if (kind === "video") setEditingVideo(null);
-    else setEditingReel(null);
-  }
-
-  function renderMediaEditor(kind: "video" | "reel") {
-    const editingItem = kind === "video" ? editingVideo : editingReel;
-    const coverRef = kind === "video" ? videoCoverInputRef : reelCoverInputRef;
-    const fileRef = kind === "video" ? videoFileInputRef : reelFileInputRef;
-
-    if (!editingItem) return null;
+    const entryExists = (tuningSettings.videoEntries || []).some(
+      (entry) => entry.id === editingVideo.id,
+    );
+    const previewEmbed = getEmbedUrl("video", editingVideo.mediaUrl);
 
     return (
       <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
-        <div className="w-full max-w-3xl overflow-hidden rounded-[28px] border border-white/10 bg-[#041210] shadow-[0_24px_120px_rgba(0,0,0,.45)]">
+        <div className="w-full max-w-5xl overflow-hidden rounded-[28px] border border-white/10 bg-[#041210] shadow-[0_24px_120px_rgba(0,0,0,.45)]">
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.24em] text-gray-400">
-                {kind === "video" ? "Editor de video" : "Editor de formato corto"}
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
+                Editor de video
               </p>
               <h3 className="mt-1 text-2xl font-semibold text-white">
-                {editingItem.title || (kind === "video" ? "Nuevo video" : "Nuevo formato corto")}
+                {editingVideo.title || "Nuevo video"}
               </h3>
             </div>
-            <button type="button" onClick={() => closeMediaEditor(kind)} className="rounded-full border border-white/10 bg-white/5 p-3 text-white hover:bg-white/10">✕</button>
+            <button
+              type="button"
+              onClick={() => setEditingVideo(null)}
+              className="rounded-full border border-white/10 bg-white/5 p-3 text-white hover:bg-white/10"
+            >
+              ✕
+            </button>
           </div>
 
-          <div className="grid gap-0 lg:grid-cols-[1.1fr_.9fr]">
-            <div className="relative min-h-[320px] overflow-hidden border-b border-white/10 bg-black lg:min-h-[440px] lg:border-b-0 lg:border-r">
-              {editingItem.mediaUrl && isDirectVideoUrl(editingItem.mediaUrl) ? (
+          <div className="grid gap-0 lg:grid-cols-[1.25fr_.95fr]">
+            <div className="relative min-h-[320px] overflow-hidden border-b border-white/10 bg-black lg:min-h-[480px] lg:border-b-0 lg:border-r">
+              {editingVideo.mediaUrl &&
+              isDirectVideoUrl(editingVideo.mediaUrl) ? (
                 <video
-                  src={editingItem.mediaUrl}
-                  poster={getMediaPoster({ img: editingItem.coverImageUrl, mediaUrl: editingItem.mediaUrl, kind })}
+                  src={editingVideo.mediaUrl}
+                  poster={getMediaPoster({
+                    img: editingVideo.coverImageUrl,
+                    mediaUrl: editingVideo.mediaUrl,
+                  })}
                   className="h-full w-full object-cover"
                   controls
                   playsInline
                   preload="metadata"
                 />
-              ) : editingItem.mediaUrl && getEmbedUrl(kind, editingItem.mediaUrl) ? (
+              ) : editingVideo.mediaUrl && previewEmbed ? (
                 <iframe
-                  src={getEmbedUrl(kind, editingItem.mediaUrl)}
-                  title={editingItem.title}
+                  src={previewEmbed}
+                  title={editingVideo.title}
                   className="h-full w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
-              ) : editingItem.coverImageUrl ? (
-                <img src={editingItem.coverImageUrl} alt={editingItem.title} className="h-full w-full object-cover" />
+              ) : editingVideo.coverImageUrl ? (
+                <img
+                  src={editingVideo.coverImageUrl}
+                  alt={editingVideo.title}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">Carga un video o pega el link fuente.</div>
+                <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
+                  Sube un video, una portada o pega el link fuente.
+                </div>
               )}
             </div>
 
             <div className="space-y-4 p-5 sm:p-6">
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Título</span>
-                <input value={editingItem.title} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, title: e.target.value }))} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder={kind === "video" ? "Título del video" : "Título del formato corto"} />
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+                  Título
+                </span>
+                <input
+                  value={editingVideo.title}
+                  onChange={(e) =>
+                    setEditingVideo((prev) =>
+                      prev ? { ...prev, title: e.target.value } : prev,
+                    )
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60"
+                  placeholder="Título del video"
+                />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Descripción</span>
-                <textarea value={editingItem.subtitle} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, subtitle: e.target.value }))} className="min-h-[110px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder="Texto corto editorial" />
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+                  Descripción
+                </span>
+                <textarea
+                  value={editingVideo.subtitle}
+                  onChange={(e) =>
+                    setEditingVideo((prev) =>
+                      prev ? { ...prev, subtitle: e.target.value } : prev,
+                    )
+                  }
+                  className="min-h-[110px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60"
+                  placeholder="Texto corto editorial"
+                />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Link original / fuente</span>
-                <input value={editingItem.mediaUrl} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, mediaUrl: e.target.value, coverImageUrl: prev.coverImageUrl || e.target.value }))} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder="https://..." />
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+                  Link original / fuente
+                </span>
+                <input
+                  value={editingVideo.mediaUrl}
+                  onChange={(e) =>
+                    setEditingVideo((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            mediaUrl: e.target.value,
+                            coverImageUrl:
+                              prev.coverImageUrl ||
+                              getMediaPreviewImage(e.target.value),
+                          }
+                        : prev,
+                    )
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60"
+                  placeholder="https://..."
+                />
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Fecha</span>
-                <input value={editingItem.when} onChange={(e) => updateEditingMedia(kind, (prev) => ({ ...prev, when: e.target.value }))} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60" placeholder="07 abr 2026" />
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+                  Fecha
+                </span>
+                <input
+                  value={editingVideo.when}
+                  onChange={(e) =>
+                    setEditingVideo((prev) =>
+                      prev ? { ...prev, when: e.target.value } : prev,
+                    )
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/60"
+                  placeholder="07 abr 2026"
+                />
               </label>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button type="button" variant="cyan" className="w-full" onClick={() => fileRef.current?.click()}>Subir {kind === "video" ? "video" : "formato corto"}</Button>
-                <Button type="button" variant="pink" className="w-full" onClick={() => coverRef.current?.click()}>Subir portada</Button>
+                <Button
+                  type="button"
+                  variant="cyan"
+                  className="w-full"
+                  onClick={() => videoFileInputRef.current?.click()}
+                >
+                  Subir video
+                </Button>
+                <Button
+                  type="button"
+                  variant="pink"
+                  className="w-full"
+                  onClick={() => videoCoverInputRef.current?.click()}
+                >
+                  Subir portada
+                </Button>
               </div>
 
-              <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={(e) => uploadMediaFile(kind, e.target.files)} />
-              <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={(e) => uploadMediaCover(kind, e.target.files)} />
+              <input
+                ref={videoFileInputRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={(e) => {
+                  void uploadVideoFile(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <input
+                ref={videoCoverInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  void uploadVideoCover(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
 
               <div className="flex flex-col gap-3 pt-2">
-                <Button type="button" variant="cyan" className="w-full" onClick={() => saveMediaDraft(kind)}>Guardar</Button>
-                {((kind === "video" ? tuningSettings.videoEntries : tuningSettings.reelEntries) || []).some((entry) => entry.id === editingItem.id) ? (
-                  <button type="button" onClick={() => removeMediaEntry(kind, editingItem.id)} className="inline-flex w-full items-center justify-center rounded-2xl border border-red-500/25 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/10">Eliminar</button>
+                <Button
+                  type="button"
+                  variant="cyan"
+                  className="w-full"
+                  onClick={saveVideoDraft}
+                  disabled={savingTuning}
+                >
+                  {savingTuning ? "Guardando..." : "Guardar"}
+                </Button>
+                {entryExists ? (
+                  <button
+                    type="button"
+                    onClick={() => removeVideoEntry(editingVideo.id)}
+                    className="inline-flex w-full items-center justify-center rounded-2xl border border-red-500/25 px-5 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/10"
+                  >
+                    Eliminar video
+                  </button>
                 ) : null}
-                <button type="button" onClick={() => closeMediaEditor(kind)} className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/5">Cancelar</button>
+                <button
+                  type="button"
+                  onClick={() => setEditingVideo(null)}
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/5"
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
           </div>
@@ -1857,7 +2248,7 @@ export default function TuningPage({
     <>
       <Seo
         title="Tuning | MotorWelt"
-        description="Builds, mods, street culture, aero, stance y el lado más visual y obsesivo del universo automotriz."
+        description="El lado más visual, radical y obsesivo de la cultura automotriz."
         image={heroImage}
       />
 
@@ -1906,9 +2297,13 @@ export default function TuningPage({
               <span>
                 {spectatorMode ? "Vista espectador" : "Modo edición tuning"}
               </span>
-              {savingTuning && <span className="text-[#0CE0B2]">Guardando…</span>}
+              {savingTuning && (
+                <span className="text-[#0CE0B2]">Guardando…</span>
+              )}
             </div>
-            {tuningError && <div className="mt-1 text-red-300">{tuningError}</div>}
+            {tuningError && (
+              <div className="mt-1 text-red-300">{tuningError}</div>
+            )}
             <button
               type="button"
               onClick={toggleSpectatorMode}
@@ -1946,21 +2341,18 @@ export default function TuningPage({
                 >
                   Tuning
                 </Link>
-
                 <Link
                   href="/noticias/autos"
                   className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
                 >
                   Autos
                 </Link>
-
                 <Link
                   href="/noticias/motos"
                   className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
                 >
                   Motos
                 </Link>
-
                 <Link
                   href="/deportes"
                   className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
@@ -1977,7 +2369,7 @@ export default function TuningPage({
                   href="/comunidad"
                   className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
                 >
-                  {t("nav.community")}
+                  Comunidad
                 </Link>
               </nav>
             </div>
@@ -1988,7 +2380,6 @@ export default function TuningPage({
 
             <div className="flex items-center justify-end gap-2 md:hidden">
               <ProfileButton />
-
               <button
                 onClick={() => setMobileOpen(true)}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-mw-surface/60 backdrop-blur-md hover:bg-white/5 focus:outline-none"
@@ -1996,7 +2387,13 @@ export default function TuningPage({
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
                   <path
                     d="M4 6h16M4 12h16M4 18h16"
                     stroke="currentColor"
@@ -2016,7 +2413,6 @@ export default function TuningPage({
               onClick={() => setMobileOpen(false)}
               aria-hidden
             />
-
             <aside
               id="mobile-menu"
               className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/10 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
@@ -2034,7 +2430,13 @@ export default function TuningPage({
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
                   aria-label="Cerrar menú"
                 >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
                     <path
                       d="M6 6l12 12M18 6l-12 12"
                       stroke="currentColor"
@@ -2053,7 +2455,6 @@ export default function TuningPage({
                 >
                   Tuning
                 </Link>
-
                 <Link
                   href="/noticias/autos"
                   className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
@@ -2061,7 +2462,6 @@ export default function TuningPage({
                 >
                   Autos
                 </Link>
-
                 <Link
                   href="/noticias/motos"
                   className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
@@ -2069,7 +2469,6 @@ export default function TuningPage({
                 >
                   Motos
                 </Link>
-
                 <Link
                   href="/deportes"
                   className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
@@ -2089,7 +2488,7 @@ export default function TuningPage({
                   className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
                   onClick={() => setMobileOpen(false)}
                 >
-                  {t("nav.community")}
+                  Comunidad
                 </Link>
               </nav>
             </aside>
@@ -2102,6 +2501,8 @@ export default function TuningPage({
             setDraft={setEditingGallery}
             onClose={() => setEditingGallery(null)}
             onSave={saveGalleryDraft}
+            onDelete={deleteGalleryDraft}
+            canDelete={canDeleteEditingGallery}
             onUploadCover={uploadGalleryCover}
             onUploadImages={uploadGalleryImages}
             onRemoveImage={removeGalleryImage}
@@ -2110,8 +2511,7 @@ export default function TuningPage({
           />
         )}
 
-        {renderMediaEditor("video")}
-        {renderMediaEditor("reel")}
+        {renderVideoEditor()}
 
         {activeMedia && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5">
@@ -2122,8 +2522,8 @@ export default function TuningPage({
               aria-label="Cerrar preview"
             />
 
-            <div className="relative z-10 w-full max-w-6xl overflow-hidden rounded-[28px] border border-white/10 bg-[#071412]/95 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="relative z-10 flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#071412]/95 shadow-2xl">
+              <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-gray-400">
                     <span
@@ -2150,13 +2550,29 @@ export default function TuningPage({
                     </button>
                   ) : null}
 
+                  {editControlsVisible && activeMedia.kind === "video" ? (
+                    <button
+                      type="button"
+                      onClick={() => openVideoEditor(activeMedia)}
+                      className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                    >
+                      Editar
+                    </button>
+                  ) : null}
+
                   <button
                     type="button"
                     onClick={() => setActiveMedia(null)}
                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10"
                     aria-label="Cerrar preview"
                   >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <svg
+                      width="22"
+                      height="22"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden
+                    >
                       <path
                         d="M6 6l12 12M18 6l-12 12"
                         stroke="currentColor"
@@ -2168,27 +2584,30 @@ export default function TuningPage({
                 </div>
               </div>
 
-              <div
-                className={`grid gap-0 ${
-                  activeMedia.kind === "reel"
-                    ? "lg:grid-cols-[1fr_.78fr]"
-                    : "lg:grid-cols-[1.5fr_.7fr]"
-                }`}
-              >
+              <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[1.5fr_.7fr]">
                 <div className="bg-black">
                   <div
-                    className={`relative ${
-                      activeMedia.kind === "reel" ? "aspect-[4/5]" : "aspect-[16/10]"
-                    }`}
+                    className={
+                      activeMedia.kind === "video"
+                        ? "relative aspect-video w-full bg-black"
+                        : "relative flex min-h-[300px] max-h-[58dvh] bg-black sm:aspect-[16/10] sm:min-h-0 sm:max-h-none"
+                    }
                   >
                     {activeMedia.kind === "photo" ? (
                       <>
-                        <img
-                          src={activePhotoImage}
-                          alt={activeMedia.title}
-                          className="h-full w-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
+                        <button
+                          type="button"
+                          onClick={() => setFullscreenImage(activePhotoImage)}
+                          className="block h-full w-full cursor-zoom-in"
+                          aria-label="Ver foto en pantalla completa"
+                        >
+                          <img
+                            src={activePhotoImage}
+                            alt={activeMedia.title}
+                            className="h-full w-full object-contain sm:object-cover"
+                          />
+                        </button>
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
 
                         {activePhotoGalleryUrls.length > 1 ? (
                           <>
@@ -2198,25 +2617,24 @@ export default function TuningPage({
                                 setActiveGalleryIndex((prev) =>
                                   prev === 0
                                     ? activePhotoGalleryUrls.length - 1
-                                    : prev - 1
+                                    : prev - 1,
                                 )
                               }
-                              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-black/45 px-3 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-black/60"
+                              className="absolute left-4 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/15 bg-black/45 px-3 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-black/60 md:inline-flex"
                               aria-label="Foto anterior"
                             >
                               ‹
                             </button>
-
                             <button
                               type="button"
                               onClick={() =>
                                 setActiveGalleryIndex((prev) =>
                                   prev === activePhotoGalleryUrls.length - 1
                                     ? 0
-                                    : prev + 1
+                                    : prev + 1,
                                 )
                               }
-                              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-white/15 bg-black/45 px-3 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-black/60"
+                              className="absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/15 bg-black/45 px-3 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-black/60 md:inline-flex"
                               aria-label="Foto siguiente"
                             >
                               ›
@@ -2224,32 +2642,12 @@ export default function TuningPage({
                           </>
                         ) : null}
                       </>
-                    ) : activeMedia.kind === "reel" && activeMedia.embedUrl ? (
-                      <div className="flex h-full w-full items-center justify-center bg-black">
-                        <iframe
-                          src={activeMedia.embedUrl}
-                          title={activeMedia.title}
-                          className="h-full w-full max-w-[420px]"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : activeMedia.kind === "reel" && activeMedia.mediaUrl && isDirectVideoUrl(activeMedia.mediaUrl) ? (
-                      <div className="flex h-full w-full items-center justify-center bg-black">
-                        <video
-                          src={activeMedia.mediaUrl}
-                          poster={getMediaPoster(activeMedia)}
-                          className="h-full w-full object-contain"
-                          controls
-                          playsInline
-                          preload="metadata"
-                        />
-                      </div>
-                    ) : activeMedia.mediaUrl && isDirectVideoUrl(activeMedia.mediaUrl) ? (
+                    ) : activeMedia.mediaUrl &&
+                      isDirectVideoUrl(activeMedia.mediaUrl) ? (
                       <video
                         src={activeMedia.mediaUrl}
                         poster={getMediaPoster(activeMedia)}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain"
                         controls
                         playsInline
                         preload="metadata"
@@ -2267,15 +2665,13 @@ export default function TuningPage({
                         <img
                           src={activeMedia.img}
                           alt={activeMedia.title}
-                          className={`h-full w-full ${activeMedia.kind === "reel" ? "object-contain" : "object-cover"}`}
+                          className="h-full w-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
                         {activeMedia.kind !== "photo" && (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div
-                              className={`flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-black/40 backdrop-blur-md ${getPlayGlow(
-                                activeMedia.kind
-                              )}`}
+                              className={`flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-black/40 backdrop-blur-md ${getPlayGlow(activeMedia.kind)}`}
                             >
                               <svg
                                 width="28"
@@ -2301,11 +2697,7 @@ export default function TuningPage({
                           key={`${url}-${index}`}
                           type="button"
                           onClick={() => setActiveGalleryIndex(index)}
-                          className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-xl border ${
-                            index === activeGalleryIndex
-                              ? "border-[#0CE0B2]"
-                              : "border-white/10"
-                          }`}
+                          className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-xl border ${index === activeGalleryIndex ? "border-[#0CE0B2]" : "border-white/10"}`}
                         >
                           <img
                             src={url}
@@ -2327,18 +2719,16 @@ export default function TuningPage({
                       {getKindLabel(activeMedia.kind)}
                     </div>
 
-                    <p className="mt-4 text-sm leading-relaxed text-gray-300 sm:text-base">
+                    <p className="mt-4 break-words text-sm leading-relaxed text-gray-300 sm:text-base">
                       {activeMedia.subtitle}
                     </p>
-
-                    <p className="mt-4 text-sm leading-relaxed text-gray-400">
+                    <p className="mt-4 break-words text-sm leading-relaxed text-gray-400">
                       {activeMedia.kind === "photo"
-                        ? "Esta galería se muestra dentro del mismo modal para mantener una lectura más editorial y visual dentro de Tuning."
-                        : activeMedia.mediaUrl && isPlayableVideoUrl(activeMedia.mediaUrl)
-                        ? "Este preview ya permite reproducirse dentro del mismo modal sin sacarlo del flujo visual de la sección."
-                        : activeMedia.kind === "reel"
-                        ? "Este formato corto se mantiene dentro del mismo modal con una proporción más limpia y alineada a la ventana de preview."
-                        : "Esta vista se mantiene como preview editorial fija, pero el botón inferior te lleva al video original."}
+                        ? "Da clic en la foto principal para verla en pantalla completa."
+                        : activeMedia.mediaUrl &&
+                            isPlayableVideoUrl(activeMedia.mediaUrl)
+                          ? "Este preview permite reproducirse dentro del mismo modal sin salir del flujo visual de la sección."
+                          : "Esta vista se mantiene como preview editorial fija, pero el botón inferior te lleva al video original."}
                     </p>
                   </div>
 
@@ -2350,11 +2740,9 @@ export default function TuningPage({
                         rel="noreferrer"
                         className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/5"
                       >
-                        Abrir {activeMedia.kind === "video" ? "video" : "formato corto"}{" "}
-                        original
+                        Abrir video original
                       </a>
                     ) : null}
-
                     <button
                       type="button"
                       onClick={() => setActiveMedia(null)}
@@ -2369,8 +2757,78 @@ export default function TuningPage({
           </div>
         )}
 
+        {fullscreenImage && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 p-4">
+            <button
+              type="button"
+              className="absolute inset-0"
+              onClick={() => setFullscreenImage(null)}
+              aria-label="Cerrar imagen"
+            />
+
+            {activeMedia?.kind === "photo" &&
+            activePhotoGalleryUrls.length > 1 ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveGalleryIndex((prev) =>
+                    prev === 0 ? activePhotoGalleryUrls.length - 1 : prev - 1,
+                  );
+                }}
+                className="absolute left-3 top-1/2 z-20 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/35 text-2xl text-white backdrop-blur hover:bg-white/15 sm:left-4 sm:h-12 sm:w-12 sm:text-3xl"
+                aria-label="Foto anterior"
+              >
+                ‹
+              </button>
+            ) : null}
+
+            <img
+              src={
+                activeMedia?.kind === "photo"
+                  ? activePhotoImage
+                  : fullscreenImage
+              }
+              alt="Imagen en pantalla completa"
+              className="relative z-10 max-h-[92vh] max-w-[96vw] object-contain"
+            />
+
+            {activeMedia?.kind === "photo" &&
+            activePhotoGalleryUrls.length > 1 ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveGalleryIndex((prev) =>
+                    prev === activePhotoGalleryUrls.length - 1 ? 0 : prev + 1,
+                  );
+                }}
+                className="absolute right-3 top-1/2 z-20 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/35 text-2xl text-white backdrop-blur hover:bg-white/15 sm:right-4 sm:h-12 sm:w-12 sm:text-3xl"
+                aria-label="Foto siguiente"
+              >
+                ›
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => setFullscreenImage(null)}
+              className="absolute right-4 top-4 z-30 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10 text-2xl text-white backdrop-blur hover:bg-white/15"
+              aria-label="Cerrar imagen"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         <main
-          aria-hidden={mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel}
+          aria-hidden={
+            mobileOpen ||
+            !!activeMedia ||
+            !!editingGallery ||
+            !!editingVideo ||
+            !!fullscreenImage
+          }
           className="relative z-10"
         >
           <section className="relative isolate overflow-hidden pt-16 lg:pt-[72px]">
@@ -2386,7 +2844,6 @@ export default function TuningPage({
                 }}
                 priority
               />
-
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(12,224,178,.14),transparent_26%),radial-gradient(circle_at_84%_18%,rgba(255,122,26,.16),transparent_30%),linear-gradient(180deg,rgba(0,0,0,.24)_0%,rgba(0,0,0,.45)_38%,rgba(2,10,10,.88)_100%)]" />
               <div className="absolute inset-y-0 left-0 hidden w-[58%] bg-gradient-to-r from-black/75 via-black/45 to-transparent lg:block" />
               <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#041210] via-[#041210]/70 to-transparent" />
@@ -2406,19 +2863,16 @@ export default function TuningPage({
               <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:px-8 lg:pb-16">
                 <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.34em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-                      Tuning • Builds • Street Culture
+                      Built to Stand Out
                     </div>
-
-                    <h1 className="mt-5 font-display text-[2.8rem] font-black leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.4rem]">
+                    <h1 className="mt-5 font-display text-[3.2rem] font-black leading-[0.88] tracking-[-0.01em] text-white sm:text-[4.4rem] md:text-[5.4rem] lg:text-[6.2rem]">
                       <span className="glow-cool block">Tuning</span>
-                      <span className="block text-white/95">& performance</span>
                     </h1>
-
                     <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                      Proyectos, mods, aero, stance, interiores, cultura de garage y
-                      builds que no piden permiso para llamar la atención.
+                      El lado más visual, radical y obsesivo de la cultura
+                      automotriz.
                     </p>
                   </div>
                 </div>
@@ -2426,7 +2880,9 @@ export default function TuningPage({
             </div>
           </section>
 
-          <section className={`${!tuningSettings.ads.leaderboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-4 sm:py-6`}>
+          <section
+            className={`${!tuningSettings.ads.leaderboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-4 sm:py-6`}
+          >
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               {renderEditableAd("leaderboard")}
             </div>
@@ -2444,64 +2900,60 @@ export default function TuningPage({
               {mainTuningItems.length > 0 ? (
                 <>
                   <div className="hidden md:grid gap-5 md:grid-cols-2">
-                <div className="grid gap-6">
-                  {tuningDesktopColumns.left.map((item) => (
-                    <TuningFeatureCard key={item.id} item={item} />
-                  ))}
-                </div>
+                    <div className="grid gap-6">
+                      {tuningDesktopColumns.left.map((item) => (
+                        <TuningFeatureCard key={item.id} item={item} />
+                      ))}
+                    </div>
+                    <div className="grid gap-6">
+                      {tuningDesktopColumns.right.map((item) => (
+                        <TuningFeatureCard key={item.id} item={item} />
+                      ))}
+                    </div>
+                  </div>
 
-                <div className="grid gap-6">
-                  {tuningDesktopColumns.right.map((item) => (
-                    <TuningFeatureCard key={item.id} item={item} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
+                  <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
                     <div className="flex gap-4 snap-x snap-mandatory">
-                  {mainTuningItems.map((item) => (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
-                    >
-                      <Card className="h-full overflow-hidden">
-                        <div className="relative h-36 w-full">
-                          <Image
-                            src={item.img}
-                            alt={item.title}
-                            fill
-                            sizes="78vw"
-                            style={{ objectFit: "cover" }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                        </div>
-
-                        <CardContent className="p-4">
-                          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
-                            <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-                            Tuning · {item.typeLabel}
-                          </div>
-
-                          <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
-                            {item.title}
-                          </h3>
-
-                          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-                            {item.excerpt}
-                          </p>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                            {item.authorName ? <span>Por {item.authorName}</span> : null}
-                            {item.authorName && item.when ? (
-                              <span className="text-gray-600">•</span>
-                            ) : null}
-                            {item.when ? <span>{item.when}</span> : null}
-                          </div>
-
-                        </CardContent>
-                      </Card>
-                    </Link>
+                      {mainTuningItems.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
+                        >
+                          <Card className="h-full overflow-hidden">
+                            <div className="relative h-36 w-full">
+                              <Image
+                                src={item.img}
+                                alt={item.title}
+                                fill
+                                sizes="78vw"
+                                style={{ objectFit: "cover" }}
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                            </div>
+                            <CardContent className="p-4">
+                              <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                                <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+                                Tuning · {item.typeLabel}
+                              </div>
+                              <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
+                                {item.title}
+                              </h3>
+                              <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+                                {item.excerpt}
+                              </p>
+                              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                                {item.authorName ? (
+                                  <span>Por {item.authorName}</span>
+                                ) : null}
+                                {item.authorName && item.when ? (
+                                  <span className="text-gray-600">•</span>
+                                ) : null}
+                                {item.when ? <span>{item.when}</span> : null}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
                       ))}
                     </div>
                   </div>
@@ -2519,8 +2971,8 @@ export default function TuningPage({
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               <SectionHeader
                 eyebrow="Visual Library"
-                title="Galerías, videos y más"
-                description="Los detalles son los que hacen el auto"
+                title="Galerías y videos"
+                description="Los detalles son los que hacen el auto."
                 accent="cool"
                 action={
                   editControlsVisible ? (
@@ -2542,138 +2994,172 @@ export default function TuningPage({
                       Photos
                     </p>
                     <h3 className="mt-1 text-2xl font-semibold text-white">
-                      Galería 
+                      Galería
                     </h3>
                   </div>
 
                   {photoItems.length > 0 ? (
                     <>
-                  <div className="hidden gap-4 overflow-x-auto pb-2 no-scrollbar sm:flex">
-                    {photoItems.slice(0, 6).map((item) => (
-                      <div
-                        key={item.id}
-                        className={`group relative w-[260px] shrink-0 overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
-                          item.kind
-                        )}`}
-                      >
-                        {editControlsVisible ? (
-                          <div className="absolute right-3 top-3 z-20">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openGalleryEditorFromItem(item);
-                              }}
-                              className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                            >
-                              Editar
-                            </button>
-                          </div>
-                        ) : null}
+                      <div className="hidden overflow-x-auto pb-3 no-scrollbar sm:block">
+                        <div className="flex snap-x snap-mandatory gap-6">
+                          {photoGroups.map((group, groupIndex) => {
+                            const left = group.slice(0, 2);
+                            const right = group.slice(2, 5);
 
-                        <button
-                          type="button"
-                          onClick={() => openMediaPreview(item)}
-                          className="block w-full text-left"
-                        >
-                          <div className="relative aspect-[4/3] w-full">
-                            <Image
-                              src={item.img}
-                              alt={item.title}
-                              fill
-                              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                              style={{ objectFit: "cover" }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                            return (
+                              <div
+                                key={`photo-group-${groupIndex}`}
+                                className="grid min-w-full snap-start gap-5 lg:grid-cols-[1fr_1.18fr]"
+                              >
+                                <div className="grid gap-5">
+                                  {left.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className={`group relative min-h-[265px] overflow-hidden rounded-[26px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(item.kind)}`}
+                                    >
+                                      {editControlsVisible ? (
+                                        <div className="absolute right-4 top-4 z-20">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openGalleryEditorFromItem(item);
+                                            }}
+                                            className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                          >
+                                            Editar
+                                          </button>
+                                        </div>
+                                      ) : null}
+                                      <button
+                                        type="button"
+                                        onClick={() => openMediaPreview(item)}
+                                        className="block h-full w-full text-left"
+                                      >
+                                        <div className="relative h-full min-h-[265px] w-full">
+                                          <img
+                                            src={item.img}
+                                            alt={item.title}
+                                            className="h-full w-full object-cover"
+                                          />
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                                          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
+                                            <span
+                                              className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`}
+                                            />
+                                            {getKindLabel(item.kind)}
+                                          </div>
+                                          <div className="absolute bottom-0 left-0 right-0 p-5">
+                                            <h4 className="line-clamp-2 text-xl font-semibold text-white">
+                                              {item.title}
+                                            </h4>
+                                            <p className="mt-2 line-clamp-2 text-sm text-gray-200">
+                                              {item.subtitle}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
 
-                            <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                              <span className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`} />
-                              {getKindLabel(item.kind)}
-                            </div>
-
-                            <div className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white opacity-90 backdrop-blur transition group-hover:scale-105">
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                                <path
-                                  d="M8 8h3M16 8v3M16 16h-3M8 16v-3"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                            </div>
-
-                            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
-                              <h4 className="text-xl font-semibold text-white">
-                                {item.title}
-                              </h4>
-                              <p className="mt-2 line-clamp-2 text-sm text-gray-200">
-                                {item.subtitle}
-                              </p>
-                            </div>
-                          </div>
-                        </button>
+                                <div className="grid gap-5">
+                                  {right.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className={`group relative min-h-[170px] overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(item.kind)}`}
+                                    >
+                                      {editControlsVisible ? (
+                                        <div className="absolute right-4 top-4 z-20">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openGalleryEditorFromItem(item);
+                                            }}
+                                            className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                          >
+                                            Editar
+                                          </button>
+                                        </div>
+                                      ) : null}
+                                      <button
+                                        type="button"
+                                        onClick={() => openMediaPreview(item)}
+                                        className="block h-full w-full text-left"
+                                      >
+                                        <div className="grid h-full min-h-[170px] grid-cols-[0.95fr_1.15fr]">
+                                          <div className="relative h-full w-full overflow-hidden">
+                                            <img
+                                              src={item.img}
+                                              alt={item.title}
+                                              className="h-full w-full object-cover"
+                                            />
+                                          </div>
+                                          <div className="flex flex-col justify-end p-5">
+                                            <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
+                                              <span
+                                                className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`}
+                                              />
+                                              {getKindLabel(item.kind)}
+                                            </div>
+                                            <h4 className="line-clamp-2 text-lg font-semibold text-white">
+                                              {item.title}
+                                            </h4>
+                                            <p className="mt-2 line-clamp-2 text-sm text-gray-300">
+                                              {item.subtitle}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:hidden">
-                    <div className="flex gap-4 snap-x snap-mandatory">
-                      {photoItems.slice(0, 6).map((item) => (
-                        <div
-                          key={item.id}
-                          className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
-                            item.kind
-                          )}`}
-                        >
-                          {editControlsVisible ? (
-                            <div className="absolute right-3 top-3 z-20">
+                      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:hidden">
+                        <div className="flex snap-x snap-mandatory gap-4">
+                          {photoItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className={`group relative aspect-square w-[82vw] min-w-[82vw] max-w-[330px] shrink-0 snap-start overflow-hidden rounded-[24px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(item.kind)}`}
+                            >
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openGalleryEditorFromItem(item);
-                                }}
-                                className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                onClick={() => openMediaPreview(item)}
+                                className="block h-full w-full text-left"
                               >
-                                Editar
+                                <div className="relative h-full w-full">
+                                  <img
+                                    src={item.img}
+                                    alt={item.title}
+                                    className="h-full w-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                                  <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
+                                    <span
+                                      className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`}
+                                    />
+                                    {getKindLabel(item.kind)}
+                                  </div>
+                                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                                    <h4 className="line-clamp-2 text-lg font-semibold leading-tight text-white">
+                                      {item.title}
+                                    </h4>
+                                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-200">
+                                      {item.subtitle}
+                                    </p>
+                                  </div>
+                                </div>
                               </button>
                             </div>
-                          ) : null}
-
-                          <button
-                            type="button"
-                            onClick={() => openMediaPreview(item)}
-                            className="block w-full text-left"
-                          >
-                            <div className="relative h-full w-full">
-                              <Image
-                                src={item.img}
-                                alt={item.title}
-                                fill
-                                sizes="290px"
-                                style={{ objectFit: "cover" }}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-
-                              <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                                <span className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`} />
-                                {getKindLabel(item.kind)}
-                              </div>
-
-                              <div className="absolute bottom-0 left-0 right-0 p-4">
-                                <h4 className="line-clamp-2 text-base font-semibold text-white">
-                                  {item.title}
-                                </h4>
-                                <p className="mt-2 line-clamp-2 text-xs text-gray-200">
-                                  {item.subtitle}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
                     </>
                   ) : (
                     <EmptySectionNotice
@@ -2684,173 +3170,153 @@ export default function TuningPage({
                 </div>
 
                 <div>
-                  <div className="mb-5">
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
-                      Videos
-                    </p>
-                    <h3 className="mt-1 text-2xl font-semibold text-white">
-                      Videos 
-                    </h3>
+                  <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
+                        Videos
+                      </p>
+                      <h3 className="mt-1 text-2xl font-semibold text-white">
+                        Videos
+                      </h3>
+                    </div>
                     {editControlsVisible ? (
-                      <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={() => openMediaEditor("video")}
-                          className="hidden rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                        >
-                          Nuevo video
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openVideoEditor()}
+                        className="hidden rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                      >
+                        Nuevo video
+                      </button>
                     ) : null}
                   </div>
 
                   {videoItems.length > 0 ? (
                     <>
-                  <div className="hidden gap-5 lg:grid lg:grid-cols-2">
-                    {videoItems.slice(0, 4).map((item) => (
-                      <div
-                        key={item.id}
-                        className={`group relative w-[260px] shrink-0 overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
-                          item.kind
-                        )}`}
-                      >
-                        {editControlsVisible ? (
-                          <div className="absolute right-4 top-4 z-20">
+                      <div className="hidden gap-5 lg:grid lg:grid-cols-2">
+                        {videoItems.slice(0, 4).map((item) => (
+                          <div
+                            key={item.id}
+                            className={`group relative overflow-hidden rounded-[26px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(item.kind)}`}
+                          >
+                            {editControlsVisible ? (
+                              <div className="absolute right-4 top-4 z-20">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openVideoEditor(item);
+                                  }}
+                                  className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                >
+                                  Editar
+                                </button>
+                              </div>
+                            ) : null}
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openMediaEditor("video", item);
-                              }}
-                              className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                              onClick={() => openMediaPreview(item)}
+                              className="block w-full text-left"
                             >
-                              Editar
+                              <div className="relative aspect-[16/9] w-full">
+                                {renderMediaVisual(
+                                  item,
+                                  "h-full w-full object-cover",
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
+                                  <span
+                                    className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`}
+                                  />
+                                  {getKindLabel(item.kind)}
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <div
+                                    className={`flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md transition group-hover:scale-105 ${getPlayGlow(item.kind)}`}
+                                  >
+                                    <svg
+                                      width="22"
+                                      height="22"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      aria-hidden
+                                    >
+                                      <path
+                                        d="M8 6.5v11l9-5.5-9-5.5z"
+                                        fill="white"
+                                      />
+                                    </svg>
+                                  </div>
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 p-5">
+                                  <h4 className="text-xl font-semibold text-white">
+                                    {item.title}
+                                  </h4>
+                                  <p className="mt-2 line-clamp-2 text-sm text-gray-200">
+                                    {item.subtitle}
+                                  </p>
+                                </div>
+                              </div>
                             </button>
                           </div>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => openMediaPreview(item)}
-                          className="block w-full text-left"
-                        >
-                        <div className="relative aspect-[16/9] w-full">
-                          {renderMediaVisual(
-                            item,
-                            "(max-width: 1024px) 100vw, 50vw",
-                            "h-full w-full object-cover"
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-
-                          <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                            <span className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`} />
-                            {getKindLabel(item.kind)}
-                          </div>
-
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div
-                              className={`flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md transition group-hover:scale-105 ${getPlayGlow(
-                                item.kind
-                              )}`}
-                            >
-                              <svg
-                                width="22"
-                                height="22"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                aria-hidden
-                              >
-                                <path d="M8 6.5v11l9-5.5-9-5.5z" fill="white" />
-                              </svg>
-                            </div>
-                          </div>
-
-                          <div className="absolute bottom-0 left-0 right-0 p-5">
-                            <h4 className="text-xl font-semibold text-white">
-                              {item.title}
-                            </h4>
-                            <p className="mt-2 line-clamp-2 text-sm text-gray-200">
-                              {item.subtitle}
-                            </p>
-                          </div>
-                        </div>
-                        </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar lg:hidden">
-                    <div className="flex gap-4 snap-x snap-mandatory">
-                      {videoItems.slice(0, 4).map((item) => (
-                        <div
-                          key={item.id}
-                          className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
-                            item.kind
-                          )}`}
-                        >
-                          {editControlsVisible ? (
-                            <div className="absolute right-3 top-3 z-20">
+                      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar lg:hidden">
+                        <div className="flex gap-4 snap-x snap-mandatory">
+                          {videoItems.slice(0, 4).map((item) => (
+                            <div
+                              key={item.id}
+                              className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(item.kind)}`}
+                            >
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openMediaEditor("video", item);
-                                }}
-                                className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                                onClick={() => openMediaPreview(item)}
+                                className="block h-full w-full text-left"
                               >
-                                Editar
+                                <div className="relative h-full w-full">
+                                  {renderMediaVisual(
+                                    item,
+                                    "h-full w-full object-cover",
+                                  )}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                                  <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
+                                    <span
+                                      className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`}
+                                    />
+                                    {getKindLabel(item.kind)}
+                                  </div>
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div
+                                      className={`flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md ${getPlayGlow(item.kind)}`}
+                                    >
+                                      <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        aria-hidden
+                                      >
+                                        <path
+                                          d="M8 6.5v11l9-5.5-9-5.5z"
+                                          fill="white"
+                                        />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                                    <h4 className="line-clamp-2 text-base font-semibold text-white">
+                                      {item.title}
+                                    </h4>
+                                    <p className="mt-2 line-clamp-2 text-xs text-gray-200">
+                                      {item.subtitle}
+                                    </p>
+                                  </div>
+                                </div>
                               </button>
                             </div>
-                          ) : null}
-                          <button
-                            type="button"
-                            onClick={() => openMediaPreview(item)}
-                            className="block w-full text-left"
-                          >
-                          <div className="relative h-full w-full sm:aspect-[16/10]">
-                            {renderMediaVisual(
-                              item,
-                              "(max-width: 640px) 320px, 300px",
-                              "h-full w-full object-cover"
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-
-                            <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                              <span className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`} />
-                              {getKindLabel(item.kind)}
-                            </div>
-
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div
-                                className={`flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md ${getPlayGlow(
-                                  item.kind
-                                )}`}
-                              >
-                                <svg
-                                  width="20"
-                                  height="20"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  aria-hidden
-                                >
-                                  <path d="M8 6.5v11l9-5.5-9-5.5z" fill="white" />
-                                </svg>
-                              </div>
-                            </div>
-
-                            <div className="absolute bottom-0 left-0 right-0 p-4">
-                              <h4 className="line-clamp-2 text-base font-semibold text-white">
-                                {item.title}
-                              </h4>
-                              <p className="mt-2 line-clamp-2 text-xs text-gray-200">
-                                {item.subtitle}
-                              </p>
-                            </div>
-                          </div>
-                          </button>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
                     </>
                   ) : (
                     <EmptySectionNotice
@@ -2859,190 +3325,13 @@ export default function TuningPage({
                     />
                   )}
                 </div>
-
-                <div>
-                  <div className="mb-5">
-                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#A3FF12]">
-                      Formato corto
-                    </p>
-                    <h3 className="mt-1 text-2xl font-semibold text-white">
-                      Shorts
-                    </h3>
-                    {editControlsVisible ? (
-                      <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={() => openMediaEditor("reel")}
-                          className="hidden rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                        >
-                          Nuevo formato corto
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {reelItems.length > 0 ? (
-                    <>
-                  <div className="hidden overflow-x-auto pb-2 no-scrollbar sm:block">
-                    <div className="flex gap-4">
-                    {reelItems.slice(0, 8).map((item) => (
-                      <div
-                        key={item.id}
-                        className={`group relative w-[260px] shrink-0 overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
-                          item.kind
-                        )}`}
-                      >
-                        {editControlsVisible ? (
-                          <div className="absolute right-3 top-3 z-20">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openMediaEditor("reel", item);
-                              }}
-                              className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                            >
-                              Editar
-                            </button>
-                          </div>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => openMediaPreview(item)}
-                          className="block w-full text-left"
-                        >
-                        <div className="relative h-full w-full">
-                          {renderMediaVisual(
-                            item,
-                            "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
-                            "h-full w-full object-cover"
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-
-                          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                            <span className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`} />
-                            {getKindLabel(item.kind)}
-                          </div>
-
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div
-                              className={`flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md transition group-hover:scale-105 ${getPlayGlow(
-                                item.kind
-                              )}`}
-                            >
-                              <svg
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                aria-hidden
-                              >
-                                <path d="M8 6.5v11l9-5.5-9-5.5z" fill="white" />
-                              </svg>
-                            </div>
-                          </div>
-
-                          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
-                            <h4 className="line-clamp-2 text-sm font-semibold text-white sm:text-base">
-                              {item.title}
-                            </h4>
-                            <p className="mt-1 line-clamp-2 text-xs text-gray-200 sm:text-sm">
-                              {item.subtitle}
-                            </p>
-                          </div>
-                        </div>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  </div>
-
-                  <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:hidden">
-                    <div className="flex gap-4 snap-x snap-mandatory">
-                      {reelItems.slice(0, 4).map((item) => (
-                        <div
-                          key={item.id}
-                          className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(
-                            item.kind
-                          )}`}
-                        >
-                          {editControlsVisible ? (
-                            <div className="absolute right-3 top-3 z-20">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openMediaEditor("reel", item);
-                                }}
-                                className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                              >
-                                Editar
-                              </button>
-                            </div>
-                          ) : null}
-                          <button
-                            type="button"
-                            onClick={() => openMediaPreview(item)}
-                            className="block w-full text-left"
-                          >
-                          <div className="relative h-full w-full">
-                            {renderMediaVisual(
-                              item,
-                              "320px",
-                              "h-full w-full object-cover"
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-
-                            <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                              <span className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`} />
-                              Reel
-                            </div>
-
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div
-                                className={`flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md ${getPlayGlow(
-                                  item.kind
-                                )}`}
-                              >
-                                <svg
-                                  width="18"
-                                  height="18"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  aria-hidden
-                                >
-                                  <path d="M8 6.5v11l9-5.5-9-5.5z" fill="white" />
-                                </svg>
-                              </div>
-                            </div>
-
-                            <div className="absolute bottom-0 left-0 right-0 p-3">
-                              <h4 className="line-clamp-2 text-sm font-semibold text-white">
-                                {item.title}
-                              </h4>
-                              <p className="mt-1 line-clamp-2 text-xs text-gray-200">
-                                {item.subtitle}
-                              </p>
-                            </div>
-                          </div>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                    </>
-                  ) : (
-                    <EmptySectionNotice
-                      title="Próximas publicaciones"
-                      message="Muy pronto llegarán formatos cortos, previews verticales y clips rápidos del universo Tuning."
-                    />
-                  )}
-                </div>
               </div>
             </div>
           </section>
 
-          <section className={`${!tuningSettings.ads.billboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-8`}>
+          <section
+            className={`${!tuningSettings.ads.billboard.enabled && editControlsVisible ? "hidden md:block" : ""} py-8`}
+          >
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               {renderEditableAd("billboard")}
             </div>
@@ -3053,10 +3342,9 @@ export default function TuningPage({
               <SectionHeader
                 eyebrow="Últimas publicaciones"
                 title="Lo más reciente en MotorWelt"
-                description=""
+                description="Una selección actualizada con las publicaciones más nuevas de todas las secciones."
                 accent="cool"
               />
-
               {latestItems.length > 0 ? (
                 <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
                   <div className="flex snap-x snap-mandatory gap-4">
@@ -3085,18 +3373,15 @@ export default function TuningPage({
                 <p className="text-[11px] uppercase tracking-[0.28em] text-gray-400">
                   Explore MotorWelt
                 </p>
-
                 <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
                   Seguir explorando MotorWelt
                 </h2>
-
                 <div className="mt-3 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
-
                 <p className="mt-4 max-w-2xl text-sm text-gray-300">
-                  Sigue navegando entre más historias, coberturas y cultura editorial dentro del universo MotorWelt.
+                  Sigue navegando entre más historias, coberturas y cultura
+                  editorial dentro del universo MotorWelt.
                 </p>
               </div>
-
               <div className="no-scrollbar overflow-x-auto pb-6">
                 <div className="flex items-start gap-5 pr-12">
                   <ExploreCard
@@ -3142,7 +3427,13 @@ export default function TuningPage({
         </main>
 
         <footer
-          aria-hidden={mobileOpen || !!activeMedia || !!editingGallery || !!editingVideo || !!editingReel}
+          aria-hidden={
+            mobileOpen ||
+            !!activeMedia ||
+            !!editingGallery ||
+            !!editingVideo ||
+            !!fullscreenImage
+          }
           className="relative z-10 mt-12 border-t border-white/10 bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
         >
           <div className="mx-auto grid w-full max-w-[1440px] 2xl:max-w-[1560px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8">
@@ -3159,15 +3450,12 @@ export default function TuningPage({
                 visual, editorial y aspiracional.
               </p>
             </div>
-
             <div>
-              <h4 className="text-lg font-semibold text-white">
-                {t("footer.links")}
-              </h4>
+              <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
                 <li>
                   <Link href="/about" className="hover:text-white">
-                    {t("footer.about")}
+                    Acerca de
                   </Link>
                 </li>
                 <li>
@@ -3187,11 +3475,8 @@ export default function TuningPage({
                 </li>
               </ul>
             </div>
-
             <div>
-              <h4 className="text-lg font-semibold text-white">
-                {t("footer.socials")}
-              </h4>
+              <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
                 <a
                   href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
@@ -3228,9 +3513,8 @@ export default function TuningPage({
               </div>
             </div>
           </div>
-
           <p className="mt-6 px-4 text-center text-xs text-gray-500">
-            © {year} MotorWelt. {t("footer.rights")}
+            © {year} MotorWelt. Todos los derechos reservados.
           </p>
         </footer>
       </div>
@@ -3247,9 +3531,21 @@ export default function TuningPage({
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(120% 80% at 20% 10%, rgba(0, 0, 0, 0.15) 0%, transparent 60%),
-            radial-gradient(120% 80% at 80% 90%, rgba(0, 0, 0, 0.18) 0%, transparent 60%),
-            linear-gradient(180deg, rgba(4, 18, 16, 0.85), rgba(4, 18, 16, 0.85));
+            radial-gradient(
+              120% 80% at 20% 10%,
+              rgba(0, 0, 0, 0.15) 0%,
+              transparent 60%
+            ),
+            radial-gradient(
+              120% 80% at 80% 90%,
+              rgba(0, 0, 0, 0.18) 0%,
+              transparent 60%
+            ),
+            linear-gradient(
+              180deg,
+              rgba(4, 18, 16, 0.85),
+              rgba(4, 18, 16, 0.85)
+            );
         }
         .streak-wrap {
           position: absolute;
@@ -3264,7 +3560,7 @@ export default function TuningPage({
           width: 220%;
           height: 100%;
           will-change: transform, opacity;
-          filter: blur(.5px);
+          filter: blur(0.5px);
         }
         @keyframes slide-fwd {
           0% {
@@ -3272,7 +3568,7 @@ export default function TuningPage({
             opacity: 0;
           }
           10% {
-            opacity: .9;
+            opacity: 0.9;
           }
           100% {
             transform: translateX(130%);
@@ -3285,7 +3581,7 @@ export default function TuningPage({
             opacity: 0;
           }
           10% {
-            opacity: .9;
+            opacity: 0.9;
           }
           100% {
             transform: translateX(-30%);
@@ -3299,13 +3595,28 @@ export default function TuningPage({
           animation: slide-rev 11s linear infinite;
         }
         .streak-cool {
-          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(12, 224, 178, 0.95),
+            transparent
+          );
         }
         .streak-warm {
-          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, .95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 122, 26, 0.95),
+            transparent
+          );
         }
         .streak-lime {
-          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, .9), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(163, 255, 18, 0.9),
+            transparent
+          );
         }
         .glow-warm {
           text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
@@ -3315,6 +3626,9 @@ export default function TuningPage({
             0 0 12px rgba(12, 224, 178, 0.28),
             0 0 26px rgba(12, 224, 178, 0.22),
             0 0 50px rgba(12, 224, 178, 0.14);
+        }
+        .logo-glow {
+          filter: drop-shadow(0 0 18px rgba(12, 224, 178, 0.12));
         }
         .no-scrollbar {
           -ms-overflow-style: none;
@@ -3330,14 +3644,12 @@ export default function TuningPage({
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
-
         @media (prefers-reduced-motion: reduce) {
           .streak {
             animation: none !important;
-            opacity: .35;
+            opacity: 0.35;
           }
         }
-
         @supports (content-visibility: auto) {
           main > section {
             content-visibility: auto;
@@ -3406,7 +3718,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
         }
       },
       "photoGalleries": coalesce(photoGalleries, []),
-      "videoEntries": coalesce(videoEntries, []),
+      "videoEntries": coalesce(videoEntries, videos, []),
       "reelEntries": coalesce(reelEntries, [])
     }
   `;
@@ -3453,12 +3765,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     }
   `;
 
-  const [tuningRaw, tuningSettingsRaw, sectionSettingsRaw, latestRaw] = await Promise.all([
-    sanityReadClient.fetch(tuningQuery),
-    sanityReadClient.fetch(tuningSettingsQuery).catch(() => null),
-    sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
-    sanityReadClient.fetch(latestQuery).catch(() => []),
-  ]);
+  const [tuningRaw, tuningSettingsRaw, sectionSettingsRaw, latestRaw] =
+    await Promise.all([
+      sanityReadClient.fetch(tuningQuery),
+      sanityReadClient.fetch(tuningSettingsQuery).catch(() => null),
+      sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
+      sanityReadClient.fetch(latestQuery).catch(() => []),
+    ]);
 
   const formatWhen = (iso?: string | null) => {
     if (!iso) return "";
@@ -3487,7 +3800,9 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     reelUrl: String(it?.reelUrl || ""),
   }));
 
-  const latestItems: LatestArticleData[] = (Array.isArray(latestRaw) ? latestRaw : [])
+  const latestItems: LatestArticleData[] = (
+    Array.isArray(latestRaw) ? latestRaw : []
+  )
     .map((it: any) => {
       const slug = getSlugValue(it?.slug);
       if (!slug) return null;
@@ -3508,7 +3823,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
           it?.excerpt ||
             it?.subtitle ||
             it?.seoDescription ||
-            "Lee la publicación completa en MotorWelt."
+            "Lee la publicación completa en MotorWelt.",
         ),
         img,
         href: `${sectionData.hrefBase}/${slug}`,
@@ -3544,13 +3859,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       ...(await serverSideTranslations(
         locale ?? "es",
         ["home"],
-        nextI18NextConfig
+        nextI18NextConfig,
       )),
       year: new Date().getFullYear(),
       tuningItems,
       initialTuningSettings: sanitizeTuningSettings(
         tuningSettingsRaw,
-        fallbackHero
+        fallbackHero,
       ),
       sectionHeroImages,
       latestItems,

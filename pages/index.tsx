@@ -280,7 +280,6 @@ export default function HomePage({
 
   const tuningDesktopColumns = splitFiveItemLayout(tuningDesktopItems);
   const lifestyleDesktopColumns = splitFiveItemLayout(lifestyleDesktopItems);
-  const communityDesktopColumns = splitFiveItemLayout(communityDesktopItems);
 
   const heroSectionCards: HomeSectionCard[] = useMemo(
     () => [
@@ -810,6 +809,80 @@ export default function HomePage({
             <LinkButton href={ctaHref} variant={ctaVariant}>
               {ctaLabel}
             </LinkButton>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderCommunityCardsRail() {
+    return (
+      <section className="py-12 sm:py-16">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+          <div className="mb-8 text-center">
+            <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Comunidad</h2>
+            <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
+          </div>
+
+          {communityDesktopItems.length > 0 ? (
+            <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
+              <div className="flex snap-x snap-mandatory gap-4 md:gap-5">
+                {communityDesktopItems.map((item, index) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="block h-[230px] w-[238px] min-w-[238px] shrink-0 snap-start md:h-[320px] md:w-[380px] md:min-w-[380px]"
+                  >
+                    <Card className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
+                      <div className="relative h-[96px] w-full md:h-[138px]">
+                        <Image
+                          src={item.img}
+                          alt={item.title}
+                          fill
+                          sizes="(max-width: 768px) 238px, 380px"
+                          style={{ objectFit: "cover" }}
+                          priority={index === 0}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                      </div>
+
+                      <CardContent className="p-4 md:p-5">
+                        <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400 md:text-[11px]">
+                          <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                          {item.sectionLabel} · {item.typeLabel}
+                        </div>
+
+                        <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-white md:text-lg">
+                          {item.title}
+                        </h3>
+
+                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300 md:text-sm">
+                          {getCardExcerpt(item)}
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400 md:text-xs">
+                          {item.authorName ? <span>Por {item.authorName}</span> : null}
+                          {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+                          {item.when ? <span>{item.when}</span> : null}
+                        </div>
+
+                        <div className="mt-auto hidden pt-4 md:block">
+                          <span className={getButtonClasses("pink", "px-4 py-2 text-xs")}>
+                            Leer más
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            renderEmptySectionNotice("Próximas publicaciones", "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt.")
+          )}
+
+          <div className="mt-8 text-center">
+            <LinkButton href="/comunidad" variant="pink">Entrar a Comunidad</LinkButton>
           </div>
         </div>
       </section>
@@ -1456,61 +1529,7 @@ export default function HomePage({
             </div>
           </section>
 
-          {communityDesktopItems.length > 0 ? (
-            renderMobileCardsRail(
-              "Comunidad",
-              "bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]",
-              communityDesktopItems,
-              "/comunidad",
-              "Entrar a Comunidad",
-              "pink",
-            )
-          ) : (
-            <section className="py-12 sm:py-16 md:hidden">
-              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-                <div className="mb-8 text-center">
-                  <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Comunidad</h2>
-                  <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
-                </div>
-
-                {renderEmptySectionNotice("Próximas publicaciones", "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt.")}
-
-                <div className="mt-8 text-center">
-                  <LinkButton href="/comunidad" variant="pink">Entrar a Comunidad</LinkButton>
-                </div>
-              </div>
-            </section>
-          )}
-
-          <section className="hidden py-12 sm:py-16 md:block">
-            <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-              <div className="mb-8 text-center">
-                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Comunidad</h2>
-                <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
-              </div>
-
-              {communityDesktopItems.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="grid gap-6">
-                    {communityDesktopColumns.left.map((item, index) =>
-                      renderStackedFeatureCard(item, index === 0),
-                    )}
-                  </div>
-                  <div className="grid gap-6">
-                    {communityDesktopColumns.right.map((item) =>
-                      renderStackedFeatureCard(item),
-                    )}
-                  </div>
-                </div>
-              ) : (
-                renderEmptySectionNotice("Próximas publicaciones", "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt.")
-              )}
-
-              <div className="mt-8 text-center">
-                <LinkButton href="/comunidad" variant="pink">Entrar a Comunidad</LinkButton>
-              </div>
-            </div>
-          </section>
+          {renderCommunityCardsRail()}
 
           <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
