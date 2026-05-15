@@ -87,6 +87,12 @@ type TuningItem = {
   galleryUrls: string[];
   videoUrl: string;
   reelUrl: string;
+  section: string;
+  category: string;
+  subcategory: string;
+  noteSection: string;
+  categories: string[];
+  tags: string[];
 };
 
 type LatestArticleData = {
@@ -506,6 +512,25 @@ function uniqueStrings(values: string[]) {
         .filter(Boolean),
     ),
   );
+}
+
+function getTuningMetaBlob(item: TuningItem) {
+  return [
+    item.section,
+    item.category,
+    item.subcategory,
+    item.noteSection,
+    item.typeLabel,
+    ...(item.categories || []),
+    ...(item.tags || []),
+  ]
+    .map((value) => normalizeText(value))
+    .join(" ");
+}
+
+function hasAnyMetaKeyword(item: TuningItem, keywords: string[]) {
+  const blob = getTuningMetaBlob(item);
+  return keywords.some((keyword) => blob.includes(keyword));
 }
 
 function chunkItems<T>(items: T[], size: number) {
@@ -1164,6 +1189,38 @@ export default function TuningPage({
     () => splitFiveItemLayout(mainTuningItems),
     [mainTuningItems],
   );
+
+
+  const exteriorTuningItems = useMemo(() => {
+    const keywords = [
+      "aero",
+      "stance",
+      "exterior",
+      "bodykit",
+      "body kit",
+      "widebody",
+      "fitment",
+    ];
+
+    return tuningItems.filter((item) => hasAnyMetaKeyword(item, keywords));
+  }, [tuningItems]);
+
+  const performanceTuningItems = useMemo(() => {
+    const keywords = [
+      "performance",
+      "performance lab",
+      "motor",
+      "engine",
+      "turbo",
+      "suspensión",
+      "suspension",
+      "frenos",
+      "brakes",
+      "potencia",
+    ];
+
+    return tuningItems.filter((item) => hasAnyMetaKeyword(item, keywords));
+  }, [tuningItems]);
 
   const activePhotoGalleryUrls = useMemo(() => {
     if (!activeMedia || activeMedia.kind !== "photo") return [];
@@ -2511,10 +2568,8 @@ export default function TuningPage({
           />
         )}
 
-        {renderVideoEditor()}
-
         {activeMedia && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5">
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-5">
             <button
               type="button"
               className="absolute inset-0 bg-black/85 backdrop-blur-md"
@@ -2522,7 +2577,7 @@ export default function TuningPage({
               aria-label="Cerrar preview"
             />
 
-            <div className="relative z-10 flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#071412]/95 shadow-2xl">
+            <div className="relative z-10 flex max-h-[calc(100dvh-1rem)] w-full max-w-[calc(100vw-.75rem)] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#071412]/95 shadow-2xl sm:max-w-6xl">
               <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-gray-400">
@@ -2544,16 +2599,6 @@ export default function TuningPage({
                     <button
                       type="button"
                       onClick={() => openGalleryEditorFromItem(activeMedia)}
-                      className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                    >
-                      Editar
-                    </button>
-                  ) : null}
-
-                  {editControlsVisible && activeMedia.kind === "video" ? (
-                    <button
-                      type="button"
-                      onClick={() => openVideoEditor(activeMedia)}
                       className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
                     >
                       Editar
@@ -2585,14 +2630,8 @@ export default function TuningPage({
               </div>
 
               <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[1.5fr_.7fr]">
-                <div className="bg-black">
-                  <div
-                    className={
-                      activeMedia.kind === "video"
-                        ? "relative aspect-video w-full bg-black"
-                        : "relative flex min-h-[300px] max-h-[58dvh] bg-black sm:aspect-[16/10] sm:min-h-0 sm:max-h-none"
-                    }
-                  >
+                <div className="min-w-0 bg-black">
+                  <div className="relative h-[52dvh] min-h-[300px] max-h-[560px] bg-black sm:h-[64vh] lg:h-auto lg:aspect-[16/10] lg:max-h-none">
                     {activeMedia.kind === "photo" ? (
                       <>
                         <button
@@ -2604,10 +2643,10 @@ export default function TuningPage({
                           <img
                             src={activePhotoImage}
                             alt={activeMedia.title}
-                            className="h-full w-full object-contain sm:object-cover"
+                            className="h-full w-full object-contain"
                           />
                         </button>
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
 
                         {activePhotoGalleryUrls.length > 1 ? (
                           <>
@@ -2642,62 +2681,32 @@ export default function TuningPage({
                           </>
                         ) : null}
                       </>
-                    ) : activeMedia.mediaUrl &&
-                      isDirectVideoUrl(activeMedia.mediaUrl) ? (
-                      <video
-                        src={activeMedia.mediaUrl}
-                        poster={getMediaPoster(activeMedia)}
-                        className="h-full w-full object-contain"
-                        controls
-                        playsInline
-                        preload="metadata"
-                      />
-                    ) : activeMedia.embedUrl ? (
-                      <iframe
-                        src={activeMedia.embedUrl}
-                        title={activeMedia.title}
-                        className="h-full w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
                     ) : (
-                      <>
-                        <img
-                          src={activeMedia.img}
-                          alt={activeMedia.title}
-                          className="h-full w-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10" />
-                        {activeMedia.kind !== "photo" && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div
-                              className={`flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-black/40 backdrop-blur-md ${getPlayGlow(activeMedia.kind)}`}
-                            >
-                              <svg
-                                width="28"
-                                height="28"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                aria-hidden
-                              >
-                                <path d="M8 6.5v11l9-5.5-9-5.5z" fill="white" />
-                              </svg>
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      <img
+                        src={activeMedia.img}
+                        alt={activeMedia.title}
+                        className="h-full w-full object-contain"
+                      />
                     )}
                   </div>
 
                   {activeMedia.kind === "photo" &&
                   activePhotoGalleryUrls.length > 1 ? (
-                    <div className="flex gap-3 overflow-x-auto border-t border-white/10 p-3 no-scrollbar">
+                    <div
+                      className="relative z-20 flex touch-pan-x gap-3 overflow-x-auto overscroll-x-contain border-t border-white/10 bg-black/95 p-3 no-scrollbar"
+                      onTouchMove={(e) => e.stopPropagation()}
+                      onWheel={(e) => e.stopPropagation()}
+                    >
                       {activePhotoGalleryUrls.map((url, index) => (
                         <button
                           key={`${url}-${index}`}
                           type="button"
                           onClick={() => setActiveGalleryIndex(index)}
-                          className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-xl border ${index === activeGalleryIndex ? "border-[#0CE0B2]" : "border-white/10"}`}
+                          className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border transition ${
+                            index === activeGalleryIndex
+                              ? "border-[#0CE0B2] shadow-[0_0_18px_rgba(12,224,178,.28)]"
+                              : "border-white/10"
+                          }`}
                         >
                           <img
                             src={url}
@@ -2710,8 +2719,8 @@ export default function TuningPage({
                   ) : null}
                 </div>
 
-                <div className="flex flex-col justify-between p-5 sm:p-6">
-                  <div>
+                <div className="flex min-w-0 flex-col justify-between p-5 sm:p-6">
+                  <div className="min-w-0">
                     <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-gray-300">
                       <span
                         className={`h-2 w-2 rounded-full ${getKindAccent(activeMedia.kind)}`}
@@ -2719,30 +2728,18 @@ export default function TuningPage({
                       {getKindLabel(activeMedia.kind)}
                     </div>
 
-                    <p className="mt-4 break-words text-sm leading-relaxed text-gray-300 sm:text-base">
+                    <p className="mt-4 max-w-full break-words text-sm leading-relaxed text-gray-300 sm:text-base">
                       {activeMedia.subtitle}
                     </p>
-                    <p className="mt-4 break-words text-sm leading-relaxed text-gray-400">
-                      {activeMedia.kind === "photo"
-                        ? "Da clic en la foto principal para verla en pantalla completa."
-                        : activeMedia.mediaUrl &&
-                            isPlayableVideoUrl(activeMedia.mediaUrl)
-                          ? " "
-                          : " "}
-                    </p>
+
+                    {activeMedia.kind === "photo" ? (
+                      <p className="mt-4 max-w-full break-words text-sm leading-relaxed text-gray-400">
+                        Da clic en la foto principal para verla en pantalla completa.
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="mt-6 flex flex-col gap-3">
-                    {activeMedia.mediaUrl ? (
-                      <a
-                        href={activeMedia.mediaUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 px-5 py-3 text-sm font-semibold text-gray-200 transition hover:bg-white/5"
-                      >
-                        Abrir video original
-                      </a>
-                    ) : null}
                     <button
                       type="button"
                       onClick={() => setActiveMedia(null)}
@@ -2867,7 +2864,7 @@ export default function TuningPage({
                       <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
                       Built to Stand Out
                     </div>
-                    <h1 className="mt-5 font-display text-[3.2rem] font-black leading-[0.88] tracking-[-0.01em] text-white sm:text-[4.4rem] md:text-[5.4rem] lg:text-[6.2rem]">
+                    <h1 className="mt-5 font-display text-[3.2rem] font-black leading-[0.88] tracking-[-0.03em] text-white sm:text-[4.4rem] md:text-[5.4rem] lg:text-[6.2rem]">
                       <span className="glow-cool block">Tuning</span>
                     </h1>
                     <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
@@ -2971,7 +2968,7 @@ export default function TuningPage({
             <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px] px-4 sm:px-6 lg:px-8">
               <SectionHeader
                 eyebrow="Visual Library"
-                title="Galerías y videos"
+                title="Galerías"
                 description="Los detalles son los que hacen el auto."
                 accent="cool"
                 action={
@@ -3170,162 +3167,168 @@ export default function TuningPage({
                 </div>
 
                 <div>
-                  <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
-                        Videos
-                      </p>
-                      <h3 className="mt-1 text-2xl font-semibold text-white">
-                        Videos
-                      </h3>
-                    </div>
-                    {editControlsVisible ? (
-                      <button
-                        type="button"
-                        onClick={() => openVideoEditor()}
-                        className="hidden rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                      >
-                        Nuevo video
-                      </button>
-                    ) : null}
+                  <div className="mb-5">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
+                      Exterior Tuning
+                    </p>
+                    <h3 className="mt-1 text-2xl font-semibold text-white">
+                      Aero & Stance
+                    </h3>
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300">
+                      Fitment, rines, aero, widebody y detalles visuales que cambian por completo la presencia de un auto.
+                    </p>
                   </div>
 
-                  {videoItems.length > 0 ? (
+                  {exteriorTuningItems.length > 0 ? (
                     <>
-                      <div className="hidden gap-5 lg:grid lg:grid-cols-2">
-                        {videoItems.slice(0, 4).map((item) => (
-                          <div
-                            key={item.id}
-                            className={`group relative overflow-hidden rounded-[26px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(item.kind)}`}
-                          >
-                            {editControlsVisible ? (
-                              <div className="absolute right-4 top-4 z-20">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openVideoEditor(item);
-                                  }}
-                                  className="hidden rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white backdrop-blur hover:bg-black/90 md:inline-flex"
-                                >
-                                  Editar
-                                </button>
-                              </div>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() => openMediaPreview(item)}
-                              className="block w-full text-left"
-                            >
-                              <div className="relative aspect-[16/9] w-full">
-                                {renderMediaVisual(
-                                  item,
-                                  "h-full w-full object-cover",
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                                  <span
-                                    className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`}
-                                  />
-                                  {getKindLabel(item.kind)}
-                                </div>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <div
-                                    className={`flex h-16 w-16 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md transition group-hover:scale-105 ${getPlayGlow(item.kind)}`}
-                                  >
-                                    <svg
-                                      width="22"
-                                      height="22"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      aria-hidden
-                                    >
-                                      <path
-                                        d="M8 6.5v11l9-5.5-9-5.5z"
-                                        fill="white"
-                                      />
-                                    </svg>
-                                  </div>
-                                </div>
-                                <div className="absolute bottom-0 left-0 right-0 p-5">
-                                  <h4 className="text-xl font-semibold text-white">
-                                    {item.title}
-                                  </h4>
-                                  <p className="mt-2 line-clamp-2 text-sm text-gray-200">
-                                    {item.subtitle}
-                                  </p>
-                                </div>
-                              </div>
-                            </button>
-                          </div>
-                        ))}
+                      <div className="hidden md:grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-6">
+                          {exteriorTuningItems.slice(0, 2).map((item) => (
+                            <TuningFeatureCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                        <div className="grid gap-6">
+                          {exteriorTuningItems.slice(2, 5).map((item) => (
+                            <TuningFeatureCard key={item.id} item={item} />
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar lg:hidden">
+                      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
                         <div className="flex gap-4 snap-x snap-mandatory">
-                          {videoItems.slice(0, 4).map((item) => (
-                            <div
+                          {exteriorTuningItems.map((item) => (
+                            <Link
                               key={item.id}
-                              className={`group relative h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start overflow-hidden rounded-[22px] border bg-mw-surface/75 text-left backdrop-blur-md transition ${getKindBorder(item.kind)}`}
+                              href={item.href}
+                              className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
                             >
-                              <button
-                                type="button"
-                                onClick={() => openMediaPreview(item)}
-                                className="block h-full w-full text-left"
-                              >
-                                <div className="relative h-full w-full">
-                                  {renderMediaVisual(
-                                    item,
-                                    "h-full w-full object-cover",
-                                  )}
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                                  <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur">
-                                    <span
-                                      className={`h-2 w-2 rounded-full ${getKindAccent(item.kind)}`}
-                                    />
-                                    {getKindLabel(item.kind)}
-                                  </div>
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <div
-                                      className={`flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur-md ${getPlayGlow(item.kind)}`}
-                                    >
-                                      <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        aria-hidden
-                                      >
-                                        <path
-                                          d="M8 6.5v11l9-5.5-9-5.5z"
-                                          fill="white"
-                                        />
-                                      </svg>
-                                    </div>
-                                  </div>
-                                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                                    <h4 className="line-clamp-2 text-base font-semibold text-white">
-                                      {item.title}
-                                    </h4>
-                                    <p className="mt-2 line-clamp-2 text-xs text-gray-200">
-                                      {item.subtitle}
-                                    </p>
-                                  </div>
+                              <Card className="h-full overflow-hidden">
+                                <div className="relative h-36 w-full">
+                                  <Image
+                                    src={item.img}
+                                    alt={item.title}
+                                    fill
+                                    sizes="78vw"
+                                    style={{ objectFit: "cover" }}
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                                 </div>
-                              </button>
-                            </div>
+                                <CardContent className="p-4">
+                                  <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                                    <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+                                    Tuning · {item.typeLabel}
+                                  </div>
+                                  <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
+                                    {item.title}
+                                  </h3>
+                                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+                                    {item.excerpt}
+                                  </p>
+                                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                                    {item.authorName ? (
+                                      <span>Por {item.authorName}</span>
+                                    ) : null}
+                                    {item.authorName && item.when ? (
+                                      <span className="text-gray-600">•</span>
+                                    ) : null}
+                                    {item.when ? <span>{item.when}</span> : null}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </Link>
                           ))}
                         </div>
                       </div>
                     </>
                   ) : (
                     <EmptySectionNotice
-                      title="Próximas publicaciones"
-                      message="Muy pronto aparecerán piezas de video con movimiento, sonido y energía editorial para esta sección."
+                      title="Exterior Tuning en preparación"
+                      message="Aquí vivirán historias de rines, aero, stance, widebody y detalles visuales que construyen presencia."
                     />
                   )}
                 </div>
-              </div>
+
+                <div>
+                  <div className="mb-5">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#A3FF12]">
+                      Performance
+                    </p>
+                    <h3 className="mt-1 text-2xl font-semibold text-white">
+                      Performance Lab
+                    </h3>
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300">
+                      Potencia, puesta a punto, frenos, suspensión y upgrades pensados para que el auto no solo se vea distinto: se sienta distinto.
+                    </p>
+                  </div>
+
+                  {performanceTuningItems.length > 0 ? (
+                    <>
+                      <div className="hidden md:grid gap-5 md:grid-cols-[0.92fr_1.08fr]">
+                        <div className="grid gap-6">
+                          {performanceTuningItems.slice(0, 2).map((item) => (
+                            <TuningFeatureCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                        <div className="grid gap-6">
+                          {performanceTuningItems.slice(2, 5).map((item) => (
+                            <TuningFeatureCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
+                        <div className="flex gap-4 snap-x snap-mandatory">
+                          {performanceTuningItems.map((item) => (
+                            <Link
+                              key={item.id}
+                              href={item.href}
+                              className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
+                            >
+                              <Card className="h-full overflow-hidden">
+                                <div className="relative h-36 w-full">
+                                  <Image
+                                    src={item.img}
+                                    alt={item.title}
+                                    fill
+                                    sizes="78vw"
+                                    style={{ objectFit: "cover" }}
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                                </div>
+                                <CardContent className="p-4">
+                                  <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                                    <span className="h-2 w-2 rounded-full bg-[#A3FF12]" />
+                                    Tuning · {item.typeLabel}
+                                  </div>
+                                  <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
+                                    {item.title}
+                                  </h3>
+                                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
+                                    {item.excerpt}
+                                  </p>
+                                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                                    {item.authorName ? (
+                                      <span>Por {item.authorName}</span>
+                                    ) : null}
+                                    {item.authorName && item.when ? (
+                                      <span className="text-gray-600">•</span>
+                                    ) : null}
+                                    {item.when ? <span>{item.when}</span> : null}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <EmptySectionNotice
+                      title="Performance Lab en preparación"
+                      message="Aquí agruparemos piezas enfocadas en potencia, suspensión, frenos, puesta a punto y upgrades reales."
+                    />
+                  )}
+                </div>              </div>
             </div>
           </section>
 
@@ -3689,7 +3692,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       "authorName": coalesce(authorName, author->name, ""),
       "galleryUrls": coalesce(galleryUrls, []),
       "videoUrl": coalesce(videoUrl, youtubeUrl, ""),
-      "reelUrl": coalesce(reelUrl, shortVideoUrl, socialUrl, "")
+      "reelUrl": coalesce(reelUrl, shortVideoUrl, socialUrl, ""),
+      "section": coalesce(section, ""),
+      "category": coalesce(category, ""),
+      "subcategory": coalesce(subcategory, ""),
+      "noteSection": coalesce(noteSection, seccionNota, sectionNote, ""),
+      "categories": coalesce(categories, []),
+      "tags": coalesce(tags, [])
     }
   `;
 
@@ -3798,6 +3807,16 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       : [],
     videoUrl: String(it?.videoUrl || ""),
     reelUrl: String(it?.reelUrl || ""),
+    section: String(it?.section || ""),
+    category: String(it?.category || ""),
+    subcategory: String(it?.subcategory || ""),
+    noteSection: String(it?.noteSection || ""),
+    categories: Array.isArray(it?.categories)
+      ? it.categories.filter(Boolean).map((value: unknown) => String(value))
+      : [],
+    tags: Array.isArray(it?.tags)
+      ? it.tags.filter(Boolean).map((value: unknown) => String(value))
+      : [],
   }));
 
   const latestItems: LatestArticleData[] = (
