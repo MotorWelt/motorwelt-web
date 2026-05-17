@@ -5,7 +5,7 @@ type GetBody = { id?: string };
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const isPost = req.method === "POST";
   const isGet = req.method === "GET";
@@ -36,6 +36,7 @@ export default async function handler(
         excerpt,
 
         section,
+        "subcategory": coalesce(subcategory, ""),
         contentType,
         status,
 
@@ -75,9 +76,10 @@ export default async function handler(
       ok: true,
       doc,
       debug: {
-        buildMarker: "content-get-debug-v1",
+        buildMarker: "content-get-subcategory-fix-v2",
         readPublishedAt: doc?.publishedAt || null,
         readType: doc?._type || null,
+        readSubcategory: doc?.subcategory || "",
       },
     });
   } catch (err: any) {

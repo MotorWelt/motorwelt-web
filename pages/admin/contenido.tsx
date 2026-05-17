@@ -90,9 +90,10 @@ type NoteSubcategory =
   | "motos_pista"
   | "motos_off_road"
   | "motos_electricas"
+  | "motos_heritage"
   | "motos_prueba_manejo"
   | "motos_urbanas"
-  | "motos_touring"
+  | "deportes_noticias"
   | "f1"
   | "nascar"
   | "motogp"
@@ -194,11 +195,12 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
     { value: "motos_pista", label: "Pista" },
     { value: "motos_off_road", label: "Off road" },
     { value: "motos_electricas", label: "Eléctricas" },
+    { value: "motos_heritage", label: "Heritage" },
     { value: "motos_prueba_manejo", label: "Prueba de manejo" },
     { value: "motos_urbanas", label: "Urbanas" },
-    { value: "motos_touring", label: "Touring" },
   ],
   deportes: [
+    { value: "deportes_noticias", label: "Noticias" },
     { value: "f1", label: "F1" },
     { value: "nascar", label: "Nascar" },
     { value: "motogp", label: "MotoGP" },
@@ -224,6 +226,7 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
 };
 
 const LEGACY_SUBCATEGORY_LABELS: Record<string, string> = {
+  deportes_noticias: "Noticias",
   autos_lanzamientos: "Lanzamientos",
   autos_pruebas: "Pruebas / Reviews",
   autos_industria: "Industria",
@@ -268,6 +271,50 @@ function normalizeSubcategoryForSection(
   }
 
   return getDefaultSubcategoryForSection(section);
+}
+
+function getAutosAdminFilterValue(subcategory?: NoteSubcategory) {
+  if (subcategory === "autos_noticias") return "noticias";
+  if (subcategory === "autos_gasolina") return "gasolina";
+  if (subcategory === "autos_hibridos") return "hibridos";
+  if (subcategory === "autos_electricos") return "electricos";
+  if (subcategory === "autos_prueba_manejo") return "prueba_manejo";
+  return "";
+}
+
+function getMotosAdminFilterValue(subcategory?: NoteSubcategory) {
+  if (subcategory === "motos_noticias") return "noticias";
+  if (subcategory === "motos_doble_proposito") return "doble_proposito";
+  if (subcategory === "motos_pista") return "pista";
+  if (subcategory === "motos_off_road") return "off_road";
+  if (subcategory === "motos_electricas") return "electricas";
+  if (subcategory === "motos_heritage") return "heritage";
+  if (subcategory === "motos_prueba_manejo") return "prueba_manejo";
+  if (subcategory === "motos_urbanas") return "urbanas";
+  return "";
+}
+
+function getDeportesAdminFilterValue(subcategory?: NoteSubcategory) {
+  if (subcategory === "deportes_noticias") return "noticias";
+  if (subcategory === "f1") return "f1";
+  if (subcategory === "nascar") return "nascar";
+  if (subcategory === "motogp") return "motogp";
+  if (subcategory === "wrc") return "wrc";
+  if (subcategory === "drift") return "drift";
+  return "";
+}
+
+function getCommunityAdminFilterValue(subcategory?: NoteSubcategory) {
+  if (subcategory === "comunidad_eventos_nacionales") return "eventos_nacionales";
+  if (subcategory === "comunidad_eventos_internacionales") return "eventos_internacionales";
+  if (subcategory === "comunidad_meets") return "meets";
+  if (subcategory === "comunidad_clubes") return "clubes";
+  return "";
+}
+
+function getTuningAdminFilterValue(subcategory?: NoteSubcategory) {
+  if (subcategory === "tuning_noticias") return "noticias";
+  return "";
 }
 
 function labelForSection(section?: SectionSlug) {
@@ -1057,18 +1104,55 @@ const AdminContentEditorPage: React.FC = () => {
 
         section,
         subcategory: subcategory || undefined,
+        subCategory: subcategory || undefined,
+        noteSubcategory: subcategory || undefined,
+        sectionOfNote: subcategory || undefined,
+        autoSection:
+          section === "noticias_autos"
+            ? getAutosAdminFilterValue(subcategory) || undefined
+            : undefined,
+        autosSection:
+          section === "noticias_autos"
+            ? getAutosAdminFilterValue(subcategory) || undefined
+            : undefined,
+        autoCategory:
+          section === "noticias_autos"
+            ? getAutosAdminFilterValue(subcategory) || undefined
+            : undefined,
+        motoSection:
+          section === "noticias_motos"
+            ? getMotosAdminFilterValue(subcategory) || undefined
+            : undefined,
+        motosSection:
+          section === "noticias_motos"
+            ? getMotosAdminFilterValue(subcategory) || undefined
+            : undefined,
+        sport:
+          section === "deportes"
+            ? getDeportesAdminFilterValue(subcategory) || undefined
+            : undefined,
+        deportesSection:
+          section === "deportes"
+            ? getDeportesAdminFilterValue(subcategory) || undefined
+            : undefined,
+        sportsSection:
+          section === "deportes"
+            ? getDeportesAdminFilterValue(subcategory) || undefined
+            : undefined,
+        communitySection:
+          section === "comunidad"
+            ? getCommunityAdminFilterValue(subcategory) || undefined
+            : undefined,
+        tuningSection:
+          section === "tuning"
+            ? getTuningAdminFilterValue(subcategory) || undefined
+            : undefined,
         contentType,
         status: "borrador" as ContentStatus,
 
         body,
 
-        tags: Array.from(
-          new Set([
-            ...cleanTags,
-            ...(subcategory ? [subcategory] : []),
-            ...(subcategoryLabel ? [subcategoryLabel] : []),
-          ]),
-        ),
+        tags: cleanTags,
 
         videoUrl: videoUrl || undefined,
         reelUrl: reelUrl || undefined,

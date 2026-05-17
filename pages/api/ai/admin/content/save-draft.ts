@@ -8,7 +8,9 @@ type SaveDraftRequest = {
 
   title: string;
   subtitle?: string;
+  excerpt?: string;
   section: string;
+  subcategory?: string;
   contentType?: string;
   status?: ContentStatus;
 
@@ -47,6 +49,7 @@ type Data =
         existingPublishedAt: string | null;
         resolvedPublishedAt: string | null;
         resolvedType: string;
+        resolvedSubcategory: string;
       };
     }
   | { ok: false; error: string };
@@ -77,6 +80,19 @@ function slugify(input: string): string {
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+function normalizeSubcategory(input: unknown): string {
+  return String(input || "").trim();
+}
+
+function autosSubcategoryToAutoSection(subcategory: string) {
+  if (subcategory === "autos_noticias") return "noticias";
+  if (subcategory === "autos_gasolina") return "gasolina";
+  if (subcategory === "autos_hibridos") return "hibridos";
+  if (subcategory === "autos_electricos") return "electricos";
+  if (subcategory === "autos_prueba_manejo") return "prueba_manejo";
+  return "";
 }
 
 async function makeUniqueSlug(base: string, excludeId?: string): Promise<string> {
@@ -128,7 +144,7 @@ async function getExistingDoc(id: string): Promise<{
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Data>
+  res: NextApiResponse<Data>,
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
@@ -143,7 +159,9 @@ export default async function handler(
       id,
       title,
       subtitle,
+      excerpt,
       section,
+      subcategory,
       contentType,
       status,
       body: articleBody,
@@ -173,6 +191,7 @@ export default async function handler(
     const normalizedStatus: ContentStatus =
       (status as ContentStatus) || "borrador";
 
+    const normalizedSubcategory = normalizeSubcategory(subcategory);
     const normalizedTags = normalizeStringArray(tags);
     const normalizedGallery = normalizeStringArray(galleryUrls);
     const resolvedMainImageUrl = mainImageAsset?.url || mainImageUrl || "";
@@ -196,7 +215,8 @@ export default async function handler(
         : null;
 
     const existingPublishedAt =
-      typeof existingDoc?.publishedAt === "string" && existingDoc.publishedAt.trim()
+      typeof existingDoc?.publishedAt === "string" &&
+      existingDoc.publishedAt.trim()
         ? existingDoc.publishedAt.trim()
         : null;
 
@@ -204,21 +224,27 @@ export default async function handler(
       incomingPublishedAt !== null
         ? incomingPublishedAt
         : existingPublishedAt !== null
-        ? existingPublishedAt
-        : normalizedStatus === "publicado"
-        ? now
-        : null;
+          ? existingPublishedAt
+          : normalizedStatus === "publicado"
+            ? now
+            : null;
+
+    const autosSection = autosSubcategoryToAutoSection(normalizedSubcategory);
 
     const docBase: Record<string, any> = {
       _type: resolvedType,
       title,
       subtitle: subtitle || "",
-      excerpt: "",
+      excerpt: excerpt || subtitle || "",
       section,
+      subcategory: normalizedSubcategory,
       contentType: contentType || "noticia",
       status: normalizedStatus,
       body: articleBody || "",
+
+      // Solo guarda los tags escritos manualmente. NO agrega subcategoría automática.
       tags: normalizedTags,
+
       seoTitle: seoTitle || "",
       seoDescription: seoDescription || "",
       authorName: authorName || "",
@@ -231,6 +257,7 @@ export default async function handler(
       useVideoAsHero: !!useVideoAsHero,
       updatedAt: now,
       ...(resolvedPublishedAt ? { publishedAt: resolvedPublishedAt } : {}),
+      ...(autosSection ? { autoSection: autosSection } : {}),
       ...(mainImageAsset?.assetId
         ? {
             coverImage: {
@@ -244,7 +271,7 @@ export default async function handler(
         : {}),
     };
 
-    const buildMarker = "save-draft-debug-v1";
+    const buildMarker = "save-draft-subcategory-fix-v2";
 
     if (id) {
       const updated = await sanityAdminClient
@@ -263,15 +290,19 @@ export default async function handler(
           existingPublishedAt,
           resolvedPublishedAt,
           resolvedType,
+          resolvedSubcategory: normalizedSubcategory,
         },
       });
     }
 
-    const createdDoc = await sanityAdminClient.create(docBase);
+    const created = await sanityAdminClient.create({
+      ...docBase,
+      _type: resolvedType,
+    });
 
     return res.status(200).json({
       ok: true,
-      id: createdDoc._id,
+      id: created._id,
       created: true,
       slug: finalSlug || undefined,
       debug: {
@@ -280,13 +311,14 @@ export default async function handler(
         existingPublishedAt,
         resolvedPublishedAt,
         resolvedType,
+        resolvedSubcategory: normalizedSubcategory,
       },
     });
-  } catch (error: any) {
-    console.error("SANITY SAVE ERROR:", error?.message || error);
+  } catch (err: any) {
+    console.error("save-draft error:", err);
     return res.status(500).json({
       ok: false,
-      error: error?.message || "Error guardando contenido en Sanity",
+      error: err?.message || "Error guardando borrador",
     });
   }
 }

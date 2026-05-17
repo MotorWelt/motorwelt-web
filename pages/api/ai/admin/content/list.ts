@@ -6,6 +6,8 @@ type ContentStatus = "borrador" | "revision" | "publicado";
 type ListBody = {
   authorEmail?: string;
   status?: ContentStatus | "all";
+  section?: string;
+  subcategory?: string;
   q?: string;
   limit?: number;
 };
@@ -14,9 +16,30 @@ function isValidStatus(v: any): v is ContentStatus {
   return v === "borrador" || v === "revision" || v === "publicado";
 }
 
+const resolvedSectionExpr = `coalesce(
+  section,
+  select(
+    lower(category) == "autos" => "noticias_autos",
+    lower(category) == "motos" => "noticias_motos",
+    lower(category) == "deportes" => "deportes",
+    lower(category) == "lifestyle" => "lifestyle",
+    lower(category) == "comunidad" => "comunidad",
+    lower(category) == "tuning" => "tuning",
+    "autos" in categories[] => "noticias_autos",
+    "motos" in categories[] => "noticias_motos",
+    "deportes" in categories[] => "deportes",
+    "lifestyle" in categories[] => "lifestyle",
+    "comunidad" in categories[] => "comunidad",
+    "tuning" in categories[] => "tuning",
+    "builds" in categories[] => "tuning",
+    "mods" in categories[] => "tuning",
+    ""
+  )
+)`;
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const isPost = req.method === "POST";
   const isGet = req.method === "GET";
@@ -40,6 +63,14 @@ export default async function handler(
             typeof req.query.status === "string"
               ? (req.query.status as ContentStatus | "all")
               : undefined,
+          section:
+            typeof req.query.section === "string"
+              ? req.query.section
+              : undefined,
+          subcategory:
+            typeof req.query.subcategory === "string"
+              ? req.query.subcategory
+              : undefined,
           q: typeof req.query.q === "string" ? req.query.q : undefined,
           limit:
             typeof req.query.limit === "string" ||
@@ -51,8 +82,11 @@ export default async function handler(
     const authorEmail = (payload.authorEmail || "").trim() || undefined;
     const rawStatus = payload.status;
     const status = isValidStatus(rawStatus) ? rawStatus : undefined;
+    const section = (payload.section || "").trim() || undefined;
+    const subcategory =
+      typeof payload.subcategory === "string" ? payload.subcategory.trim() : undefined;
     const q = (payload.q || "").trim() || undefined;
-    const limit = Math.min(Math.max(Number(payload.limit || 30), 1), 50);
+    const limit = Math.min(Math.max(Number(payload.limit || 30), 1), 100);
 
     const filters: string[] = [
       `_type in ["article", "post"]`,
@@ -72,9 +106,23 @@ export default async function handler(
       params.status = status;
     }
 
+    if (section) {
+      filters.push(`${resolvedSectionExpr} == $section`);
+      params.section = section;
+    }
+
+    if (subcategory !== undefined) {
+      if (subcategory === "") {
+        filters.push(`!defined(subcategory) || subcategory == ""`);
+      } else {
+        filters.push(`coalesce(subcategory, "") == $subcategory`);
+        params.subcategory = subcategory;
+      }
+    }
+
     if (q) {
       filters.push(
-        `(title match $q || subtitle match $q || excerpt match $q || body match $q)`
+        `(title match $q || subtitle match $q || excerpt match $q || body match $q)`,
       );
       params.q = `*${q}*`;
     }
@@ -88,26 +136,8 @@ export default async function handler(
         "_type": _type,
         title,
         "slug": slug.current,
-        "section": coalesce(
-          section,
-          select(
-            lower(category) == "autos" => "noticias_autos",
-            lower(category) == "motos" => "noticias_motos",
-            lower(category) == "deportes" => "deportes",
-            lower(category) == "lifestyle" => "lifestyle",
-            lower(category) == "comunidad" => "comunidad",
-            lower(category) == "tuning" => "tuning",
-            "autos" in categories[] => "noticias_autos",
-            "motos" in categories[] => "noticias_motos",
-            "deportes" in categories[] => "deportes",
-            "lifestyle" in categories[] => "lifestyle",
-            "comunidad" in categories[] => "comunidad",
-            "tuning" in categories[] => "tuning",
-            "builds" in categories[] => "tuning",
-            "mods" in categories[] => "tuning",
-            ""
-          )
-        ),
+        "section": ${resolvedSectionExpr},
+        "subcategory": coalesce(subcategory, ""),
         "contentType": coalesce(contentType, "noticia"),
         "status": coalesce(status, "publicado"),
         "updatedAt": coalesce(updatedAt, _updatedAt, _createdAt),
@@ -123,8 +153,10 @@ export default async function handler(
       ok: true,
       items,
       debug: {
-        buildMarker: "content-list-debug-v1",
+        buildMarker: "content-list-subcategory-fix-v2",
         requestedStatus: status || "all",
+        requestedSection: section || "all",
+        requestedSubcategory: subcategory ?? "all",
         count: Array.isArray(items) ? items.length : 0,
       },
     });

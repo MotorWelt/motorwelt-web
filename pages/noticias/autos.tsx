@@ -569,13 +569,6 @@ function getLatestSectionData(
   return null;
 }
 
-function splitFive(items: NewsItem[]) {
-  return {
-    left: items.slice(0, 2),
-    right: items.slice(2, 5),
-  };
-}
-
 function normalizeAutoSection(value?: string | null) {
   const raw = String(value || "")
     .trim()
@@ -583,6 +576,7 @@ function normalizeAutoSection(value?: string | null) {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+  if (["noticias", "noticia", "news"].includes(raw)) return "noticias";
   if (["gasolina", "combustion", "ice", "gas"].includes(raw)) return "gasolina";
   if (["hibridos", "hibrido", "hybrid", "hev", "phev"].includes(raw))
     return "hibridos";
@@ -593,6 +587,7 @@ function normalizeAutoSection(value?: string | null) {
 
 function autoSectionLabel(value?: string | null) {
   const normalized = normalizeAutoSection(value);
+  if (normalized === "noticias") return "Noticias";
   if (normalized === "gasolina") return "Gasolina";
   if (normalized === "hibridos") return "Híbridos";
   if (normalized === "electricos") return "Eléctricos";
@@ -601,22 +596,18 @@ function autoSectionLabel(value?: string | null) {
 
 function itemMatchesAutoSection(
   item: NewsItem,
-  sectionKey: "gasolina" | "hibridos" | "electricos",
-  fallbackTerms: string[],
+  sectionKey: "noticias" | "gasolina" | "hibridos" | "electricos",
+  _fallbackTerms: string[] = [],
 ) {
   const normalized = normalizeAutoSection(item.autoSection);
+
   if (normalized) return normalized === sectionKey;
 
-  const haystack = [
-    item.title,
-    item.excerpt,
-    item.tag,
-    ...(Array.isArray(item.tags) ? item.tags : []),
-  ]
-    .join(" ")
-    .toLowerCase();
+  if (sectionKey === "noticias") {
+    return normalizeAutoSection(item.tag) === "noticias";
+  }
 
-  return fallbackTerms.some((term) => haystack.includes(term.toLowerCase()));
+  return false;
 }
 
 function CategoryRail({
@@ -628,6 +619,9 @@ function CategoryRail({
   subtle: string;
   items: NewsItem[];
 }) {
+  const left = items.slice(0, 2);
+  const right = items.slice(2, 6);
+
   return (
     <section className="py-10 sm:py-12">
       <SectionHeading title={title} subtle={subtle} glow="cool" align="left" />
@@ -636,16 +630,29 @@ function CategoryRail({
         <>
           <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
             <div className="flex snap-x snap-mandatory gap-4">
-              {items.slice(0, 5).map((item) => (
+              {items.slice(0, 6).map((item) => (
                 <NewsCard key={item.id} item={item} compact mobileSize />
               ))}
             </div>
           </div>
 
-          <div className="hidden md:grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 items-stretch">
-            {items.slice(0, 6).map((item) => (
-              <NewsCard key={item.id} item={item} imageHeight="h-48" compact />
-            ))}
+          <div className="hidden md:grid md:grid-cols-[1.05fr_.95fr] gap-6 items-start">
+            <div className="grid gap-6">
+              {left.map((item) => (
+                <NewsCard key={item.id} item={item} imageHeight="h-56" />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-5">
+              {right.map((item) => (
+                <NewsCard
+                  key={item.id}
+                  item={item}
+                  imageHeight="h-40"
+                  compact
+                />
+              ))}
+            </div>
           </div>
         </>
       ) : (
@@ -1168,33 +1175,19 @@ export default function NoticiasAutos({
 
   const editControlsVisible = canEditPage && !spectatorMode;
   const displayItems = filtered.length > 0 ? filtered : safeItems;
-  const latestFive = displayItems.slice(0, 5);
-  const latestColumns = splitFive(latestFive);
-  const moreNews = displayItems.slice(5, 17);
-  const gasolineItems = safeItems.filter((item) =>
-    itemMatchesAutoSection(item, "gasolina", [
-      "gasolina",
-      "combustión",
-      "combustion",
-      "ice",
-    ]),
+  const newsItems = displayItems.filter((item) =>
+    itemMatchesAutoSection(item, "noticias"),
   );
-  const hybridItems = safeItems.filter((item) =>
-    itemMatchesAutoSection(item, "hibridos", [
-      "híbrido",
-      "hibrido",
-      "hybrid",
-      "phev",
-      "hev",
-    ]),
+  const latestFive = newsItems.slice(0, 5);
+  const moreNews = newsItems.slice(5, 17);
+  const gasolineItems = displayItems.filter((item) =>
+    itemMatchesAutoSection(item, "gasolina"),
   );
-  const electricItems = safeItems.filter((item) =>
-    itemMatchesAutoSection(item, "electricos", [
-      "eléctrico",
-      "electrico",
-      "electric",
-      "ev",
-    ]),
+  const hybridItems = displayItems.filter((item) =>
+    itemMatchesAutoSection(item, "hibridos"),
+  );
+  const electricItems = displayItems.filter((item) =>
+    itemMatchesAutoSection(item, "electricos"),
   );
   const heroImageSrc =
     pageSettings.heroImageUrl ||
@@ -1406,19 +1399,18 @@ export default function NoticiasAutos({
             <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:px-8 lg:pb-16">
               <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                 <div className="max-w-4xl">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
-                    <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                    Noticias • Autos
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.34em] text-gray-200 backdrop-blur md:text-[11px]">
+                    <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+                    Built to Stand Out
                   </div>
 
                   <h1 className="mt-5 font-display text-[2.8rem] font-black leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.4rem]">
-                    <span className="glow-cool block">Noticias</span>
-                    <span className="block text-white/95">de Autos</span>
+                    <span className="glow-cool block">Autos</span>
+                    <span className="block text-white/95"></span>
                   </h1>
 
                   <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                    Lanzamientos, pruebas, tecnología, diseño y cultura sobre
-                    cuatro ruedas con el pulso editorial de MotorWelt.
+                    Diseño, ingeniería y cultura automotriz.
                   </p>
                 </div>
               </div>
@@ -1467,48 +1459,23 @@ export default function NoticiasAutos({
             </section>
           ) : (
             <>
-              <section className="md:hidden py-10 sm:py-12">
+              <section className="py-10 sm:py-12" aria-labelledby="feed-title">
                 <SectionHeading
-                  title="Últimas publicaciones"
-                  subtle="La conversación más reciente del universo automotriz."
+                  title="Noticias"
+                  subtle="Notas, lanzamientos y actualidad del mundo automotriz."
                   glow="cool"
                   align="left"
                 />
+
                 <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
                   <div className="flex snap-x snap-mandatory gap-4">
                     {latestFive.map((item) => (
-                      <NewsCard key={item.id} item={item} compact mobileSize />
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              <section
-                className="hidden md:block py-10 sm:py-12"
-                aria-labelledby="feed-title"
-              >
-                <SectionHeading
-                  title="Últimas publicaciones"
-                  subtle="La conversación más reciente del universo automotriz."
-                  glow="cool"
-                  align="left"
-                />
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="grid gap-6">
-                    {latestColumns.left.map((item) => (
-                      <NewsCard key={item.id} item={item} imageHeight="h-56" />
-                    ))}
-                  </div>
-
-                  <div className="grid gap-6">
-                    {latestColumns.right.map((item) => (
-                      <NewsCard
+                      <div
                         key={item.id}
-                        item={item}
-                        imageHeight="h-44"
-                        compact
-                      />
+                        className="w-[232px] min-w-[232px] shrink-0 snap-start sm:w-[260px] sm:min-w-[260px] md:w-[280px] md:min-w-[280px]"
+                      >
+                        <NewsCard item={item} compact imageHeight="h-36" />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1878,11 +1845,17 @@ export default function NoticiasAutos({
             transparent
           );
         }
-        .glow-cool {
-          text-shadow: 0 0 14px rgba(12, 224, 178, 0.25);
-        }
         .glow-warm {
           text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
+        }
+        .glow-cool {
+          text-shadow:
+            0 0 12px rgba(12, 224, 178, 0.28),
+            0 0 26px rgba(12, 224, 178, 0.22),
+            0 0 50px rgba(12, 224, 178, 0.14);
+        }
+        .logo-glow {
+          filter: drop-shadow(0 0 18px rgba(12, 224, 178, 0.12));
         }
         .no-scrollbar {
           -ms-overflow-style: none;
@@ -1930,7 +1903,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       "excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
       "tag": coalesce(contentType, "noticia"),
       "tags": coalesce(tags, []),
-      "autoSection": coalesce(autoSection, autosSection, autoCategory, propulsionType, powertrainType, fuelType, ""),
+      "autoSection": coalesce(autoSection, autosSection, autoCategory, noteSection, sectionNote, noticiaSection, subcategory, propulsionType, powertrainType, fuelType, ""),
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,

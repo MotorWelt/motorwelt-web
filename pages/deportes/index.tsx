@@ -10,7 +10,7 @@ import ProfileButton from "../../components/ProfileButton";
 const nextI18NextConfig = require("../../next-i18next.config.js");
 
 type ButtonVariant = "cyan" | "pink" | "link";
-type SportKey = "F1" | "Nascar" | "MotoGP" | "WRC" | "Drift";
+type SportKey = "Noticias" | "F1" | "Nascar" | "MotoGP" | "WRC" | "Drift";
 type AdKind = "leaderboard" | "billboard";
 
 type Streak = {
@@ -87,7 +87,13 @@ type RawPost = {
   section?: string;
   category?: string;
   subcategory?: string;
+  subCategory?: string;
+  noteSubcategory?: string;
+  sectionOfNote?: string;
   sport?: string;
+  deportesSection?: string;
+  deporteSection?: string;
+  sportsSection?: string;
   contentType?: string;
   categories?: string[];
   tags?: Array<
@@ -203,72 +209,75 @@ function normalizeText(value: unknown) {
   return String(value).trim().toLowerCase();
 }
 
-function detectSport(post: RawPost): SportKey {
-  const controlledFields = [
-    post.sport,
-    post.category,
-    post.subcategory,
-    post.categories,
-    post.tags,
-  ]
-    .map(normalizeText)
-    .join(" ");
+function normalizeSportValue(value: unknown): SportKey | null {
+  const text = normalizeText(value)
+    .replace(/á/g, "a")
+    .replace(/é/g, "e")
+    .replace(/í/g, "i")
+    .replace(/ó/g, "o")
+    .replace(/ú/g, "u")
+    .replace(/ü/g, "u")
+    .replace(/ñ/g, "n")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 
-  const controlledExact = controlledFields
-    .split(/\s|,|;|\||\//g)
-    .map((v) => v.trim())
-    .filter(Boolean);
+  if (!text) return null;
 
   if (
-    controlledExact.includes("f1") ||
-    controlledFields.includes("formula 1") ||
-    controlledFields.includes("fórmula 1") ||
-    controlledFields.includes("formula uno")
+    text === "noticias" ||
+    text === "deportes_noticias" ||
+    text === "deporte_noticias" ||
+    text === "sports_news"
   ) {
+    return "Noticias";
+  }
+
+  if (text === "f1" || text === "deportes_f1" || text === "formula_1") {
     return "F1";
   }
 
-  if (controlledFields.includes("nascar")) return "Nascar";
+  if (text === "nascar" || text === "deportes_nascar") {
+    return "Nascar";
+  }
 
   if (
-    controlledFields.includes("motogp") ||
-    controlledFields.includes("moto gp")
+    text === "motogp" ||
+    text === "moto_gp" ||
+    text === "deportes_motogp" ||
+    text === "deportes_moto_gp"
   ) {
     return "MotoGP";
   }
 
-  if (
-    controlledExact.includes("wrc") ||
-    controlledFields.includes("world rally") ||
-    controlledFields.includes("rally")
-  ) {
+  if (text === "wrc" || text === "deportes_wrc") {
     return "WRC";
   }
 
-  if (
-    controlledFields.includes("drift") ||
-    controlledFields.includes("drifting")
-  ) {
+  if (text === "drift" || text === "drifting" || text === "deportes_drift") {
     return "Drift";
   }
 
-  const titleBlob = normalizeText(post.title);
+  return null;
+}
 
-  if (
-    titleBlob.includes("f1") ||
-    titleBlob.includes("formula 1") ||
-    titleBlob.includes("fórmula 1")
-  ) {
-    return "F1";
+function detectSport(post: RawPost): SportKey {
+  const controlledFields = [
+    post.sport,
+    post.deportesSection,
+    post.deporteSection,
+    post.sportsSection,
+    post.subcategory,
+    post.subCategory,
+    post.noteSubcategory,
+    post.sectionOfNote,
+  ];
+
+  for (const value of controlledFields) {
+    const normalized = normalizeSportValue(value);
+    if (normalized) return normalized;
   }
 
-  if (titleBlob.includes("nascar")) return "Nascar";
-  if (titleBlob.includes("motogp") || titleBlob.includes("moto gp"))
-    return "MotoGP";
-  if (titleBlob.includes("wrc") || titleBlob.includes("rally")) return "WRC";
-  if (titleBlob.includes("drift")) return "Drift";
-
-  return "F1";
+  return "Noticias";
 }
 
 function isLifestyleMarker(value: unknown) {
@@ -501,7 +510,7 @@ function ArticleCard({
       className={
         mobileSize
           ? "block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
-          : "block h-full w-full md:max-w-[82%]"
+          : "block h-full w-full"
       }
     >
       <Card className="group hover:-translate-y-[2px] hover:shadow-[0_0_24px_rgba(255,255,255,.045)]">
@@ -1072,7 +1081,7 @@ export default function DeportesPage({
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
 
   const featured = deportesItems[0] || null;
-  const latest = deportesItems.slice(0, 8);
+  const latest = deportesItems.filter((item) => item.sport === "Noticias").slice(0, 8);
   const recentMotorWelt = recentItems.slice(0, 8);
 
   const grouped = useMemo(() => {
@@ -1593,19 +1602,17 @@ export default function DeportesPage({
               <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:px-8 lg:pb-16">
                 <div className="mx-auto w-full max-w-[1440px] px-0 xl:px-10 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
-                      <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                      MotorWelt Deportes
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.34em] text-gray-200 backdrop-blur md:text-[11px]">
+                      <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+                      Built to Stand Out
                     </div>
 
-                    <h1 className="mt-5 font-display text-[2.8rem] font-black leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.4rem]">
+                    <h1 className="mt-5 font-display text-[3.2rem] font-black leading-[0.88] tracking-[-0.03em] text-white sm:text-[4.4rem] md:text-[5.4rem] lg:text-[6.2rem]">
                       <span className="glow-cool block">Deportes</span>
                     </h1>
 
                     <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                      F1, Nascar, MotoGP, WRC y Drift. Cobertura, contexto,
-                      cultura, competencia y piezas con presencia visual real
-                      dentro del ADN MotorWelt.
+                      Competencia, contexto y cultura del deporte motor.
                     </p>
                   </div>
                 </div>
@@ -1635,8 +1642,8 @@ export default function DeportesPage({
           <section className="py-10 sm:py-12">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <SectionHeader
-                eyebrow="Últimas publicaciones"
-                title="Lo más reciente en Deportes"
+                eyebrow="MotorWelt Deportes"
+                title="Noticias"
                 description="La conversación más reciente del deporte motor."
                 accent="warm"
               />
@@ -1924,7 +1931,10 @@ export default function DeportesPage({
           );
         }
         .glow-cool {
-          text-shadow: 0 0 14px rgba(12, 224, 178, 0.28);
+          text-shadow:
+            0 0 12px rgba(12, 224, 178, 0.28),
+            0 0 26px rgba(12, 224, 178, 0.22),
+            0 0 50px rgba(12, 224, 178, 0.14);
         }
         .glow-warm {
           text-shadow: 0 0 14px rgba(255, 122, 26, 0.22);
@@ -1990,7 +2000,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       section,
       category,
       subcategory,
+      subCategory,
+      noteSubcategory,
+      sectionOfNote,
       sport,
+      deportesSection,
+      deporteSection,
+      sportsSection,
       categories,
       tags,
       contentType,
@@ -2022,7 +2038,13 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       section,
       category,
       subcategory,
+      subCategory,
+      noteSubcategory,
+      sectionOfNote,
       sport,
+      deportesSection,
+      deporteSection,
+      sportsSection,
       categories,
       tags,
       contentType,

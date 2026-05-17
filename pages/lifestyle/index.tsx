@@ -91,6 +91,11 @@ type RawPost = {
   section?: string;
   category?: string;
   subcategory?: string;
+  subCategory?: string;
+  noteSubcategory?: string;
+  sectionOfNote?: string;
+  lifestyleSection?: string;
+  lifestyleCategory?: string;
   categories?: string[];
   tags?: Array<
     string | { title?: string; name?: string; label?: string; value?: string }
@@ -138,25 +143,19 @@ function readCookie(name: string) {
   if (typeof document === "undefined") return "";
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
   const match = document.cookie.match(
-    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)")
+    new RegExp("(^|;\\s*)" + escaped + "=([^;]+)"),
   );
   return match ? decodeURIComponent(match[2]) : "";
 }
 
-const getButtonClasses = (
-  variant: ButtonVariant = "cyan",
-  className = ""
-) => {
+const getButtonClasses = (variant: ButtonVariant = "cyan", className = "") => {
   const base =
     "inline-flex items-center justify-center rounded-2xl px-5 py-2.5 font-semibold text-white transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60";
 
   const styles: Record<ButtonVariant, string> = {
-    cyan:
-      "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#0CE0B2]/35",
-    pink:
-      "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(255,122,26,.24),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.34),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
-    link:
-      "border border-white/10 bg-white/[0.035] px-4 py-2 text-xs no-underline shadow-[0_0_18px_rgba(255,122,26,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
+    cyan: "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#0CE0B2]/35",
+    pink: "border border-white/10 bg-white/[0.035] shadow-[0_0_18px_rgba(255,122,26,.24),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.34),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
+    link: "border border-white/10 bg-white/[0.035] px-4 py-2 text-xs no-underline shadow-[0_0_18px_rgba(255,122,26,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] hover:bg-white/5 hover:shadow-[0_0_24px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,255,255,.05)] focus-visible:ring-[#FF7A1A]/35",
   };
 
   return `${base} ${styles[variant]} ${className}`.trim();
@@ -216,109 +215,59 @@ function getMainImage(it: RawPost, fallback = "/images/comunidad.jpg") {
 }
 
 function detectLifestyleCategory(post: RawPost): LifestyleKey | null {
-  const controlledFields = [
-    post.section,
-    post.category,
+  const section = normalizeText(post.section);
+  const category = normalizeText(post.category);
+  const categories = Array.isArray(post.categories)
+    ? post.categories.map(normalizeText)
+    : [];
+
+  const isLifestylePost =
+    section === "lifestyle" ||
+    category === "lifestyle" ||
+    categories.includes("lifestyle");
+
+  if (!isLifestylePost) return null;
+
+  const adminValue = [
     post.subcategory,
-    post.categories,
-    post.tags,
+    post.subCategory,
+    post.noteSubcategory,
+    post.sectionOfNote,
+    post.lifestyleSection,
+    post.lifestyleCategory,
   ]
     .map(normalizeText)
-    .join(" ");
+    .find(Boolean);
 
-  const fullBlob = [
-    post.title,
-    post.excerpt,
-    post.subtitle,
-    post.seoDescription,
-    post.section,
-    post.category,
-    post.subcategory,
-    post.categories,
-    post.tags,
-  ]
-    .map(normalizeText)
-    .join(" ");
+  if (!adminValue) return null;
 
-  const blockedSections = [
-    "autos",
-    "noticias_autos",
-    "motos",
-    "noticias_motos",
-    "tuning",
-    "deportes",
-    "f1",
-    "nascar",
-    "motogp",
-    "wrc",
-    "drift",
-  ];
-
-  const sectionCategoryText = [
-    post.section,
-    post.category,
-    post.subcategory,
-    post.categories,
-  ]
-    .map(normalizeText)
-    .join(" ");
-
-  const isClearlyOtherSection = blockedSections.some((word) =>
-    sectionCategoryText.includes(word)
-  );
-
-  if (isClearlyOtherSection) return null;
-
-  const blob = controlledFields.includes("lifestyle")
-    ? fullBlob
-    : controlledFields;
-
-  if (
-    blob.includes("lifestyle_moda") ||
-    blob.includes("moda") ||
-    blob.includes("fashion") ||
-    blob.includes("sneakers") ||
-    blob.includes("apparel")
-  ) {
+  if (adminValue === "lifestyle_moda" || adminValue === "moda") {
     return "Moda";
   }
 
   if (
-    blob.includes("lifestyle_relojeria") ||
-    blob.includes("lifestyle_relojería") ||
-    blob.includes("relojeria") ||
-    blob.includes("relojería") ||
-    blob.includes("relojes") ||
-    blob.includes("reloj") ||
-    blob.includes("watch") ||
-    blob.includes("watches") ||
-    blob.includes("cronógrafo") ||
-    blob.includes("cronografo")
+    adminValue === "lifestyle_relojeria" ||
+    adminValue === "lifestyle_relojería" ||
+    adminValue === "relojeria" ||
+    adminValue === "relojería"
   ) {
     return "Relojería";
   }
 
   if (
-    blob.includes("lifestyle_fuera_del_volante") ||
-    blob.includes("fuera del volante") ||
-    blob.includes("off track") ||
-    blob.includes("off the track") ||
-    blob.includes("vida fuera") ||
-    blob.includes("lifestyle piloto")
+    adminValue === "lifestyle_fuera_del_volante" ||
+    adminValue === "fuera_del_volante" ||
+    adminValue === "fuera del volante"
   ) {
     return "Fuera del volante";
   }
 
   if (
-    blob.includes("lifestyle_cine") ||
-    blob.includes("cine automovilístico") ||
-    blob.includes("cine automovilistico") ||
-    blob.includes("cine") ||
-    blob.includes("película") ||
-    blob.includes("pelicula") ||
-    blob.includes("documental") ||
-    blob.includes("serie") ||
-    blob.includes("film")
+    adminValue === "lifestyle_cine" ||
+    adminValue === "cine" ||
+    adminValue === "cine_automovilistico" ||
+    adminValue === "cine automovilistico" ||
+    adminValue === "cine automovilístico"
   ) {
     return "Cine automovilístico";
   }
@@ -394,7 +343,7 @@ function getLatestSectionData(post: RawPost): {
 
 function sanitizePageSettings(
   raw?: any,
-  fallbackHero = "/images/comunidad.jpg"
+  fallbackHero = "/images/comunidad.jpg",
 ): LifestylePageSettings {
   return {
     heroImageUrl:
@@ -431,7 +380,7 @@ function sanitizePageSettings(
 }
 
 function sanitizeSectionHeroImages(
-  raw?: Partial<SectionHeroImages>
+  raw?: Partial<SectionHeroImages>,
 ): SectionHeroImages {
   return {
     tuning:
@@ -554,7 +503,7 @@ function ArticleCard({
             <span
               className={getButtonClasses(
                 "pink",
-                "h-10 rounded-xl px-4 py-0 text-sm leading-none"
+                "h-10 rounded-xl px-4 py-0 text-sm leading-none",
               )}
             >
               Leer más
@@ -864,7 +813,7 @@ function Header({
   return (
     <>
       <header className="fixed left-0 top-0 z-50 w-full border-b border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
-        <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+        <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] xl:px-10 2xl:max-w-[1560px]">
           <div className="flex items-center">
             <Link
               href="/"
@@ -914,7 +863,7 @@ function Header({
 
               <Link
                 href="/lifestyle"
-                className="inline-flex h-10 items-center leading-none border-b-2 border-[#FF7A1A] text-white"
+                className="inline-flex h-10 items-center leading-none text-white"
               >
                 Lifestyle
               </Link>
@@ -1194,7 +1143,7 @@ export default function LifestylePage({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<LifestylePageSettings>(
-    sanitizePageSettings(initialSettings, initialSettings?.heroImageUrl)
+    sanitizePageSettings(initialSettings, initialSettings?.heroImageUrl),
   );
 
   const heroInputRef = useRef<HTMLInputElement | null>(null);
@@ -1205,35 +1154,177 @@ export default function LifestylePage({
     return LIFESTYLE_SECTIONS.reduce(
       (acc, category) => {
         acc[category] = lifestyleItems.filter(
-          (item) => item.category === category
+          (item) => item.category === category,
         );
         return acc;
       },
-      {} as Record<LifestyleKey, ArticleCardData[]>
+      {} as Record<LifestyleKey, ArticleCardData[]>,
     );
   }, [lifestyleItems]);
 
   const streaks: Streak[] = useMemo(
     () => [
-      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
-      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
-      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
-      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
-      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
-      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
-      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
-      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
-      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
-      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
-      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
-      { top: "6%", left: "-38%", v: "cool", dir: "rev", delay: "0.6s", dur: "14s", op: 0.55, h: "1px" },
-      { top: "18%", left: "-33%", v: "warm", dir: "fwd", delay: "1.2s", dur: "12.8s", op: 0.55, h: "1px" },
-      { top: "34%", left: "-31%", v: "cool", dir: "fwd", delay: "2.4s", dur: "13.6s", op: 0.58, h: "1px" },
-      { top: "42%", left: "-36%", v: "warm", dir: "rev", delay: "3.0s", dur: "12.2s", op: 0.52, h: "1px" },
-      { top: "66%", left: "-29%", v: "cool", dir: "rev", delay: "4.2s", dur: "14.4s", op: 0.55, h: "1px" },
-      { top: "82%", left: "-28%", v: "lime", dir: "fwd", delay: "5.3s", dur: "12.4s", op: 0.86, h: "3px" },
+      {
+        top: "8%",
+        left: "-35%",
+        v: "cool",
+        dir: "fwd",
+        delay: "0s",
+        dur: "12s",
+        op: 0.85,
+      },
+      {
+        top: "12%",
+        left: "-28%",
+        v: "warm",
+        dir: "rev",
+        delay: ".4s",
+        dur: "10.5s",
+        op: 0.75,
+      },
+      {
+        top: "20%",
+        left: "-36%",
+        v: "lime",
+        dir: "fwd",
+        delay: "1.0s",
+        dur: "13s",
+        op: 0.8,
+      },
+      {
+        top: "28%",
+        left: "-22%",
+        v: "cool",
+        dir: "rev",
+        delay: "1.6s",
+        dur: "9.5s",
+        op: 0.9,
+      },
+      {
+        top: "36%",
+        left: "-40%",
+        v: "warm",
+        dir: "fwd",
+        delay: "2.1s",
+        dur: "11.5s",
+        op: 0.7,
+      },
+      {
+        top: "44%",
+        left: "-30%",
+        v: "cool",
+        dir: "rev",
+        delay: "2.7s",
+        dur: "12.5s",
+        op: 0.85,
+      },
+      {
+        top: "52%",
+        left: "-26%",
+        v: "warm",
+        dir: "fwd",
+        delay: "3.2s",
+        dur: "10.2s",
+        op: 0.8,
+      },
+      {
+        top: "60%",
+        left: "-18%",
+        v: "lime",
+        dir: "rev",
+        delay: "3.8s",
+        dur: "12.2s",
+        op: 0.75,
+      },
+      {
+        top: "68%",
+        left: "-34%",
+        v: "cool",
+        dir: "fwd",
+        delay: "4.4s",
+        dur: "11.2s",
+        op: 0.85,
+      },
+      {
+        top: "76%",
+        left: "-24%",
+        v: "warm",
+        dir: "rev",
+        delay: "5.0s",
+        dur: "9.8s",
+        op: 0.72,
+      },
+      {
+        top: "84%",
+        left: "-20%",
+        v: "cool",
+        dir: "fwd",
+        delay: "5.6s",
+        dur: "13.2s",
+        op: 0.82,
+      },
+      {
+        top: "6%",
+        left: "-38%",
+        v: "cool",
+        dir: "rev",
+        delay: "0.6s",
+        dur: "14s",
+        op: 0.55,
+        h: "1px",
+      },
+      {
+        top: "18%",
+        left: "-33%",
+        v: "warm",
+        dir: "fwd",
+        delay: "1.2s",
+        dur: "12.8s",
+        op: 0.55,
+        h: "1px",
+      },
+      {
+        top: "34%",
+        left: "-31%",
+        v: "cool",
+        dir: "fwd",
+        delay: "2.4s",
+        dur: "13.6s",
+        op: 0.58,
+        h: "1px",
+      },
+      {
+        top: "42%",
+        left: "-36%",
+        v: "warm",
+        dir: "rev",
+        delay: "3.0s",
+        dur: "12.2s",
+        op: 0.52,
+        h: "1px",
+      },
+      {
+        top: "66%",
+        left: "-29%",
+        v: "cool",
+        dir: "rev",
+        delay: "4.2s",
+        dur: "14.4s",
+        op: 0.55,
+        h: "1px",
+      },
+      {
+        top: "82%",
+        left: "-28%",
+        v: "lime",
+        dir: "fwd",
+        delay: "5.3s",
+        dur: "12.4s",
+        op: 0.86,
+        h: "3px",
+      },
     ],
-    []
+    [],
   );
 
   useEffect(() => {
@@ -1422,9 +1513,7 @@ export default function LifestylePage({
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-[#FF7A1A]" />
               <span>
-                {spectatorMode
-                  ? "Vista espectador"
-                  : "Modo edición lifestyle"}
+                {spectatorMode ? "Vista espectador" : "Modo edición lifestyle"}
               </span>
               {saving && <span className="text-[#FFB36B]">Guardando…</span>}
             </div>
@@ -1475,22 +1564,17 @@ export default function LifestylePage({
               <div className="relative z-10 w-full px-4 pb-14 pt-14 sm:px-6 lg:pb-16 xl:px-10">
                 <div className="mx-auto w-full max-w-[1440px] 2xl:max-w-[1560px]">
                   <div className="max-w-4xl">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.28em] text-gray-200 backdrop-blur md:text-[11px]">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[10px] uppercase tracking-[0.34em] text-gray-200 backdrop-blur md:text-[11px]">
                       <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-                      Lifestyle • Style • Motor Culture
+                      Built to Stand Out
                     </div>
 
-                    <h1 className="mt-5 font-display text-[2.8rem] font-black leading-[0.92] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.8rem] lg:text-[5.4rem]">
-                      <span className="glow-warm block">Lifestyle</span>
-                      <span className="block text-white/95">
-                        Beyond the Drive
-                      </span>
+                    <h1 className="mt-5 font-display text-[3.2rem] font-black leading-[0.88] tracking-[-0.03em] text-white sm:text-[4.4rem] md:text-[5.4rem] lg:text-[6.2rem]">
+                      <span className="glow-cool block">Lifestyle</span>
                     </h1>
 
                     <p className="mt-5 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                      Moda, relojería, vida fuera de pista y cine
-                      automovilístico. La capa más aspiracional, estética y
-                      humana del universo MotorWelt.
+                      Moda, relojería y cultura fuera del volante.
                     </p>
                   </div>
                 </div>
@@ -1577,9 +1661,7 @@ export default function LifestylePage({
                   editable={editControlsVisible}
                   inputRef={billboardInputRef}
                   onToggle={() => void toggleAd("billboard")}
-                  onPick={(files) =>
-                    void handleAdImagePick("billboard", files)
-                  }
+                  onPick={(files) => void handleAdImagePick("billboard", files)}
                   onEditLink={() => void editAdLink("billboard")}
                   onClear={() => void clearAdImage("billboard")}
                 />
@@ -1777,7 +1859,8 @@ export default function LifestylePage({
         .mw-global-base {
           position: absolute;
           inset: 0;
-          background: radial-gradient(
+          background:
+            radial-gradient(
               120% 80% at 20% 10%,
               rgba(0, 0, 0, 0.15) 0%,
               transparent 60%
@@ -1864,6 +1947,12 @@ export default function LifestylePage({
             transparent
           );
         }
+        .glow-cool {
+          text-shadow:
+            0 0 12px rgba(12, 224, 178, 0.28),
+            0 0 26px rgba(12, 224, 178, 0.22),
+            0 0 50px rgba(12, 224, 178, 0.14);
+        }
         .glow-warm {
           text-shadow: 0 0 14px rgba(255, 122, 26, 0.22);
         }
@@ -1917,6 +2006,11 @@ export async function getServerSideProps() {
       section,
       category,
       subcategory,
+      subCategory,
+      noteSubcategory,
+      sectionOfNote,
+      lifestyleSection,
+      lifestyleCategory,
       categories,
       tags,
       authorName,
@@ -2036,7 +2130,7 @@ export async function getServerSideProps() {
           it.excerpt ||
             it.subtitle ||
             it.seoDescription ||
-            "Lee el artículo completo en MotorWelt."
+            "Lee el artículo completo en MotorWelt.",
         ),
         img: getMainImage(it, "/images/comunidad.jpg"),
         href: `/lifestyle/${slug}`,
@@ -2062,7 +2156,7 @@ export async function getServerSideProps() {
           it.excerpt ||
             it.subtitle ||
             it.seoDescription ||
-            "Lee la publicación completa en MotorWelt."
+            "Lee la publicación completa en MotorWelt.",
         ),
         img: getMainImage(it, "/images/noticia-3.jpg"),
         href: `${sectionData.hrefBase}/${slug}`,
