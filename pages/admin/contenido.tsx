@@ -688,10 +688,15 @@ const AdminContentEditorPage: React.FC = () => {
     null,
   );
 
+  // ✅ Upload real de video principal
+  const [uploadingMainVideo, setUploadingMainVideo] = useState(false);
+  const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
+
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
   const inlineImagesInputRef = useRef<HTMLInputElement | null>(null);
   const galleryImagesInputRef = useRef<HTMLInputElement | null>(null);
   const mainImageInputRef = useRef<HTMLInputElement | null>(null);
+  const mainVideoInputRef = useRef<HTMLInputElement | null>(null);
 
   async function uploadImageToSanity(file: File) {
     const fd = new FormData();
@@ -833,6 +838,30 @@ const AdminContentEditorPage: React.FC = () => {
     }
   };
 
+  const handleMainVideoPick = async (files?: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("video/")) {
+      setVideoUploadError("Selecciona un archivo de video válido.");
+      if (mainVideoInputRef.current) mainVideoInputRef.current.value = "";
+      return;
+    }
+
+    setVideoUploadError(null);
+    setUploadingMainVideo(true);
+
+    try {
+      const uploaded = await uploadImageToSanity(file);
+      setVideoUrl(uploaded.url);
+    } catch (err: any) {
+      setVideoUploadError(err?.message || "No se pudo subir el video.");
+    } finally {
+      setUploadingMainVideo(false);
+      if (mainVideoInputRef.current) mainVideoInputRef.current.value = "";
+    }
+  };
+
   // Extras
   const [tags, setTags] = useState("");
   const [seoTitle, setSeoTitle] = useState("");
@@ -957,6 +986,7 @@ const AdminContentEditorPage: React.FC = () => {
 
     setInlineUploadError(null);
     setGalleryUploadError(null);
+    setVideoUploadError(null);
 
     setTags("");
     setSeoTitle("");
@@ -971,6 +1001,7 @@ const AdminContentEditorPage: React.FC = () => {
     if (inlineImagesInputRef.current) inlineImagesInputRef.current.value = "";
     if (galleryImagesInputRef.current) galleryImagesInputRef.current.value = "";
     if (mainImageInputRef.current) mainImageInputRef.current.value = "";
+    if (mainVideoInputRef.current) mainVideoInputRef.current.value = "";
   };
 
   const fetchMyNotes = async () => {
@@ -1116,11 +1147,13 @@ const AdminContentEditorPage: React.FC = () => {
       setUploadError(null);
       setInlineUploadError(null);
       setGalleryUploadError(null);
+      setVideoUploadError(null);
 
       if (inlineImagesInputRef.current) inlineImagesInputRef.current.value = "";
       if (galleryImagesInputRef.current)
         galleryImagesInputRef.current.value = "";
       if (mainImageInputRef.current) mainImageInputRef.current.value = "";
+      if (mainVideoInputRef.current) mainVideoInputRef.current.value = "";
     } catch (err: any) {
       setAiError(err?.message || "No se pudo cargar la nota.");
     } finally {
@@ -1902,6 +1935,11 @@ const AdminContentEditorPage: React.FC = () => {
                   Subiendo galería…
                 </span>
               )}
+              {uploadingMainVideo && (
+                <span className="text-[11px] text-[#0CE0B2]">
+                  Subiendo video…
+                </span>
+              )}
               {aiLoading && (
                 <span className="text-[11px] text-[#0CE0B2]">
                   IA trabajando en{" "}
@@ -1928,6 +1966,11 @@ const AdminContentEditorPage: React.FC = () => {
               {galleryUploadError && (
                 <span className="text-[11px] text-red-300">
                   {galleryUploadError}
+                </span>
+              )}
+              {videoUploadError && (
+                <span className="text-[11px] text-red-300">
+                  {videoUploadError}
                 </span>
               )}
             </div>
@@ -2516,15 +2559,50 @@ const AdminContentEditorPage: React.FC = () => {
                         htmlFor="content-video"
                         className="text-xs text-gray-300"
                       >
-                        Video (YouTube, Vimeo, etc.)
+                        Video principal (YouTube, Vimeo o archivo desde galería)
                       </label>
+
                       <input
                         id="content-video"
                         value={videoUrl}
                         onChange={(e) => setVideoUrl(e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=XXXXXX"
+                        placeholder="https://www.youtube.com/watch?v=XXXXXX o video subido desde galería"
                         className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                       />
+
+                      <input
+                        ref={mainVideoInputRef}
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        onChange={(e) => handleMainVideoPick(e.target.files)}
+                      />
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-[11px] px-3 py-1.5"
+                          onClick={() => mainVideoInputRef.current?.click()}
+                          disabled={uploadingMainVideo}
+                        >
+                          {uploadingMainVideo
+                            ? "Subiendo video…"
+                            : "Subir video desde galería"}
+                        </Button>
+
+                        {videoUrl && (
+                          <a
+                            href={videoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-semibold text-[#0CE0B2] hover:text-[#7CFFE2]"
+                          >
+                            Ver video cargado
+                          </a>
+                        )}
+                      </div>
+
                       <div className="mt-1 flex items-center gap-2 text-[11px] text-gray-400">
                         <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                           <input
@@ -2539,7 +2617,16 @@ const AdminContentEditorPage: React.FC = () => {
                         </label>
                       </div>
 
+                      {videoUploadError && (
+                        <p className="text-[11px] text-red-300">
+                          {videoUploadError}
+                        </p>
+                      )}
+
                       <p className="mt-2 text-[10px] text-gray-500">
+                        Puedes pegar un link externo o subir un archivo de video.
+                        Cualquiera de las dos opciones se guarda en el mismo
+                        campo para aparecer en el espacio del video principal.
                         Para meter un video dentro del texto usa el botón{" "}
                         <span className="text-gray-300 font-semibold">
                           Video
