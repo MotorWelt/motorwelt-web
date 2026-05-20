@@ -733,6 +733,29 @@ const AdminContentEditorPage: React.FC = () => {
     return out;
   }
 
+  async function uploadVideoToSanity(file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    const res = await fetch("/api/ai/admin/content/upload-video", {
+      method: "POST",
+      body: fd,
+    });
+
+    let data: any = null;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Respuesta inválida del upload de video.");
+    }
+
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Video upload failed");
+    }
+
+    return data as { ok: true; assetId: string; url: string };
+  }
+
   const insertAtCursor = (text: string) => {
     const el = bodyRef.current;
     const currentBody = bodyValueRef.current;
@@ -852,7 +875,7 @@ const AdminContentEditorPage: React.FC = () => {
     setUploadingMainVideo(true);
 
     try {
-      const uploaded = await uploadImageToSanity(file);
+      const uploaded = await uploadVideoToSanity(file);
       setVideoUrl(uploaded.url);
     } catch (err: any) {
       setVideoUploadError(err?.message || "No se pudo subir el video.");
