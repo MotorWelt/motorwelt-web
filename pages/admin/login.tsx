@@ -29,28 +29,6 @@ const Button: React.FC<
 
 /* ---------- Página de login admin/redactores ---------- */
 
-type DemoUser = {
-  email: string;
-  password: string;
-  name: string;
-  role: "admin" | "editor" | "autor";
-};
-
-const DEMO_USERS: DemoUser[] = [
-  {
-    email: "admin@motorwelt.com",
-    password: "motorwelt_admin",
-    name: "Gabriel Rodríguez",
-    role: "admin",
-  },
-  {
-    email: "editor@motorwelt.com",
-    password: "motorwelt_editor",
-    name: "Redactor Autos",
-    role: "editor",
-  },
-];
-
 const LOCALSTORAGE_KEY = "mw_admin_user";
 
 type StoredSession = {
@@ -84,7 +62,7 @@ function setCookie(name: string, value: string, days = 7) {
       : "";
 
   document.cookie = `${name}=${encodeURIComponent(
-    value
+    value,
   )}; Path=/; Max-Age=${maxAge}; SameSite=Lax;${secure}`;
 }
 
@@ -92,7 +70,9 @@ function getCookie(name: string) {
   if (typeof document === "undefined") return null;
 
   const escaped = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-  const match = document.cookie.match(new RegExp("(^| )" + escaped + "=([^;]+)"));
+  const match = document.cookie.match(
+    new RegExp("(^| )" + escaped + "=([^;]+)"),
+  );
 
   return match ? decodeURIComponent(match[2]) : null;
 }
@@ -125,8 +105,8 @@ function clearMwCookies() {
 const AdminLoginPage: React.FC = () => {
   const router = useRouter();
 
-  const [email, setEmail] = useState("gabriel@motorwelt.mx");
-  const [password, setPassword] = useState("Mw160295$");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,13 +120,18 @@ const AdminLoginPage: React.FC = () => {
     const cEmail = getCookie("mw_email");
     const cName = getCookie("mw_name");
 
-    if (cRole && cEmail && cName && ["admin", "editor", "autor"].includes(cRole)) {
+    if (
+      cRole &&
+      cEmail &&
+      cName &&
+      ["admin", "editor", "autor"].includes(cRole)
+    ) {
       if (cRole === "admin") router.replace("/admin/perfil");
       else router.replace("/admin/perfil-equipo");
       return;
     }
 
-    // Si no hay cookies, mantenemos fallback con localStorage (demo)
+    // Si no hay cookies, mantenemos fallback con localStorage
     try {
       const stored = localStorage.getItem(LOCALSTORAGE_KEY);
       if (!stored) return;
@@ -181,14 +166,15 @@ const AdminLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-const res = await fetch("/api/ai/admin/auth/login", {        method: "POST",
+      const res = await fetch("/api/ai/admin/auth/login", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
- body: JSON.stringify({
-  email: email.trim().toLowerCase(),
-  password,
-}),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
 
       const data = await res.json();
@@ -272,7 +258,7 @@ const res = await fetch("/api/ai/admin/auth/login", {        method: "POST",
 
               <div className="mt-8 grid gap-3 text-xs text-gray-200">
                 <div className="rounded-2xl border border-white/10 bg-black/40 px-3 py-2">
-                  <p className="font-semibold text-white">Roles soportados (demo)</p>
+                  <p className="font-semibold text-white">Roles soportados</p>
                   <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px] text-gray-300">
                     <li>
                       <span className="font-semibold text-[#0CE0B2]">Admin:</span>{" "}
@@ -287,24 +273,6 @@ const res = await fetch("/api/ai/admin/auth/login", {        method: "POST",
                       enfocado en crear contenido propio.
                     </li>
                   </ul>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/40 px-3 py-2">
-                  <p className="font-semibold text-white text-xs mb-1">
-                    Credenciales demo
-                  </p>
-                  <p className="text-[11px] text-gray-300">
-                    <span className="font-semibold">Admin:</span> admin@motorwelt.com /
-                    motorwelt_admin
-                  </p>
-                  <p className="text-[11px] text-gray-300">
-                    <span className="font-semibold">Editor:</span> editor@motorwelt.com /
-                    motorwelt_editor
-                  </p>
-                  <p className="mt-1 text-[10px] text-gray-500">
-                    Cuando conectes tu backend, aquí validaremos contra tu base de
-                    datos o proveedor de auth.
-                  </p>
                 </div>
               </div>
 
@@ -322,20 +290,26 @@ const res = await fetch("/api/ai/admin/auth/login", {        method: "POST",
                 Ingresa con tu correo corporativo y contraseña asignada.
               </p>
 
-              <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              <form
+                className="mt-6 space-y-4"
+                onSubmit={handleSubmit}
+                autoComplete="off"
+              >
                 <div className="space-y-1">
                   <label htmlFor="admin-email" className="text-xs text-gray-300">
                     Correo electrónico
                   </label>
                   <input
                     id="admin-email"
+                    name="mw-admin-email"
                     type="email"
-                    autoComplete="email"
+                    autoComplete="off"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="tucorreo@motorwelt.com"
                     className="w-full rounded-2xl border border-white/20 bg-black/50 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/50"
                     required
+                    spellCheck={false}
                   />
                 </div>
 
@@ -345,8 +319,9 @@ const res = await fetch("/api/ai/admin/auth/login", {        method: "POST",
                   </label>
                   <input
                     id="admin-password"
+                    name="mw-admin-password"
                     type="password"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="********"
