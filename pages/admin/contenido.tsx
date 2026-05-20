@@ -74,7 +74,7 @@ type SectionSlug =
   | "comunidad"
   | "tuning";
 
-type ContentType = "noticia" | "review" | "entrevista";
+type ContentType = "noticia" | "review" | "entrevista" | "evento" | "galeria" | "club";
 
 type ContentStatus = "borrador" | "revision" | "publicado";
 
@@ -106,7 +106,12 @@ type NoteSubcategory =
   | "comunidad_eventos_nacionales"
   | "comunidad_eventos_internacionales"
   | "comunidad_meets"
+  | "comunidad_cars_coffee"
+  | "comunidad_trackdays"
   | "comunidad_clubes"
+  | "comunidad_rutas"
+  | "comunidad_underground"
+  | "comunidad_galerias"
   | "comunidad_eventos"
   | "comunidad_rutas"
   | "comunidad_garage"
@@ -214,13 +219,51 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
     { value: "lifestyle_cine", label: "Cine" },
   ],
   comunidad: [
-    { value: "comunidad_eventos_nacionales", label: "Eventos nacionales" },
+    {
+      value: "comunidad_eventos_nacionales",
+      label: "Eventos nacionales",
+      helper: "Eventos dentro de México curados por MotorWelt.",
+    },
     {
       value: "comunidad_eventos_internacionales",
       label: "Eventos internacionales",
+      helper: "Eventos fuera de México o referencias globales.",
     },
-    { value: "comunidad_meets", label: "Meets" },
-    { value: "comunidad_clubes", label: "Clubes" },
+    {
+      value: "comunidad_meets",
+      label: "Meets",
+      helper: "Encuentros generales, clubes y reuniones abiertas.",
+    },
+    {
+      value: "comunidad_cars_coffee",
+      label: "Cars & Coffee",
+      helper: "Encuentros tipo desayuno, morning meets y coffee runs.",
+    },
+    {
+      value: "comunidad_trackdays",
+      label: "Trackdays",
+      helper: "Eventos de pista, manejo, autódromo o experiencias performance.",
+    },
+    {
+      value: "comunidad_clubes",
+      label: "Club Culture",
+      helper: "Clubes, grupos locales y comunidades con identidad propia.",
+    },
+    {
+      value: "comunidad_rutas",
+      label: "Rutas",
+      helper: "Rodadas, roadtrips, salidas y rutas organizadas.",
+    },
+    {
+      value: "comunidad_underground",
+      label: "Underground",
+      helper: "Stance, drift, crews y cultura street curada.",
+    },
+    {
+      value: "comunidad_galerias",
+      label: "Galerías / Highlights",
+      helper: "Coberturas visuales y galerías de comunidad.",
+    },
   ],
   tuning: [{ value: "tuning_noticias", label: "Noticias" }],
 };
@@ -238,7 +281,13 @@ const LEGACY_SUBCATEGORY_LABELS: Record<string, string> = {
   motos_industria: "Industria",
   motos_cultura: "Cultura moto",
   comunidad_eventos: "Eventos",
+  comunidad_meets: "Meets",
+  comunidad_cars_coffee: "Cars & Coffee",
+  comunidad_trackdays: "Trackdays",
+  comunidad_clubes: "Club Culture",
   comunidad_rutas: "Rutas",
+  comunidad_underground: "Underground",
+  comunidad_galerias: "Galerías / Highlights",
   comunidad_garage: "Garage / Proyectos",
   tuning_builds: "Builds",
   tuning_mods: "Mods",
@@ -308,7 +357,14 @@ function getCommunityAdminFilterValue(subcategory?: NoteSubcategory) {
   if (subcategory === "comunidad_eventos_nacionales") return "eventos_nacionales";
   if (subcategory === "comunidad_eventos_internacionales") return "eventos_internacionales";
   if (subcategory === "comunidad_meets") return "meets";
+  if (subcategory === "comunidad_cars_coffee") return "cars_coffee";
+  if (subcategory === "comunidad_trackdays") return "trackdays";
   if (subcategory === "comunidad_clubes") return "clubes";
+  if (subcategory === "comunidad_rutas") return "rutas";
+  if (subcategory === "comunidad_underground") return "underground";
+  if (subcategory === "comunidad_galerias") return "galerias";
+  if (subcategory === "comunidad_eventos") return "eventos";
+  if (subcategory === "comunidad_garage") return "garage";
   return "";
 }
 
@@ -439,6 +495,41 @@ function datetimeLocalToIso(value?: string) {
   return d.toISOString();
 }
 
+function normalizeAdminUrl(value?: string) {
+  const clean = (value || "").trim();
+  if (!clean) return "";
+  if (/^https?:\/\//i.test(clean)) return clean;
+  return `https://${clean}`;
+}
+
+function buildEventDateTimeIso(date?: string, time?: string) {
+  const cleanDate = (date || "").trim();
+  if (!cleanDate) return undefined;
+
+  const cleanTime = (time || "").trim() || "00:00";
+  const d = new Date(`${cleanDate}T${cleanTime}`);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
+}
+
+function isoToDateInput(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function isoToTimeInput(iso?: string | null) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 /* ---------- Tipos para listado y carga ---------- */
 type ContentListItem = {
   id: string;
@@ -486,6 +577,34 @@ type ContentDocPayload = {
   mainImageUrl?: string;
   galleryUrls?: string[];
 
+  eventDate?: string | null;
+  eventTime?: string;
+  eventDateTime?: string | null;
+  eventLocationName?: string;
+  eventLocationUrl?: string;
+  eventLocation?: {
+    name?: string;
+    label?: string;
+    url?: string;
+    href?: string;
+  };
+  locationName?: string;
+  locationUrl?: string;
+  location?: {
+    name?: string;
+    label?: string;
+    url?: string;
+    href?: string;
+  };
+  googleMapsUrl?: string;
+  googleMapsLink?: string;
+  mapsUrl?: string;
+  eventMapsUrl?: string;
+  eventMapUrl?: string;
+  place?: string;
+  placeName?: string;
+  placeUrl?: string;
+
   coverImageAssetId?: string;
   coverImageAssetUrl?: string;
 
@@ -530,6 +649,12 @@ const AdminContentEditorPage: React.FC = () => {
   const [contentType, setContentType] = useState<ContentType>("noticia");
   const [status, setStatus] = useState<ContentStatus>("borrador");
   const [publishedAtInput, setPublishedAtInput] = useState("");
+
+  // Campos especiales para Comunidad / Eventos
+  const [eventDateInput, setEventDateInput] = useState("");
+  const [eventTimeInput, setEventTimeInput] = useState("");
+  const [eventLocationName, setEventLocationName] = useState("");
+  const [eventLocationUrl, setEventLocationUrl] = useState("");
 
   // Contenido principal
   const [body, setBody] = useState("");
@@ -756,6 +881,8 @@ const AdminContentEditorPage: React.FC = () => {
     return publicPathFromSection(section, docSlug || undefined);
   }, [section, docSlug]);
 
+  const isCommunityEventEditor = section === "comunidad";
+
   const activeSubcategoryOptions = useMemo(() => {
     return SECTION_NOTE_SUBCATEGORIES[section] || [];
   }, [section]);
@@ -795,6 +922,12 @@ const AdminContentEditorPage: React.FC = () => {
   const handleSectionChange = (nextSection: SectionSlug) => {
     setSection(nextSection);
     setSubcategory(getDefaultSubcategoryForSection(nextSection));
+
+    if (nextSection === "comunidad") {
+      setContentType("evento");
+    } else if (contentType === "evento" || contentType === "galeria" || contentType === "club") {
+      setContentType("noticia");
+    }
   };
 
   const resetEditorForNew = () => {
@@ -807,6 +940,10 @@ const AdminContentEditorPage: React.FC = () => {
     setContentType("noticia");
     setStatus("borrador");
     setPublishedAtInput("");
+    setEventDateInput("");
+    setEventTimeInput("");
+    setEventLocationName("");
+    setEventLocationUrl("");
     setBody("");
 
     setMainImage("");
@@ -908,6 +1045,37 @@ const AdminContentEditorPage: React.FC = () => {
       setContentType((doc.contentType as ContentType) || "noticia");
       setStatus((doc.status as ContentStatus) || "borrador");
       setPublishedAtInput(isoToDatetimeLocal(doc.publishedAt || ""));
+
+      const loadedEventIso = doc.eventDateTime || doc.eventDate || null;
+      setEventDateInput(isoToDateInput(loadedEventIso));
+      setEventTimeInput(doc.eventTime || isoToTimeInput(loadedEventIso));
+      setEventLocationName(
+        doc.eventLocationName ||
+          doc.eventLocation?.name ||
+          doc.eventLocation?.label ||
+          doc.locationName ||
+          doc.location?.name ||
+          doc.location?.label ||
+          doc.placeName ||
+          doc.place ||
+          "",
+      );
+      setEventLocationUrl(
+        doc.eventLocationUrl ||
+          doc.eventLocation?.url ||
+          doc.eventLocation?.href ||
+          doc.locationUrl ||
+          doc.location?.url ||
+          doc.location?.href ||
+          doc.googleMapsUrl ||
+          doc.googleMapsLink ||
+          doc.mapsUrl ||
+          doc.eventMapsUrl ||
+          doc.eventMapUrl ||
+          doc.placeUrl ||
+          "",
+      );
+
       setBody(doc.body || "");
 
       setTags(Array.isArray(doc.tags) ? doc.tags.join(", ") : "");
@@ -1094,6 +1262,16 @@ const AdminContentEditorPage: React.FC = () => {
         .filter(Boolean);
 
       const subcategoryLabel = activeSubcategoryLabel;
+      const eventDateTimeIso = buildEventDateTimeIso(
+        eventDateInput,
+        eventTimeInput,
+      );
+      const cleanEventLocationName = eventLocationName.trim();
+      const cleanEventLocationUrl = normalizeAdminUrl(eventLocationUrl);
+      const effectivePublishedAt =
+        section === "comunidad" && eventDateTimeIso
+          ? eventDateTimeIso
+          : datetimeLocalToIso(publishedAtInput);
 
       const payload = {
         id: docId || undefined,
@@ -1143,6 +1321,61 @@ const AdminContentEditorPage: React.FC = () => {
           section === "comunidad"
             ? getCommunityAdminFilterValue(subcategory) || undefined
             : undefined,
+        communityRegion:
+          section === "comunidad"
+            ? subcategory === "comunidad_eventos_internacionales"
+              ? "Internacionales"
+              : "Nacionales"
+            : undefined,
+        communityEditorialGroup:
+          section === "comunidad"
+            ? getCommunityAdminFilterValue(subcategory) || undefined
+            : undefined,
+        eventDate: section === "comunidad" ? eventDateTimeIso || undefined : undefined,
+        eventTime: section === "comunidad" ? eventTimeInput || undefined : undefined,
+        eventDateTime: section === "comunidad" ? eventDateTimeIso || undefined : undefined,
+        eventLocationName:
+          section === "comunidad" ? cleanEventLocationName || undefined : undefined,
+        eventLocationUrl:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
+        eventLocation:
+          section === "comunidad" && (cleanEventLocationName || cleanEventLocationUrl)
+            ? {
+                name: cleanEventLocationName || undefined,
+                label: cleanEventLocationName || undefined,
+                url: cleanEventLocationUrl || undefined,
+                href: cleanEventLocationUrl || undefined,
+              }
+            : undefined,
+        locationName:
+          section === "comunidad" ? cleanEventLocationName || undefined : undefined,
+        locationUrl:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
+        location:
+          section === "comunidad" && (cleanEventLocationName || cleanEventLocationUrl)
+            ? {
+                name: cleanEventLocationName || undefined,
+                label: cleanEventLocationName || undefined,
+                url: cleanEventLocationUrl || undefined,
+                href: cleanEventLocationUrl || undefined,
+              }
+            : undefined,
+        googleMapsUrl:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
+        googleMapsLink:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
+        mapsUrl:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
+        eventMapsUrl:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
+        eventMapUrl:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
+        place:
+          section === "comunidad" ? cleanEventLocationName || undefined : undefined,
+        placeName:
+          section === "comunidad" ? cleanEventLocationName || undefined : undefined,
+        placeUrl:
+          section === "comunidad" ? cleanEventLocationUrl || undefined : undefined,
         tuningSection:
           section === "tuning"
             ? getTuningAdminFilterValue(subcategory) || undefined
@@ -1165,7 +1398,7 @@ const AdminContentEditorPage: React.FC = () => {
         authorEmail: currentUser?.email || undefined,
 
         updatedAt: new Date().toISOString(),
-        publishedAt: datetimeLocalToIso(publishedAtInput),
+        publishedAt: effectivePublishedAt,
 
         mainImageUrl: mainImage || undefined,
         galleryUrls: normalizeGalleryUrls(gallery),
@@ -1850,9 +2083,20 @@ const AdminContentEditorPage: React.FC = () => {
                       }
                       className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                     >
-                      <option value="noticia">Noticia</option>
-                      <option value="review">Prueba de manejo / Review</option>
-                      <option value="entrevista">Entrevista</option>
+                      {isCommunityEventEditor ? (
+                        <>
+                          <option value="evento">Evento</option>
+                          <option value="galeria">Galería / Highlight</option>
+                          <option value="club">Club / Comunidad</option>
+                          <option value="noticia">Nota editorial</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="noticia">Noticia</option>
+                          <option value="review">Prueba de manejo / Review</option>
+                          <option value="entrevista">Entrevista</option>
+                        </>
+                      )}
                     </select>
                   </div>
 
@@ -1895,6 +2139,101 @@ const AdminContentEditorPage: React.FC = () => {
                     Si la dejas vacía, la fecha seguirá automática al publicar.
                   </p>
                 </div>
+
+                {isCommunityEventEditor && (
+                  <div className="rounded-3xl border border-[#0CE0B2]/15 bg-[#0CE0B2]/[0.035] p-4 md:p-5">
+                    <div className="mb-4">
+                      <p className="text-[10px] uppercase tracking-[0.24em] text-[#0CE0B2]">
+                        Datos del evento
+                      </p>
+                      <h3 className="mt-1 text-base font-semibold text-white">
+                        Publicación de Comunidad
+                      </h3>
+                      <p className="mt-1 text-[11px] text-gray-400">
+                        Estos campos alimentan el slug de evento: fecha, hora y ubicación con enlace nombrado.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="event-date"
+                          className="text-xs text-gray-300"
+                        >
+                          Fecha de evento
+                        </label>
+                        <input
+                          id="event-date"
+                          type="date"
+                          value={eventDateInput}
+                          onChange={(e) => setEventDateInput(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="event-time"
+                          className="text-xs text-gray-300"
+                        >
+                          Hora
+                        </label>
+                        <input
+                          id="event-time"
+                          type="time"
+                          value={eventTimeInput}
+                          onChange={(e) => setEventTimeInput(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="event-location-name"
+                          className="text-xs text-gray-300"
+                        >
+                          Nombre de ubicación
+                        </label>
+                        <input
+                          id="event-location-name"
+                          value={eventLocationName}
+                          onChange={(e) => setEventLocationName(e.target.value)}
+                          placeholder="Ej. Huixquilucan, Autódromo Hermanos Rodríguez..."
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                        <p className="mt-1 text-[10px] text-gray-500">
+                          Este será el texto visible del link de ubicación.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="event-location-url"
+                          className="text-xs text-gray-300"
+                        >
+                          Enlace de Google Maps
+                        </label>
+                        <input
+                          id="event-location-url"
+                          value={eventLocationUrl}
+                          onChange={(e) => setEventLocationUrl(e.target.value)}
+                          placeholder="https://maps.google.com/..."
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                        {eventLocationUrl && (
+                          <a
+                            href={normalizeAdminUrl(eventLocationUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 inline-flex text-[10px] font-semibold text-[#0CE0B2] hover:text-[#7CFFE2]"
+                          >
+                            Ver enlace como: {eventLocationName || "Ubicación"}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

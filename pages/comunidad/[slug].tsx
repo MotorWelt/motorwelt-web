@@ -1,4 +1,3 @@
-// pages/lifestyle/[slug].tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { GetServerSideProps } from "next";
 import Link from "next/link";
@@ -54,7 +53,7 @@ type Streak = {
   h?: string;
 };
 
-type LifestyleArticle = {
+type ComunidadArticle = {
   id: string;
   slug: string;
   title: string;
@@ -62,8 +61,6 @@ type LifestyleArticle = {
   excerpt: string;
   body: string;
   section: string;
-  category: string;
-  subcategory: string;
   contentType: string;
   status: string;
   tags: string[];
@@ -78,6 +75,11 @@ type LifestyleArticle = {
   videoUrl: string;
   reelUrl: string;
   useVideoAsHero: boolean;
+  eventDay: string;
+  eventDate: string | null;
+  eventTime: string;
+  eventLocation: string;
+  eventLocationUrl: string;
 };
 
 type SidebarArticle = {
@@ -90,17 +92,17 @@ type SidebarArticle = {
   href: string;
 };
 
-type LifestyleAdConfig = {
+type ComunidadAdConfig = {
   enabled: boolean;
   label: string;
   imageUrl: string;
   href: string;
 };
 
-type LifestyleSettings = {
+type ComunidadSettings = {
   ads: {
-    leaderboard: LifestyleAdConfig;
-    billboard: LifestyleAdConfig;
+    leaderboard: ComunidadAdConfig;
+    billboard: ComunidadAdConfig;
   };
 };
 
@@ -125,7 +127,7 @@ type BodyBlock =
 
 const GLOBAL_SLUG_ADS_PAGE_KEY = "globalSlugAds";
 
-const DEFAULT_LIFESTYLE_SETTINGS: LifestyleSettings = {
+const DEFAULT_COMUNIDAD_SETTINGS: ComunidadSettings = {
   ads: {
     leaderboard: {
       enabled: true,
@@ -160,14 +162,14 @@ function readCookie(name: string) {
   return match ? decodeURIComponent(match[2]) : "";
 }
 
-function sanitizeLifestyleSettings(raw?: any): LifestyleSettings {
+function sanitizeComunidadSettings(raw?: any): ComunidadSettings {
   return {
     ads: {
       leaderboard: {
         enabled: Boolean(raw?.ads?.leaderboard?.enabled ?? true),
         label:
           String(raw?.ads?.leaderboard?.label || "").trim() ||
-          DEFAULT_LIFESTYLE_SETTINGS.ads.leaderboard.label,
+          DEFAULT_COMUNIDAD_SETTINGS.ads.leaderboard.label,
         imageUrl: String(raw?.ads?.leaderboard?.imageUrl || "").trim(),
         href: String(raw?.ads?.leaderboard?.href || "").trim(),
       },
@@ -175,7 +177,7 @@ function sanitizeLifestyleSettings(raw?: any): LifestyleSettings {
         enabled: Boolean(raw?.ads?.billboard?.enabled ?? true),
         label:
           String(raw?.ads?.billboard?.label || "").trim() ||
-          DEFAULT_LIFESTYLE_SETTINGS.ads.billboard.label,
+          DEFAULT_COMUNIDAD_SETTINGS.ads.billboard.label,
         imageUrl: String(raw?.ads?.billboard?.imageUrl || "").trim(),
         href: String(raw?.ads?.billboard?.href || "").trim(),
       },
@@ -233,6 +235,30 @@ function formatDate(iso?: string | null) {
   }
 }
 
+
+function formatWeekday(iso?: string | null) {
+  if (!iso) return "";
+  try {
+    return new Intl.DateTimeFormat("es-MX", {
+      weekday: "long",
+    }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
+function formatEventTime(value?: string | null) {
+  const clean = (value || "").trim();
+  if (!clean) return "";
+
+  if (/^\d{2}:\d{2}$/.test(clean)) {
+    const [hours, minutes] = clean.split(":");
+    return `${hours}:${minutes} hrs`;
+  }
+
+  return clean;
+}
+
 function normalizeUrl(url?: string | null) {
   return (url || "").trim();
 }
@@ -249,29 +275,6 @@ function normalizeSectionText(value: unknown) {
   return String(value).trim().toLowerCase();
 }
 
-function detectLifestyleLabel(article: LifestyleArticle) {
-  const blob = [
-    article.title,
-    article.subtitle,
-    article.excerpt,
-    article.section,
-    article.category,
-    article.subcategory,
-    article.tags,
-  ]
-    .map(normalizeSectionText)
-    .join(" ");
-
-  if (blob.includes("diseño") || blob.includes("design")) return "Diseño";
-  if (blob.includes("viaje") || blob.includes("travel") || blob.includes("ruta")) return "Travel";
-  if (blob.includes("gadget") || blob.includes("tech") || blob.includes("tecnología")) return "Tech";
-  if (blob.includes("moda") || blob.includes("fashion") || blob.includes("apparel")) return "Style";
-  if (blob.includes("reloj") || blob.includes("watch")) return "Watches";
-  if (blob.includes("garage") || blob.includes("cultura")) return "Cultura";
-
-  return "Lifestyle";
-}
-
 function hrefFromRelatedPost(post: any) {
   const slug = String(post?.slug || "").trim();
   if (!slug) return "/";
@@ -280,7 +283,7 @@ function hrefFromRelatedPost(post: any) {
     .map(normalizeSectionText)
     .join(" ");
 
-  if (blob.includes("tuning")) return `/tuning/${slug}`;
+  if (blob.includes("tuning")) return `/comunidad/${slug}`;
   if (blob.includes("deportes")) return `/deportes/${slug}`;
   if (blob.includes("lifestyle")) return `/lifestyle/${slug}`;
   if (blob.includes("comunidad")) return `/comunidad/${slug}`;
@@ -291,7 +294,7 @@ function hrefFromRelatedPost(post: any) {
     return `/noticias/autos/${slug}`;
   }
 
-  return `/lifestyle/${slug}`;
+  return `/comunidad/${slug}`;
 }
 
 function getYoutubeEmbedUrl(url: string) {
@@ -465,7 +468,7 @@ function AdSlot({
   onClear,
   inputRef,
 }: {
-  ad: LifestyleAdConfig;
+  ad: ComunidadAdConfig;
   editable: boolean;
   kind: AdKind;
   layout?: "default" | "sidebarTall";
@@ -583,12 +586,12 @@ function AdSlot({
 function SidebarArticleCard({ item }: { item: SidebarArticle }) {
   return (
     <Link
-      href={item.href || `/tuning/${item.slug}`}
+      href={item.href || `/comunidad/${item.slug}`}
       className="group flex items-stretch gap-3 overflow-hidden rounded-[22px] border border-white/[0.06] bg-black/20 p-3 transition hover:border-white/12"
     >
       <div className="relative h-[82px] w-[96px] shrink-0 overflow-hidden rounded-[16px] sm:h-[88px] sm:w-[108px]">
         <img
-          src={item.mainImageUrl || "/images/comunidad.jpg"}
+          src={item.mainImageUrl || "/images/noticia-2.jpg"}
           alt={item.title}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
         />
@@ -663,16 +666,16 @@ function ExploreCard({
   );
 }
 
-export default function LifestyleDetailPage({
+export default function ComunidadDetailPage({
   article,
   latestArticles,
-  lifestyleSettings,
+  comunidadSettings,
   sectionHeroImages,
   year,
 }: {
-  article: LifestyleArticle;
+  article: ComunidadArticle;
   latestArticles: SidebarArticle[];
-  lifestyleSettings: LifestyleSettings;
+  comunidadSettings: ComunidadSettings;
   sectionHeroImages: SectionHeroImages;
   year: number;
 }) {
@@ -686,15 +689,15 @@ export default function LifestyleDetailPage({
   const [spectatorMode, setSpectatorMode] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [settings, setSettings] = useState<LifestyleSettings>(
-    sanitizeLifestyleSettings(lifestyleSettings),
+  const [settings, setSettings] = useState<ComunidadSettings>(
+    sanitizeComunidadSettings(comunidadSettings),
   );
 
   const leaderboardInputRef = useRef<HTMLInputElement | null>(null);
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
 
   const heroImage =
-    article.mainImageUrl || article.galleryUrls?.[0] || "/images/comunidad.jpg";
+    article.mainImageUrl || article.galleryUrls?.[0] || "/images/noticia-2.jpg";
 
   const gallery = Array.from(
     new Set(
@@ -712,7 +715,6 @@ export default function LifestyleDetailPage({
   const hasVideo = Boolean(heroVideoEmbed);
   const hasGallery = gallery.length > 1;
   const headerDate = article.publishedAt || article.updatedAt;
-  const lifestyleLabel = detectLifestyleLabel(article);
 
   const isImageModalOpen =
     activeGalleryIndex !== null || Boolean(standaloneImage);
@@ -910,7 +912,7 @@ export default function LifestyleDetailPage({
 
   const adEditVisible = canEdit && !spectatorMode;
 
-  async function persistSettings(nextSettings: LifestyleSettings) {
+  async function persistSettings(nextSettings: ComunidadSettings) {
     setSavingSettings(true);
     setSettingsError(null);
 
@@ -1022,7 +1024,7 @@ export default function LifestyleDetailPage({
           article.seoDescription ||
           article.excerpt ||
           article.subtitle ||
-          "Lifestyle en MotorWelt"
+          "Comunidad en MotorWelt"
         }
         image={heroImage}
       />
@@ -1125,13 +1127,13 @@ export default function LifestyleDetailPage({
                 </Link>
                 <Link
                   href="/lifestyle"
-                  className="inline-flex h-10 items-center leading-none text-white"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
                 >
                   Lifestyle
                 </Link>
                 <Link
                   href="/comunidad"
-                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                  className="inline-flex h-10 items-center leading-none text-white"
                 >
                   Comunidad
                 </Link>
@@ -1242,14 +1244,14 @@ export default function LifestyleDetailPage({
                 </Link>
                 <Link
                   href="/lifestyle"
-                  className="block w-full rounded-xl px-3 py-3 text-base text-white hover:bg-white/5"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
                   onClick={() => setMobileOpen(false)}
                 >
                   Lifestyle
                 </Link>
                 <Link
                   href="/comunidad"
-                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-white hover:bg-white/5"
                   onClick={() => setMobileOpen(false)}
                 >
                   Comunidad
@@ -1373,9 +1375,9 @@ export default function LifestyleDetailPage({
               <div className="max-w-5xl">
                 <div className="mb-4 flex flex-wrap items-start gap-2">
                   <Link
-                    href="/lifestyle"
+                    href="/comunidad"
                     className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.06] bg-black/30 text-white/75 backdrop-blur transition hover:text-white"
-                    aria-label="Volver a Lifestyle"
+                    aria-label="Volver a Comunidad"
                   >
                     <svg
                       width="13"
@@ -1395,8 +1397,8 @@ export default function LifestyleDetailPage({
                   </Link>
 
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-black/30 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-gray-200 backdrop-blur">
-                    <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                    Lifestyle · {lifestyleLabel}
+                    <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
+                    Comunidad
                   </div>
                 </div>
 
@@ -1642,72 +1644,72 @@ export default function LifestyleDetailPage({
                 <aside className="space-y-6">
                   <div className="rounded-[28px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-[#FF7A1A]">
-                      Nota
+                      Evento
                     </p>
                     <h3 className="mt-3 text-2xl font-semibold text-white">
-                      Ficha editorial
+                      Información del evento
                     </h3>
 
                     <div className="mt-5 space-y-4 text-sm text-gray-300">
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
-                          Sección
+                          Día / Fecha
                         </p>
-                        <p className="mt-1 text-white">Lifestyle</p>
+                        <p className="mt-1 text-white">
+                          {article.eventDate
+                            ? `${article.eventDay || formatWeekday(article.eventDate)} · ${formatDate(article.eventDate)}`
+                            : "Por confirmar"}
+                        </p>
                       </div>
 
-                      {article.contentType ? (
-                        <div>
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
-                            Tipo
-                          </p>
-                          <p className="mt-1 text-white">
-                            {article.contentType}
-                          </p>
-                        </div>
-                      ) : null}
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
+                          Horario
+                        </p>
+                        <p className="mt-1 text-white">
+                          {formatEventTime(article.eventTime) || "Por confirmar"}
+                        </p>
+                      </div>
 
-                      {article.authorName ? (
-                        <div>
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
-                            Autor
-                          </p>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
+                          Ubicación
+                        </p>
+                        {article.eventLocationUrl && article.eventLocation ? (
+                          <a
+                            href={article.eventLocationUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-1 inline-flex text-white underline decoration-white/30 underline-offset-4 transition hover:text-[#0CE0B2] hover:decoration-[#0CE0B2]/60"
+                          >
+                            {article.eventLocation}
+                          </a>
+                        ) : (
                           <p className="mt-1 text-white">
-                            {article.authorName}
+                            {article.eventLocation || "Por confirmar"}
                           </p>
-                        </div>
-                      ) : null}
-
-                      {article.publishedAt ? (
-                        <div>
-                          <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
-                            Publicación
-                          </p>
-                          <p className="mt-1 text-white">
-                            {formatDate(article.publishedAt)}
-                          </p>
-                        </div>
-                      ) : null}
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {article.tags?.length ? (
-                    <div className="rounded-[28px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md">
-                      <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
-                        Tags
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {article.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center rounded-full border border-white/[0.06] bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.14em] text-gray-200"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
+                  <div className="rounded-[28px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md">
+                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
+                      Comunidad
+                    </p>
+                    <h3 className="mt-3 text-2xl font-semibold text-white">
+                      ¿Quieres publicar tu evento?
+                    </h3>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-300">
+                      Comparte tu meet, rodada, exhibición o experiencia automotriz con MotorWelt.
+                    </p>
+                    <Link
+                      href="/contact"
+                      className="mt-5 inline-flex items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.035] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_18px_rgba(12,224,178,.22),inset_0_0_0_1px_rgba(255,255,255,.035)] transition hover:bg-white/5 hover:shadow-[0_0_24px_rgba(12,224,178,.32),inset_0_0_0_1px_rgba(255,255,255,.05)]"
+                    >
+                      Publicar evento
+                    </Link>
+                  </div>
 
                   <AdSlot
                     kind="billboard"
@@ -1725,10 +1727,10 @@ export default function LifestyleDetailPage({
 
                   <div className="rounded-[28px] border border-white/[0.06] bg-black/25 p-5 backdrop-blur-md">
                     <p className="text-[11px] uppercase tracking-[0.24em] text-[#A3FF12]">
-                      Últimas publicaciones
+                      Eventos relacionados
                     </p>
                     <h3 className="mt-3 text-2xl font-semibold text-white">
-                      Publicaciones relacionadas
+                      Eventos relacionados
                     </h3>
 
                     <div className="mt-5 max-h-[640px] space-y-3 overflow-y-auto pr-1 sidebar-scroll">
@@ -1738,8 +1740,8 @@ export default function LifestyleDetailPage({
                         ))
                       ) : (
                         <div className="rounded-[22px] border border-dashed border-white/12 bg-white/5 p-5 text-sm text-gray-300">
-                          Próximamente aparecerán más publicaciones
-                          relacionadas.
+                          Próximamente aparecerán más eventos
+                          relacionados.
                         </div>
                       )}
                     </div>
@@ -2048,25 +2050,10 @@ export const getServerSideProps: GetServerSideProps = async ({
       slug.current == $slug &&
       coalesce(status, "publicado") == "publicado" &&
       (
-        section == "lifestyle" ||
-        section == "noticias_lifestyle" ||
-        lower(category) == "lifestyle" ||
-        "lifestyle" in categories[] ||
-        "diseño" in categories[] ||
-        "design" in categories[] ||
-        "travel" in categories[] ||
-        "viajes" in categories[] ||
-        "tech" in categories[] ||
-        "gadgets" in categories[] ||
-        "style" in categories[] ||
-        "lifestyle" in tags[] ||
-        "diseño" in tags[] ||
-        "design" in tags[] ||
-        "travel" in tags[] ||
-        "viajes" in tags[] ||
-        "tech" in tags[] ||
-        "gadgets" in tags[] ||
-        "style" in tags[]
+        section == "comunidad" ||
+        lower(category) == "comunidad" ||
+        "comunidad" in categories[] ||
+        "eventos" in categories[]
       )
     ][0]{
       "id": _id,
@@ -2076,8 +2063,6 @@ export const getServerSideProps: GetServerSideProps = async ({
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "body": coalesce(body, ""),
       "section": coalesce(section, ""),
-      "category": coalesce(category, ""),
-      "subcategory": coalesce(subcategory, ""),
       "contentType": coalesce(contentType, "noticia"),
       "status": coalesce(status, "publicado"),
       "tags": coalesce(tags, []),
@@ -2087,40 +2072,30 @@ export const getServerSideProps: GetServerSideProps = async ({
       "seoDescription": coalesce(seoDescription, excerpt, subtitle, ""),
       "updatedAt": updatedAt,
       "publishedAt": coalesce(publishedAt, _createdAt),
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "galleryUrls": coalesce(galleryUrls, []),
-      "videoUrl": coalesce(videoUrl, youtubeUrl, ""),
-      "reelUrl": coalesce(reelUrl, shortVideoUrl, socialUrl, ""),
-      "useVideoAsHero": coalesce(useVideoAsHero, false)
+      "videoUrl": coalesce(videoUrl, ""),
+      "reelUrl": coalesce(reelUrl, ""),
+      "useVideoAsHero": coalesce(useVideoAsHero, false),
+      "eventDay": coalesce(eventDay, dia, ""),
+      "eventDate": coalesce(eventDateTime, eventDate, fecha, startDate, publishedAt, _createdAt),
+      "eventTime": coalesce(eventTime, horario, time, ""),
+      "eventLocation": coalesce(eventLocationName, eventLocation.name, eventLocation.label, locationName, location.name, location.label, placeName, place, ubicacion, venue, ""),
+      "eventLocationUrl": coalesce(eventLocationUrl, eventLocation.url, eventLocation.href, locationUrl, location.url, location.href, googleMapsUrl, googleMapsLink, mapsUrl, eventMapsUrl, eventMapUrl, placeUrl, "")
     }
   `;
 
-  const relatedLifestyleQuery = /* groq */ `
+  const relatedEventsQuery = /* groq */ `
     *[
       _type in ["article", "post"] &&
       coalesce(status, "publicado") == "publicado" &&
       defined(slug.current) &&
       slug.current != $slug &&
       (
-        section == "lifestyle" ||
-        section == "noticias_lifestyle" ||
-        lower(category) == "lifestyle" ||
-        "lifestyle" in categories[] ||
-        "diseño" in categories[] ||
-        "design" in categories[] ||
-        "travel" in categories[] ||
-        "viajes" in categories[] ||
-        "tech" in categories[] ||
-        "gadgets" in categories[] ||
-        "style" in categories[] ||
-        "lifestyle" in tags[] ||
-        "diseño" in tags[] ||
-        "design" in tags[] ||
-        "travel" in tags[] ||
-        "viajes" in tags[] ||
-        "tech" in tags[] ||
-        "gadgets" in tags[] ||
-        "style" in tags[]
+        lower(coalesce(contentType, "")) == "evento" ||
+        lower(category) == "evento" ||
+        "eventos" in categories[] ||
+        "evento" in categories[]
       )
     ]
     | order(coalesce(publishedAt, _createdAt) desc)[0...12]{
@@ -2129,7 +2104,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "publishedAt": coalesce(publishedAt, _createdAt),
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "section": coalesce(section, ""),
       "category": coalesce(category, ""),
       "subcategory": coalesce(subcategory, ""),
@@ -2143,7 +2118,13 @@ export const getServerSideProps: GetServerSideProps = async ({
       _type in ["article", "post"] &&
       coalesce(status, "publicado") == "publicado" &&
       defined(slug.current) &&
-      slug.current != $slug
+      slug.current != $slug &&
+      (
+        lower(coalesce(contentType, "")) == "evento" ||
+        lower(category) == "evento" ||
+        "eventos" in categories[] ||
+        "evento" in categories[]
+      )
     ]
     | order(coalesce(publishedAt, _createdAt) desc)[0...24]{
       "id": _id,
@@ -2151,7 +2132,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
       "publishedAt": coalesce(publishedAt, _createdAt),
-      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
+      "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "section": coalesce(section, ""),
       "category": coalesce(category, ""),
       "subcategory": coalesce(subcategory, ""),
@@ -2228,7 +2209,7 @@ export const getServerSideProps: GetServerSideProps = async ({
 
   const [
     article,
-    relatedLifestyleArticles,
+    relatedEvents,
     recentSitewideArticles,
     globalSlugAdsRaw,
     sectionSettingsRaw,
@@ -2236,7 +2217,7 @@ export const getServerSideProps: GetServerSideProps = async ({
     motosFallback,
   ] = await Promise.all([
     sanityReadClient.fetch(articleQuery, { slug }),
-    sanityReadClient.fetch(relatedLifestyleQuery, { slug }).catch(() => []),
+    sanityReadClient.fetch(relatedEventsQuery, { slug }).catch(() => []),
     sanityReadClient.fetch(recentSitewideQuery, { slug }).catch(() => []),
     sanityReadClient.fetch(globalSlugAdsQuery).catch(() => null),
     sanityReadClient.fetch(sectionSettingsQuery).catch(() => []),
@@ -2249,7 +2230,7 @@ export const getServerSideProps: GetServerSideProps = async ({
   }
 
   const mergedLatest = [
-    ...(Array.isArray(relatedLifestyleArticles) ? relatedLifestyleArticles : []),
+    ...(Array.isArray(relatedEvents) ? relatedEvents : []),
     ...(Array.isArray(recentSitewideArticles) ? recentSitewideArticles : []),
   ];
 
@@ -2295,7 +2276,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       year: new Date().getFullYear(),
       article,
       latestArticles,
-      lifestyleSettings: sanitizeLifestyleSettings(globalSlugAdsRaw),
+      comunidadSettings: sanitizeComunidadSettings(globalSlugAdsRaw),
       sectionHeroImages,
     },
   };

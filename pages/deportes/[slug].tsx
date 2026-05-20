@@ -1620,7 +1620,7 @@ export default function DeportesDetailPage({
                           Gallery
                         </p>
                         <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                          Más frames de la cobertura
+                          Galería 
                         </h2>
                       </div>
 

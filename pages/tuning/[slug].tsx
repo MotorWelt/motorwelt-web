@@ -1577,7 +1577,7 @@ export default function TuningDetailPage({
                           Gallery
                         </p>
                         <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                          Más frames del proyecto
+                          Galería 
                         </h2>
                       </div>
 

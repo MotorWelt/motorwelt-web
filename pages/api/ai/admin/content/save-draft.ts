@@ -35,6 +35,15 @@ type SaveDraftRequest = {
 
   slug?: string;
   publishedAt?: string | null;
+
+  eventDate?: string | null;
+  eventTime?: string;
+  eventDateTime?: string | null;
+  eventLocationName?: string;
+  eventLocationUrl?: string;
+  locationName?: string;
+  locationUrl?: string;
+  googleMapsUrl?: string;
 };
 
 type Data =
@@ -178,6 +187,14 @@ export default async function handler(
       useVideoAsHero,
       slug,
       publishedAt,
+      eventDate,
+      eventTime,
+      eventDateTime,
+      eventLocationName,
+      eventLocationUrl,
+      locationName,
+      locationUrl,
+      googleMapsUrl,
     } = payload;
 
     if (!title || !section) {
@@ -231,6 +248,32 @@ export default async function handler(
 
     const autosSection = autosSubcategoryToAutoSection(normalizedSubcategory);
 
+    const resolvedEventDateTime =
+      typeof eventDateTime === "string" && eventDateTime.trim()
+        ? eventDateTime.trim()
+        : typeof eventDate === "string" && eventDate.trim()
+          ? eventDate.trim()
+          : "";
+
+    const resolvedEventLocationName =
+      typeof eventLocationName === "string" && eventLocationName.trim()
+        ? eventLocationName.trim()
+        : typeof locationName === "string" && locationName.trim()
+          ? locationName.trim()
+          : "";
+
+    const resolvedEventLocationUrl =
+      typeof eventLocationUrl === "string" && eventLocationUrl.trim()
+        ? eventLocationUrl.trim()
+        : typeof locationUrl === "string" && locationUrl.trim()
+          ? locationUrl.trim()
+          : typeof googleMapsUrl === "string" && googleMapsUrl.trim()
+            ? googleMapsUrl.trim()
+            : "";
+
+    const resolvedEventTime =
+      typeof eventTime === "string" && eventTime.trim() ? eventTime.trim() : "";
+
     const docBase: Record<string, any> = {
       _type: resolvedType,
       title,
@@ -238,7 +281,9 @@ export default async function handler(
       excerpt: excerpt || subtitle || "",
       section,
       subcategory: normalizedSubcategory,
-      contentType: contentType || "noticia",
+      contentType:
+  contentType ||
+  (section === "comunidad" ? "evento" : "noticia"),
       status: normalizedStatus,
       body: articleBody || "",
 
@@ -255,6 +300,14 @@ export default async function handler(
       videoUrl: videoUrl || "",
       reelUrl: reelUrl || "",
       useVideoAsHero: !!useVideoAsHero,
+      eventDate: resolvedEventDateTime,
+      eventTime: resolvedEventTime,
+      eventDateTime: resolvedEventDateTime,
+      eventLocationName: resolvedEventLocationName,
+      eventLocationUrl: resolvedEventLocationUrl,
+      locationName: resolvedEventLocationName,
+      locationUrl: resolvedEventLocationUrl,
+      googleMapsUrl: resolvedEventLocationUrl,
       updatedAt: now,
       ...(resolvedPublishedAt ? { publishedAt: resolvedPublishedAt } : {}),
       ...(autosSection ? { autoSection: autosSection } : {}),
@@ -271,7 +324,7 @@ export default async function handler(
         : {}),
     };
 
-    const buildMarker = "save-draft-subcategory-fix-v2";
+    const buildMarker = "save-draft-community-maps-fix-v3";
 
     if (id) {
       const updated = await sanityAdminClient

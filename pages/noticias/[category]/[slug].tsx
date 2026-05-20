@@ -1667,7 +1667,7 @@ export default function NewsDetailPage({
                           Video
                         </p>
                         <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                          Pieza principal en movimiento
+                          Video 
                         </h2>
                       </div>
                       <InlineEmbed
@@ -1686,7 +1686,7 @@ export default function NewsDetailPage({
                           Gallery
                         </p>
                         <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                          Más frames del proyecto
+                          Galería 
                         </h2>
                       </div>
 
