@@ -15,11 +15,17 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
+  res.setHeader("Content-Type", "application/json");
+
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  const form = formidable({ multiples: false });
+  const form = formidable({
+    multiples: false,
+    keepExtensions: true,
+    maxFileSize: 25 * 1024 * 1024,
+  });
 
   try {
     assertWriteToken();
@@ -43,14 +49,32 @@ export default async function handler(
       });
     }
 
-    const buffer = fs.readFileSync(f.filepath);
+    if (!f.filepath) {
+      return res.status(400).json({
+        ok: false,
+        error: "Invalid file upload.",
+      });
+    }
 
-    const asset = await sanityAdminClient.assets.upload("image", buffer, {
+    if (f.mimetype && !f.mimetype.startsWith("image/")) {
+      return res.status(400).json({
+        ok: false,
+        error: "Only image files are allowed.",
+      });
+    }
+
+    const stream = fs.createReadStream(f.filepath);
+
+    const asset = await sanityAdminClient.assets.upload("image", stream, {
       filename: f.originalFilename || "upload.jpg",
       contentType: f.mimetype || undefined,
     });
 
-    return res.status(200).json({ ok: true, assetId: asset._id, url: asset.url });
+    return res.status(200).json({
+      ok: true,
+      assetId: asset._id,
+      url: asset.url,
+    });
   } catch (e: any) {
     const status = e?.statusCode || e?.response?.statusCode || 500;
 

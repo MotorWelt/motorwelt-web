@@ -322,6 +322,23 @@ function getEmbedUrl(url: string) {
   return "";
 }
 
+function isNativeVideoUrl(url: string) {
+  const clean = normalizeUrl(url).toLowerCase();
+  if (!clean) return false;
+
+  return (
+    clean.includes("cdn.sanity.io/files/") ||
+    clean.endsWith(".mp4") ||
+    clean.endsWith(".webm") ||
+    clean.endsWith(".mov") ||
+    clean.endsWith(".m4v") ||
+    clean.includes(".mp4?") ||
+    clean.includes(".webm?") ||
+    clean.includes(".mov?") ||
+    clean.includes(".m4v?")
+  );
+}
+
 function parseBody(body: string): BodyBlock[] {
   const lines = (body || "").replace(/\r\n/g, "\n").split("\n");
   const blocks: BodyBlock[] = [];
@@ -416,6 +433,22 @@ function InlineEmbed({ url, title }: { url: string; title?: string }) {
             allowFullScreen
           />
         </div>
+      </div>
+    );
+  }
+
+  if (isNativeVideoUrl(url)) {
+    return (
+      <div className="relative w-full overflow-hidden rounded-[24px] border border-white/[0.06] bg-black">
+        <video
+          src={url}
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-video h-full w-full bg-black object-contain"
+        >
+          Tu navegador no puede reproducir este video.
+        </video>
       </div>
     );
   }
@@ -772,7 +805,7 @@ export default function NewsDetailPage({
     [article.body],
   );
   const heroVideoEmbed = getYoutubeEmbedUrl(article.videoUrl || "");
-  const hasVideo = Boolean(heroVideoEmbed);
+  const hasVideo = Boolean(normalizeUrl(article.videoUrl || ""));
   const hasGallery = gallery.length > 1;
   const headerDate = article.publishedAt || article.updatedAt;
 
@@ -1636,8 +1669,7 @@ export default function NewsDetailPage({
                           }
 
                           if (block.type === "video") {
-                            const embed = getYoutubeEmbedUrl(block.url);
-                            if (!embed) return null;
+                            if (!normalizeUrl(block.url)) return null;
                             return (
                               <div key={index} className="my-8">
                                 <InlineEmbed
