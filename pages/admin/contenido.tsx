@@ -530,6 +530,98 @@ function isoToTimeInput(iso?: string | null) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+async function fileToImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("No se pudo leer la imagen seleccionada."));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+async function prepareImageForUpload(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Selecciona un archivo de imagen válido.");
+  }
+
+  const maxBytesBeforeCompression = 1.8 * 1024 * 1024;
+  const maxSide = 2200;
+
+  if (
+    file.size <= maxBytesBeforeCompression &&
+    !["image/heic", "image/heif"].includes(file.type)
+  ) {
+    return file;
+  }
+
+  if (typeof window === "undefined") return file;
+
+  const image = await fileToImage(file);
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+
+  if (!width || !height) {
+    throw new Error("No se pudieron obtener las dimensiones de la imagen.");
+  }
+
+  const scale = Math.min(1, maxSide / Math.max(width, height));
+  const targetWidth = Math.max(1, Math.round(width * scale));
+  const targetHeight = Math.max(1, Math.round(height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("No se pudo preparar la imagen para subirla.");
+  }
+
+  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", 0.9);
+  });
+
+  if (!blob) {
+    throw new Error("No se pudo comprimir la imagen.");
+  }
+
+  const cleanName = file.name.replace(/\.[^.]+$/, "");
+  return new File([blob], `${cleanName}.jpg`, {
+    type: "image/jpeg",
+    lastModified: Date.now(),
+  });
+}
+
+async function safeReadJsonResponse(res: Response, fallbackMessage: string) {
+  const raw = await res.text();
+
+  try {
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    if (res.status === 413) {
+      throw new Error(
+        "La imagen es demasiado pesada para subirla desde producción. Intenta con una imagen más ligera.",
+      );
+    }
+
+    throw new Error(
+      raw?.slice(0, 180) || fallbackMessage,
+    );
+  }
+}
+
 /* ---------- Tipos para listado y carga ---------- */
 type ContentListItem = {
   id: string;
@@ -699,20 +791,20 @@ const AdminContentEditorPage: React.FC = () => {
   const mainVideoInputRef = useRef<HTMLInputElement | null>(null);
 
   async function uploadImageToSanity(file: File) {
+    const safeFile = await prepareImageForUpload(file);
+
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", safeFile);
 
     const res = await fetch("/api/ai/admin/content/upload-image", {
       method: "POST",
       body: fd,
     });
 
-    let data: any = null;
-    try {
-      data = await res.json();
-    } catch {
-      throw new Error("Respuesta inválida del upload de imagen.");
-    }
+    const data = await safeReadJsonResponse(
+      res,
+      "Respuesta inválida del upload de imagen.",
+    );
 
     if (!res.ok || !data?.ok) {
       throw new Error(data?.error || "Upload failed");
