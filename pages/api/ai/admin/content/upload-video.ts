@@ -6,6 +6,7 @@ import { sanityWriteClient } from "../../../../../lib/sanityClient";
 export const config = {
   api: {
     bodyParser: false,
+    responseLimit: false,
   },
 };
 
@@ -36,8 +37,9 @@ export default async function handler(
   try {
     const form = formidable({
       multiples: false,
-      maxFileSize: 1024 * 1024 * 500, // 500MB
+      maxFileSize: 1024 * 1024 * 500,
       keepExtensions: true,
+      allowEmptyFiles: false,
     });
 
     const { files } = await new Promise<{
@@ -77,6 +79,10 @@ export default async function handler(
       contentType: mimeType,
     });
 
+    try {
+      fs.unlinkSync(uploadedFile.filepath);
+    } catch {}
+
     return res.status(200).json({
       ok: true,
       assetId: asset._id,
@@ -86,6 +92,18 @@ export default async function handler(
     });
   } catch (error: any) {
     console.error("[upload-video] error", error);
+
+    if (
+      error?.code === 1009 ||
+      error?.httpCode === 413 ||
+      String(error?.message || "").toLowerCase().includes("maxfilesize")
+    ) {
+      return res.status(413).json({
+        ok: false,
+        error:
+          "El video supera el límite permitido por el servidor. Intenta con un archivo más ligero.",
+      });
+    }
 
     return res.status(500).json({
       ok: false,
