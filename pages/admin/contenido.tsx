@@ -604,7 +604,11 @@ async function prepareImageForUpload(file: File): Promise<File> {
   });
 }
 
-async function safeReadJsonResponse(res: Response, fallbackMessage: string) {
+async function safeReadJsonResponse(
+  res: Response,
+  fallbackMessage: string,
+  mediaLabel: "imagen" | "video" = "imagen",
+) {
   const raw = await res.text();
 
   try {
@@ -612,13 +616,11 @@ async function safeReadJsonResponse(res: Response, fallbackMessage: string) {
   } catch {
     if (res.status === 413) {
       throw new Error(
-        "La imagen es demasiado pesada para subirla desde producción. Intenta con una imagen más ligera.",
+        `El ${mediaLabel} es demasiado pesado para subirlo desde producción. Intenta con un archivo más ligero.`,
       );
     }
 
-    throw new Error(
-      raw?.slice(0, 180) || fallbackMessage,
-    );
+    throw new Error(raw?.slice(0, 180) || fallbackMessage);
   }
 }
 
@@ -834,15 +836,18 @@ const AdminContentEditorPage: React.FC = () => {
       body: fd,
     });
 
-    let data: any = null;
-    try {
-      data = await res.json();
-    } catch {
-      throw new Error("Respuesta inválida del upload de video.");
-    }
+    const data = await safeReadJsonResponse(
+      res,
+      "Respuesta inválida del upload de video.",
+      "video",
+    );
 
     if (!res.ok || !data?.ok) {
       throw new Error(data?.error || "Video upload failed");
+    }
+
+    if (!data?.url) {
+      throw new Error("El upload de video no regresó una URL válida.");
     }
 
     return data as { ok: true; assetId: string; url: string };
