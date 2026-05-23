@@ -226,6 +226,7 @@ function formatDate(iso?: string | null) {
       year: "numeric",
       month: "short",
       day: "2-digit",
+      timeZone: "America/Mexico_City",
     }).format(new Date(iso));
   } catch {
     return iso;
@@ -2106,8 +2107,8 @@ export const getServerSideProps: GetServerSideProps = async ({
       "authorEmail": coalesce(authorEmail, ""),
       "seoTitle": coalesce(seoTitle, title, ""),
       "seoDescription": coalesce(seoDescription, excerpt, subtitle, ""),
-      "updatedAt": updatedAt,
-      "publishedAt": coalesce(publishedAt, _createdAt),
+      "updatedAt": coalesce(updatedAt, _updatedAt),
+      "publishedAt": coalesce(publishedAt, publishDate, publishedDate, date, _createdAt),
       "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
       "galleryUrls": coalesce(galleryUrls, []),
       "videoUrl": coalesce(videoUrl, youtubeUrl, ""),
@@ -2141,12 +2142,12 @@ export const getServerSideProps: GetServerSideProps = async ({
         "drift" in tags[]
       )
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0...12]{
+    | order(coalesce(publishedAt, publishDate, publishedDate, date, _createdAt) desc)[0...12]{
       "id": _id,
       "slug": slug.current,
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
-      "publishedAt": coalesce(publishedAt, _createdAt),
+      "publishedAt": coalesce(publishedAt, publishDate, publishedDate, date, _createdAt),
       "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
       "section": coalesce(section, ""),
       "category": coalesce(category, ""),
@@ -2163,12 +2164,12 @@ export const getServerSideProps: GetServerSideProps = async ({
       defined(slug.current) &&
       slug.current != $slug
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0...24]{
+    | order(coalesce(publishedAt, publishDate, publishedDate, date, _createdAt) desc)[0...24]{
       "id": _id,
       "slug": slug.current,
       "title": coalesce(title, ""),
       "excerpt": coalesce(excerpt, subtitle, seoDescription, ""),
-      "publishedAt": coalesce(publishedAt, _createdAt),
+      "publishedAt": coalesce(publishedAt, publishDate, publishedDate, date, _createdAt),
       "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], ""),
       "section": coalesce(section, ""),
       "category": coalesce(category, ""),
@@ -2222,7 +2223,7 @@ export const getServerSideProps: GetServerSideProps = async ({
         "autos" in categories[]
       )
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+    | order(coalesce(publishedAt, publishDate, publishedDate, date, _createdAt) desc)[0]{
       "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
     }
   `;
@@ -2239,7 +2240,7 @@ export const getServerSideProps: GetServerSideProps = async ({
         "motos" in categories[]
       )
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0]{
+    | order(coalesce(publishedAt, publishDate, publishedDate, date, _createdAt) desc)[0]{
       "image": coalesce(mainImageUrl, coverImage.asset->url, mainImage.asset->url, heroImage.asset->url, image.asset->url, galleryUrls[0], "")
     }
   `;
