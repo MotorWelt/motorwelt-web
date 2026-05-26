@@ -954,34 +954,41 @@ function EmptySectionNotice({
 
 function LatestArticleCard({ item }: { item: LatestArticleData }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[22px] border border-white/10 bg-mw-surface/80 backdrop-blur-md transition hover:border-white/10">
-      <Link href={item.href} className="flex h-full flex-col">
-        <div className="relative h-36 w-full overflow-hidden">
+    <Card className="h-full overflow-hidden hover:shadow-[0_0_22px_rgba(255,122,26,.12)]">
+      <Link href={item.href} className="block">
+        <div className="relative h-[130px] w-full md:h-[138px]">
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes="(max-width: 1024px) 78vw, 260px"
+            sizes="(max-width: 768px) 262px, 280px"
             style={{ objectFit: "cover" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
-          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
-            {item.sectionLabel}
-          </div>
-        </div>
-
-        <div className="flex flex-1 flex-col p-4">
-          <div className="text-[11px] text-gray-400">{item.when}</div>
-          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
-            {item.title}
-          </h3>
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-            {item.excerpt}
-          </p>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
         </div>
       </Link>
-    </article>
+
+      <CardContent className="p-4 md:p-3.5">
+        <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400 md:text-[10px]">
+          <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+          {item.sectionLabel} · Noticia
+        </div>
+
+        <Link href={item.href} className="block">
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white md:text-[15px]">
+            {item.title}
+          </h3>
+        </Link>
+
+        <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
+          {item.when ? <span>{item.when}</span> : null}
+        </div>
+
+        <div className="mt-auto hidden pt-3 md:block">
+          {renderReadMoreButton(item.href, "px-3.5 py-1.5 text-xs")}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -3218,7 +3225,7 @@ export default function TuningPage({
                     {latestItems.map((item) => (
                       <div
                         key={item.id}
-                        className="h-[270px] w-[290px] min-w-[290px] snap-start sm:h-auto sm:w-[300px] sm:min-w-[300px] lg:w-[280px] lg:min-w-[280px]"
+                        className="h-[253px] w-[262px] min-w-[262px] snap-start md:h-[300px] md:w-[280px] md:min-w-[280px]"
                       >
                         <LatestArticleCard item={item} />
                       </div>
