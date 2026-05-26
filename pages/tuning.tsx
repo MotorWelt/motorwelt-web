@@ -729,6 +729,209 @@ function TuningFeatureCard({ item }: { item: TuningItem }) {
   );
 }
 
+
+function TuningCompactCard({
+  item,
+  priority = false,
+  variant = "feature",
+}: {
+  item: TuningItem;
+  priority?: boolean;
+  variant?: "feature" | "side";
+}) {
+  const imageHeight = variant === "side" ? "h-[138px]" : "h-[152px]";
+  const imageSizes =
+    variant === "side"
+      ? "(max-width: 1024px) 100vw, 18vw"
+      : "(max-width: 1024px) 100vw, 38vw";
+
+  return (
+    <Card
+      className="overflow-hidden hover:shadow-[0_0_22px_rgba(255,122,26,.12)]"
+    >
+      <Link href={item.href} className="block">
+        <div className={`relative ${imageHeight} w-full`}>
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes={imageSizes}
+            style={{ objectFit: "cover" }}
+            priority={priority}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        </div>
+      </Link>
+
+      <CardContent className="p-3.5">
+        <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+          <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+          Tuning · {item.typeLabel}
+        </div>
+
+        <Link href={item.href} className="block">
+          <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-white">
+            {item.title}
+          </h3>
+        </Link>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+          {item.authorName ? <span>Por {item.authorName}</span> : null}
+          {item.authorName && item.when ? (
+            <span className="text-gray-600">•</span>
+          ) : null}
+          {item.when ? <span>{item.when}</span> : null}
+        </div>
+
+        <div className="mt-auto pt-3">
+          {renderReadMoreButton(item.href, "px-3.5 py-1.5 text-xs")}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TuningMobileRail({
+  items,
+  dotClass = "bg-[#0CE0B2]",
+}: {
+  items: TuningItem[];
+  dotClass?: string;
+}) {
+  return (
+    <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
+      <div className="flex snap-x snap-mandatory gap-4">
+        {items.map((item) => (
+          <Link
+            key={item.id}
+            href={item.href}
+            className="block h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start text-left"
+          >
+            <Card className="h-full overflow-hidden">
+              <div className="relative h-[130px] w-full">
+                <Image
+                  src={item.img}
+                  alt={item.title}
+                  fill
+                  sizes="262px"
+                  style={{ objectFit: "cover" }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              </div>
+              <CardContent className="p-4">
+                <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                  <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+                  Tuning · {item.typeLabel}
+                </div>
+                <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white">
+                  {item.title}
+                </h3>
+                <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
+                  {item.authorName ? <span>Por {item.authorName}</span> : null}
+                  {item.authorName && item.when ? (
+                    <span className="text-gray-600">•</span>
+                  ) : null}
+                  {item.when ? <span>{item.when}</span> : null}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TuningListSectionLayout({
+  items,
+}: {
+  items: TuningItem[];
+}) {
+  const leftItems = items.slice(0, 4);
+  const rightItems = items.slice(4, 9);
+
+  return (
+    <div className="hidden gap-6 md:grid lg:grid-cols-[1.08fr_1.12fr]">
+      <div className="grid gap-4 sm:grid-cols-2">
+        {leftItems.map((item, index) => (
+          <Card
+            key={item.id}
+            className="overflow-hidden hover:shadow-[0_0_26px_rgba(12,224,178,.16)]"
+          >
+            <Link href={item.href} className="block">
+              <div className="relative h-[138px] w-full">
+                <Image
+                  src={item.img}
+                  alt={item.title}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 42vw"
+                  style={{ objectFit: "cover" }}
+                  priority={index === 0}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-transparent" />
+              </div>
+            </Link>
+            <CardContent className="p-4">
+              <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400 sm:text-[11px]">
+                <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                Tuning · {item.typeLabel}
+              </div>
+              <Link href={item.href} className="block">
+                <h3 className="line-clamp-3 text-base font-semibold leading-tight text-white">
+                  {item.title}
+                </h3>
+              </Link>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                {item.authorName ? <span>Por {item.authorName}</span> : null}
+                {item.authorName && item.when ? (
+                  <span className="text-gray-600">•</span>
+                ) : null}
+                {item.when ? <span>{item.when}</span> : null}
+              </div>
+              <div className="mt-auto pt-4">
+                {renderReadMoreButton(item.href, "px-4 py-2 text-xs")}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <aside className="lg:sticky lg:top-24">
+        <div className="rounded-2xl border border-white/10 bg-mw-surface/70 backdrop-blur-md">
+          <div className="border-b border-white/10 p-4">
+            <h4 className="font-semibold text-white">Más para leer</h4>
+          </div>
+          <ul className="max-h-[520px] divide-y divide-white/10 overflow-y-auto no-scrollbar">
+            {rightItems.map((item) => (
+              <li key={item.id} className="p-4 transition hover:bg-white/5">
+                <Link href={item.href} className="flex gap-3">
+                  <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/10">
+                    <Image
+                      src={item.img}
+                      alt={item.title}
+                      fill
+                      sizes="140px"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">
+                      {item.title}
+                    </p>
+                    <span className="mt-1 block text-xs text-gray-400">
+                      Tuning{item.when ? ` • ${item.when}` : ""}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 function EmptySectionNotice({
   title,
   message,
@@ -2896,64 +3099,29 @@ export default function TuningPage({
 
               {mainTuningItems.length > 0 ? (
                 <>
-                  <div className="hidden md:grid gap-5 md:grid-cols-2">
-                    <div className="grid gap-6">
-                      {tuningDesktopColumns.left.map((item) => (
-                        <TuningFeatureCard key={item.id} item={item} />
+                  <div className="hidden items-start gap-4 md:grid lg:grid-cols-[0.86fr_1.14fr]">
+                    <div className="grid gap-4">
+                      {tuningDesktopColumns.left.map((item, index) => (
+                        <TuningCompactCard
+                          key={item.id}
+                          item={item}
+                          priority={index === 0}
+                          variant="feature"
+                        />
                       ))}
                     </div>
-                    <div className="grid gap-6">
+                    <div className="grid gap-4 lg:grid-cols-3">
                       {tuningDesktopColumns.right.map((item) => (
-                        <TuningFeatureCard key={item.id} item={item} />
+                        <TuningCompactCard
+                          key={item.id}
+                          item={item}
+                          variant="side"
+                        />
                       ))}
                     </div>
                   </div>
 
-                  <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                    <div className="flex gap-4 snap-x snap-mandatory">
-                      {mainTuningItems.map((item) => (
-                        <Link
-                          key={item.id}
-                          href={item.href}
-                          className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
-                        >
-                          <Card className="h-full overflow-hidden">
-                            <div className="relative h-36 w-full">
-                              <Image
-                                src={item.img}
-                                alt={item.title}
-                                fill
-                                sizes="78vw"
-                                style={{ objectFit: "cover" }}
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                            </div>
-                            <CardContent className="p-4">
-                              <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
-                                <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-                                Tuning · {item.typeLabel}
-                              </div>
-                              <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
-                                {item.title}
-                              </h3>
-                              <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-                                {item.excerpt}
-                              </p>
-                              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                                {item.authorName ? (
-                                  <span>Por {item.authorName}</span>
-                                ) : null}
-                                {item.authorName && item.when ? (
-                                  <span className="text-gray-600">•</span>
-                                ) : null}
-                                {item.when ? <span>{item.when}</span> : null}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
+                  <TuningMobileRail items={mainTuningItems} />
                 </>
               ) : (
                 <EmptySectionNotice
@@ -2982,64 +3150,11 @@ export default function TuningPage({
 
                   {exteriorTuningItems.length > 0 ? (
                     <>
-                      <div className="hidden md:grid gap-5 md:grid-cols-2">
-                        <div className="grid gap-6">
-                          {exteriorTuningItems.slice(0, 2).map((item) => (
-                            <TuningFeatureCard key={item.id} item={item} />
-                          ))}
-                        </div>
-                        <div className="grid gap-6">
-                          {exteriorTuningItems.slice(2, 5).map((item) => (
-                            <TuningFeatureCard key={item.id} item={item} />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                        <div className="flex gap-4 snap-x snap-mandatory">
-                          {exteriorTuningItems.map((item) => (
-                            <Link
-                              key={item.id}
-                              href={item.href}
-                              className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
-                            >
-                              <Card className="h-full overflow-hidden">
-                                <div className="relative h-36 w-full">
-                                  <Image
-                                    src={item.img}
-                                    alt={item.title}
-                                    fill
-                                    sizes="78vw"
-                                    style={{ objectFit: "cover" }}
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                                </div>
-                                <CardContent className="p-4">
-                                  <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
-                                    <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-                                    Tuning · {item.typeLabel}
-                                  </div>
-                                  <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
-                                    {item.title}
-                                  </h3>
-                                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-                                    {item.excerpt}
-                                  </p>
-                                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                                    {item.authorName ? (
-                                      <span>Por {item.authorName}</span>
-                                    ) : null}
-                                    {item.authorName && item.when ? (
-                                      <span className="text-gray-600">•</span>
-                                    ) : null}
-                                    {item.when ? <span>{item.when}</span> : null}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
+                      <TuningListSectionLayout items={exteriorTuningItems} />
+                      <TuningMobileRail
+                        items={exteriorTuningItems}
+                        dotClass="bg-[#FF7A1A]"
+                      />
                     </>
                   ) : (
                     <EmptySectionNotice
@@ -3064,64 +3179,11 @@ export default function TuningPage({
 
                   {performanceTuningItems.length > 0 ? (
                     <>
-                      <div className="hidden md:grid gap-5 md:grid-cols-[0.92fr_1.08fr]">
-                        <div className="grid gap-6">
-                          {performanceTuningItems.slice(0, 2).map((item) => (
-                            <TuningFeatureCard key={item.id} item={item} />
-                          ))}
-                        </div>
-                        <div className="grid gap-6">
-                          {performanceTuningItems.slice(2, 5).map((item) => (
-                            <TuningFeatureCard key={item.id} item={item} />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                        <div className="flex gap-4 snap-x snap-mandatory">
-                          {performanceTuningItems.map((item) => (
-                            <Link
-                              key={item.id}
-                              href={item.href}
-                              className="group block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start text-left"
-                            >
-                              <Card className="h-full overflow-hidden">
-                                <div className="relative h-36 w-full">
-                                  <Image
-                                    src={item.img}
-                                    alt={item.title}
-                                    fill
-                                    sizes="78vw"
-                                    style={{ objectFit: "cover" }}
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                                </div>
-                                <CardContent className="p-4">
-                                  <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
-                                    <span className="h-2 w-2 rounded-full bg-[#A3FF12]" />
-                                    Tuning · {item.typeLabel}
-                                  </div>
-                                  <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-white">
-                                    {item.title}
-                                  </h3>
-                                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-                                    {item.excerpt}
-                                  </p>
-                                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                                    {item.authorName ? (
-                                      <span>Por {item.authorName}</span>
-                                    ) : null}
-                                    {item.authorName && item.when ? (
-                                      <span className="text-gray-600">•</span>
-                                    ) : null}
-                                    {item.when ? <span>{item.when}</span> : null}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
+                      <TuningListSectionLayout items={performanceTuningItems} />
+                      <TuningMobileRail
+                        items={performanceTuningItems}
+                        dotClass="bg-[#A3FF12]"
+                      />
                     </>
                   ) : (
                     <EmptySectionNotice
@@ -3129,7 +3191,8 @@ export default function TuningPage({
                       message="Aquí agruparemos piezas enfocadas en potencia, suspensión, frenos, puesta a punto y upgrades reales."
                     />
                   )}
-                </div>              </div>
+                </div>
+              </div>
             </div>
           </section>
 
