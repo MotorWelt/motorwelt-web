@@ -509,14 +509,14 @@ function ArticleCard({
       href={item.href}
       className={
         mobileSize
-          ? "block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+          ? "block h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
           : "block h-full w-full"
       }
     >
       <Card className="group hover:-translate-y-[2px] hover:shadow-[0_0_24px_rgba(255,255,255,.045)]">
         <div
           className={`relative w-full ${
-            featured ? "h-64 sm:h-[340px]" : mobileSize ? "h-[112px]" : "h-40"
+            featured ? "h-64 sm:h-[340px]" : mobileSize ? "h-[130px]" : "h-40"
           }`}
         >
           <Image
@@ -525,7 +525,7 @@ function ArticleCard({
             fill
             sizes={
               mobileSize
-                ? "290px"
+                ? "262px"
                 : featured
                   ? "(max-width: 1024px) 100vw, 58vw"
                   : "(max-width: 1024px) 100vw, 27vw"
@@ -533,10 +533,6 @@ function ArticleCard({
             style={{ objectFit: "cover" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/66 via-black/14 to-transparent" />
-          <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/90 backdrop-blur">
-            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-            {item.sport}
-          </span>
         </div>
 
         <div
@@ -546,30 +542,27 @@ function ArticleCard({
               : "flex flex-1 flex-col p-4 sm:p-5"
           }
         >
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.sport}
+          </div>
+
           <h3
             className={`font-semibold leading-tight text-white ${
               featured
                 ? "text-2xl sm:text-3xl"
                 : mobileSize
-                  ? "line-clamp-2 text-[1rem]"
+                  ? "line-clamp-2 text-base"
                   : "line-clamp-2 text-lg"
             }`}
           >
             {item.title}
           </h3>
-          <p
-            className={
-              mobileSize
-                ? "mt-2 line-clamp-2 text-[12px] leading-relaxed text-gray-300"
-                : "mt-2 line-clamp-2 text-sm leading-relaxed text-gray-300"
-            }
-          >
-            {item.excerpt}
-          </p>
+
           <div
             className={
               mobileSize
-                ? "mt-auto flex flex-wrap items-center gap-1.5 pt-2 text-[10.5px] leading-tight text-gray-400"
+                ? "mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400"
                 : "mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400"
             }
           >
@@ -595,33 +588,226 @@ function ArticleCard({
   );
 }
 
-function RecentMotorWeltCard({ item }: { item: RecentCardData }) {
+function CompactArticleCard({
+  item,
+  priority = false,
+  variant = "feature",
+}: {
+  item: ArticleCardData;
+  priority?: boolean;
+  variant?: "feature" | "side";
+}) {
+  const imageHeight = variant === "side" ? "h-[138px]" : "h-[152px]";
+  const imageSizes =
+    variant === "side"
+      ? "(max-width: 1024px) 100vw, 18vw"
+      : "(max-width: 1024px) 100vw, 38vw";
+
   return (
-    <article className="group h-full overflow-hidden rounded-[22px] border border-white/[0.08] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
-      <Link href={item.href} className="flex h-full flex-col">
-        <div className="relative h-36 w-full overflow-hidden">
+    <Link href={item.href} className="block h-full w-full">
+      <Card className="overflow-hidden hover:shadow-[0_0_22px_rgba(255,122,26,.12)]">
+        <div className={`relative ${imageHeight} w-full`}>
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes="(max-width: 1024px) 78vw, 280px"
+            sizes={imageSizes}
             style={{ objectFit: "cover" }}
+            priority={priority}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
-          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
-            {item.sectionLabel}
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
         </div>
 
-        <div className="flex flex-1 flex-col p-4">
-          <div className="text-[11px] text-gray-400">{item.when}</div>
-          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+        <div className="flex flex-1 flex-col p-3.5">
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.sport}
+          </div>
+
+          <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-white">
             {item.title}
           </h3>
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-            {item.excerpt}
-          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
+
+          <div className="mt-auto pt-3">
+            <span className={getButtonClasses("pink", "px-3.5 py-1.5 text-xs")}>
+              Leer más
+            </span>
+          </div>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+function TuningHierarchySection({ items }: { items: ArticleCardData[] }) {
+  const leftItems = items.slice(0, 2);
+  const rightItems = items.slice(2, 5);
+
+  return (
+    <>
+      <div className="hidden items-start gap-4 md:grid lg:grid-cols-[0.86fr_1.14fr]">
+        <div className="grid gap-4">
+          {leftItems.map((item, index) => (
+            <CompactArticleCard
+              key={item.id}
+              item={item}
+              priority={index === 0}
+              variant="feature"
+            />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {rightItems.map((item) => (
+            <CompactArticleCard key={item.id} item={item} variant="side" />
+          ))}
+        </div>
+      </div>
+
+      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
+        <div className="flex snap-x snap-mandatory gap-4">
+          {items.map((item) => (
+            <ArticleCard key={item.id} item={item} mobileSize />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function AutosMotosHierarchySection({ items }: { items: ArticleCardData[] }) {
+  const leftItems = items.slice(0, 4);
+  const rightItems = items.slice(4, 9);
+
+  return (
+    <>
+      <div className="hidden gap-6 md:grid lg:grid-cols-[1.08fr_1.12fr]">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {leftItems.map((item, index) => (
+            <Link key={item.id} href={item.href} className="block h-full w-full">
+              <Card className="overflow-hidden hover:shadow-[0_0_26px_rgba(12,224,178,.16)]">
+                <div className="relative h-[138px] w-full">
+                  <Image
+                    src={item.img}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 42vw"
+                    style={{ objectFit: "cover" }}
+                    priority={index === 0}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-transparent" />
+                </div>
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400 sm:text-[11px]">
+                    <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                    {item.sport}
+                  </div>
+                  <h3 className="line-clamp-3 text-base font-semibold leading-tight text-white">
+                    {item.title}
+                  </h3>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                    {item.authorName ? <span>Por {item.authorName}</span> : null}
+                    {item.authorName && item.when ? (
+                      <span className="text-gray-600">•</span>
+                    ) : null}
+                    {item.when ? <span>{item.when}</span> : null}
+                  </div>
+                  <div className="mt-auto pt-4">
+                    <span className={getButtonClasses("pink", "px-4 py-2 text-xs")}>
+                      Leer más
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        <aside className="lg:sticky lg:top-24">
+          <div className="rounded-2xl border border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
+            <div className="border-b border-white/[0.08] p-4">
+              <h4 className="font-semibold text-white">Más para leer</h4>
+            </div>
+            <ul className="max-h-[520px] divide-y divide-white/[0.08] overflow-y-auto no-scrollbar">
+              {rightItems.map((item) => (
+                <li key={item.id} className="p-4 transition hover:bg-white/5">
+                  <Link href={item.href} className="flex gap-3">
+                    <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/[0.08]">
+                      <Image
+                        src={item.img}
+                        alt={item.title}
+                        fill
+                        sizes="140px"
+                        style={{ objectFit: "cover" }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">
+                        {item.title}
+                      </p>
+                      <span className="mt-1 block text-xs text-gray-400">
+                        {item.sport}
+                        {item.when ? ` • ${item.when}` : ""}
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      </div>
+
+      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
+        <div className="flex snap-x snap-mandatory gap-4">
+          {items.map((item) => (
+            <ArticleCard key={item.id} item={item} mobileSize />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function RecentMotorWeltCard({ item }: { item: RecentCardData }) {
+  return (
+    <article className="group h-full overflow-hidden rounded-[22px] border border-white/[0.08] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
+      <Link href={item.href} className="flex h-full flex-col">
+        <div className="relative h-[130px] w-full overflow-hidden">
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes="262px"
+            style={{ objectFit: "cover" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/66 via-black/14 to-transparent" />
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col p-4">
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel}
+          </div>
+
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+            {item.title}
+          </h3>
+
+          <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
         </div>
       </Link>
     </article>
@@ -1649,21 +1835,7 @@ export default function DeportesPage({
               />
 
               {latest.length > 0 ? (
-                <>
-                  <div className="hidden grid-cols-1 gap-6 md:grid md:grid-cols-2 md:justify-items-start lg:grid-cols-3">
-                    {latest.map((item) => (
-                      <ArticleCard key={item.id} item={item} />
-                    ))}
-                  </div>
-
-                  <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                    <div className="flex snap-x snap-mandatory gap-4">
-                      {latest.map((item) => (
-                        <ArticleCard key={item.id} item={item} mobileSize />
-                      ))}
-                    </div>
-                  </div>
-                </>
+                <TuningHierarchySection items={latest} />
               ) : (
                 <EmptySectionNotice
                   title="Próximas publicaciones"
@@ -1699,25 +1871,7 @@ export default function DeportesPage({
                       </div>
 
                       {items.length > 0 ? (
-                        <>
-                          <div className="hidden grid-cols-1 gap-6 md:grid md:grid-cols-2 md:justify-items-start lg:grid-cols-3">
-                            {items.map((item) => (
-                              <ArticleCard key={item.id} item={item} />
-                            ))}
-                          </div>
-
-                          <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
-                            <div className="flex snap-x snap-mandatory gap-4">
-                              {items.map((item) => (
-                                <ArticleCard
-                                  key={item.id}
-                                  item={item}
-                                  mobileSize
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        </>
+                        <AutosMotosHierarchySection items={items} />
                       ) : (
                         <EmptySectionNotice
                           title="Próximamente"
@@ -1763,7 +1917,7 @@ export default function DeportesPage({
                     {recentMotorWelt.map((item) => (
                       <div
                         key={item.id}
-                        className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-[285px] sm:w-[300px] sm:min-w-[300px] lg:h-[285px] lg:w-[280px] lg:min-w-[280px]"
+                        className="h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
                       >
                         <RecentMotorWeltCard item={item} />
                       </div>
