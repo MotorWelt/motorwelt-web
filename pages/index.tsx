@@ -859,15 +859,15 @@ export default function HomePage({
                 <Link
                   key={item.id}
                   href={item.href}
-                  className="block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+                  className="block h-[230px] w-[238px] min-w-[238px] shrink-0 snap-start"
                 >
                   <Card className="overflow-hidden">
-                    <div className="relative h-[136px] w-full">
+                    <div className="relative h-[118px] w-full">
                       <Image
                         src={item.img}
                         alt={item.title}
                         fill
-                        sizes="290px"
+                        sizes="238px"
                         style={{ objectFit: "cover" }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -1740,11 +1740,11 @@ export default function HomePage({
                       </div>
                     </div>
 
-                    <h1 className="mx-auto mt-10 max-w-[980px] font-display text-[2.75rem] font-black leading-[0.82] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.85rem] lg:text-[5.45rem] xl:text-[5.85rem]">
-                      <span className="glow-cool block text-[1.3em] tracking-[0.1em]">
+                    <h1 className="mx-auto mt-10 max-w-[980px] overflow-visible text-center font-display text-[2.55rem] font-black leading-[0.88] tracking-normal text-white sm:text-[4rem] sm:leading-[0.82] sm:tracking-[-0.05em] md:text-[4.85rem] lg:text-[5.45rem] xl:text-[5.85rem]">
+                      <span className="glow-cool block whitespace-nowrap text-[1em] tracking-[0.03em] sm:text-[1.3em] sm:tracking-[0.1em]">
                         MotorWelt
                       </span>
-                      <span className="mt-5 block text-[0.30em] font-semibold uppercase tracking-[0.42em] text-white/75">
+                      <span className="mt-5 block text-[0.30em] font-semibold uppercase tracking-[0.32em] text-white/75 sm:tracking-[0.42em]">
                         Built for enthusiasts
                       </span>
                     </h1>
@@ -1859,15 +1859,15 @@ export default function HomePage({
                       <Link
                         key={item.id}
                         href={item.href}
-                        className="block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+                        className="block h-[230px] w-[238px] min-w-[238px] shrink-0 snap-start"
                       >
                         <Card className="overflow-hidden">
-                          <div className="relative h-[136px] w-full">
+                          <div className="relative h-[118px] w-full">
                             <Image
                               src={item.img}
                               alt={item.title}
                               fill
-                              sizes="290px"
+                              sizes="238px"
                               style={{ objectFit: "cover" }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
