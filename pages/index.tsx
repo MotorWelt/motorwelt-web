@@ -859,15 +859,15 @@ export default function HomePage({
                 <Link
                   key={item.id}
                   href={item.href}
-                  className="block h-[230px] w-[238px] min-w-[238px] shrink-0 snap-start"
+                  className="block h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
                 >
                   <Card className="overflow-hidden">
-                    <div className="relative h-[118px] w-full">
+                    <div className="relative h-[130px] w-full">
                       <Image
                         src={item.img}
                         alt={item.title}
                         fill
-                        sizes="238px"
+                        sizes="262px"
                         style={{ objectFit: "cover" }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -883,8 +883,7 @@ export default function HomePage({
                         {item.title}
                       </h3>
 
-
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                      <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
                         {item.authorName ? (
                           <span>Por {item.authorName}</span>
                         ) : null}
@@ -928,15 +927,15 @@ export default function HomePage({
                   <Link
                     key={item.id}
                     href={item.href}
-                    className="block h-[230px] w-[238px] min-w-[238px] shrink-0 snap-start md:h-[320px] md:w-[380px] md:min-w-[380px]"
+                    className="block h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start md:h-[320px] md:w-[380px] md:min-w-[380px]"
                   >
                     <Card className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
-                      <div className="relative h-[118px] w-full md:h-[168px]">
+                      <div className="relative h-[130px] w-full md:h-[168px]">
                         <Image
                           src={item.img}
                           alt={item.title}
                           fill
-                          sizes="(max-width: 768px) 238px, 380px"
+                          sizes="(max-width: 768px) 262px, 380px"
                           style={{ objectFit: "cover" }}
                           priority={index === 0}
                         />
@@ -953,8 +952,7 @@ export default function HomePage({
                           {item.title}
                         </h3>
 
-
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400 md:text-xs">
+                        <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400 md:text-xs">
                           {item.authorName ? (
                             <span>Por {item.authorName}</span>
                           ) : null}
@@ -1171,7 +1169,6 @@ export default function HomePage({
             {item.title}
           </h3>
 
-
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
             {item.authorName ? <span>Por {item.authorName}</span> : null}
             {item.authorName && item.when ? (
@@ -1187,7 +1184,6 @@ export default function HomePage({
       </Card>
     );
   }
-
 
   function renderAutosMotosDesktopSection(
     title: string,
@@ -1237,8 +1233,12 @@ export default function HomePage({
                       {item.title}
                     </h3>
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                      {item.authorName ? <span>Por {item.authorName}</span> : null}
-                      {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+                      {item.authorName ? (
+                        <span>Por {item.authorName}</span>
+                      ) : null}
+                      {item.authorName && item.when ? (
+                        <span className="text-gray-600">•</span>
+                      ) : null}
                       {item.when ? <span>{item.when}</span> : null}
                     </div>
                     <div className="mt-auto pt-4">
@@ -1256,7 +1256,10 @@ export default function HomePage({
                 </div>
                 <ul className="max-h-[520px] divide-y divide-white/[0.08] overflow-y-auto no-scrollbar">
                   {rightItems.map((item) => (
-                    <li key={item.id} className="p-4 transition hover:bg-white/5">
+                    <li
+                      key={item.id}
+                      className="p-4 transition hover:bg-white/5"
+                    >
                       <Link href={item.href} className="flex gap-3">
                         <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/[0.08]">
                           <Image
@@ -1272,7 +1275,8 @@ export default function HomePage({
                             {item.title}
                           </p>
                           <span className="mt-1 block text-xs text-gray-400">
-                            {item.sectionLabel}{item.when ? ` • ${item.when}` : ""}
+                            {item.sectionLabel}
+                            {item.when ? ` • ${item.when}` : ""}
                           </span>
                         </div>
                       </Link>
@@ -1859,15 +1863,15 @@ export default function HomePage({
                       <Link
                         key={item.id}
                         href={item.href}
-                        className="block h-[230px] w-[238px] min-w-[238px] shrink-0 snap-start"
+                        className="block h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
                       >
                         <Card className="overflow-hidden">
-                          <div className="relative h-[118px] w-full">
+                          <div className="relative h-[130px] w-full">
                             <Image
                               src={item.img}
                               alt={item.title}
                               fill
-                              sizes="238px"
+                              sizes="262px"
                               style={{ objectFit: "cover" }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -1880,7 +1884,7 @@ export default function HomePage({
                             <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white">
                               {item.title}
                             </h3>
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                            <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
                               {item.authorName ? (
                                 <span>Por {item.authorName}</span>
                               ) : null}
