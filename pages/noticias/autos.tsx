@@ -1533,12 +1533,12 @@ export default function NoticiasAutos({
                 <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar">
                   <div className="flex snap-x snap-mandatory gap-4">
                     {latestFive.map((item) => (
-                      <div
+                      <NewsCard
                         key={item.id}
-                        className="w-[232px] min-w-[232px] shrink-0 snap-start sm:w-[260px] sm:min-w-[260px] md:w-[280px] md:min-w-[280px]"
-                      >
-                        <NewsCard item={item} compact imageHeight="h-36" />
-                      </div>
+                        item={item}
+                        compact
+                        mobileSize
+                      />
                     ))}
                   </div>
                 </div>
