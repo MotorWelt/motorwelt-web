@@ -34,8 +34,7 @@ const getButtonClasses = (
   const styles: Record<ButtonVariant, string> = {
     cyan: sharedButtonStyle,
     pink: sharedButtonStyle,
-    link:
-      "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
+    link: "p-0 text-[#43A1AD] hover:opacity-80 underline underline-offset-4 focus:ring-0 rounded-none shadow-none border-0",
   };
 
   return `${base} ${styles[variant]} ${className}`.trim();
@@ -226,7 +225,8 @@ function getCardExcerpt(item: HomeNewsItem) {
 
 export default function HomePage({
   year,
-  featuredMixed = [],
+  autosItems = [],
+  motosItems = [],
   sportsItems = [],
   lifestyleItems = [],
   tuningItems = [],
@@ -234,7 +234,8 @@ export default function HomePage({
   initialHomeSettings,
 }: {
   year: number;
-  featuredMixed: HomeNewsItem[];
+  autosItems: HomeNewsItem[];
+  motosItems: HomeNewsItem[];
   sportsItems: HomeNewsItem[];
   lifestyleItems: HomeNewsItem[];
   tuningItems: HomeNewsItem[];
@@ -259,7 +260,9 @@ export default function HomePage({
     phone: "",
     subject: "",
   });
-  const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [contactStatus, setContactStatus] = useState<
+    "idle" | "sending" | "success" | "error"
+  >("idle");
   const [contactMessage, setContactMessage] = useState("");
 
   const heroInputRef = useRef<HTMLInputElement | null>(null);
@@ -268,9 +271,8 @@ export default function HomePage({
   const billboardInputRef = useRef<HTMLInputElement | null>(null);
   const partnerInputRef = useRef<HTMLInputElement | null>(null);
 
-  const mixedItems = featuredMixed.slice(0, 6);
-  const heroMixed = mixedItems[0] ?? null;
-  const sidebarMixed = mixedItems.slice(1, 6);
+  const autosDesktopItems = autosItems.slice(0, 9);
+  const motosDesktopItems = motosItems.slice(0, 9);
 
   const safeSports = sportsItems.slice(0, 3);
 
@@ -375,17 +377,105 @@ export default function HomePage({
 
   const streaks: Streak[] = useMemo(
     () => [
-      { top: "8%", left: "-35%", v: "cool", dir: "fwd", delay: "0s", dur: "12s", op: 0.85 },
-      { top: "12%", left: "-28%", v: "warm", dir: "rev", delay: ".4s", dur: "10.5s", op: 0.75 },
-      { top: "20%", left: "-36%", v: "lime", dir: "fwd", delay: "1.0s", dur: "13s", op: 0.8 },
-      { top: "28%", left: "-22%", v: "cool", dir: "rev", delay: "1.6s", dur: "9.5s", op: 0.9 },
-      { top: "36%", left: "-40%", v: "warm", dir: "fwd", delay: "2.1s", dur: "11.5s", op: 0.7 },
-      { top: "44%", left: "-30%", v: "cool", dir: "rev", delay: "2.7s", dur: "12.5s", op: 0.85 },
-      { top: "52%", left: "-26%", v: "warm", dir: "fwd", delay: "3.2s", dur: "10.2s", op: 0.8 },
-      { top: "60%", left: "-18%", v: "lime", dir: "rev", delay: "3.8s", dur: "12.2s", op: 0.75 },
-      { top: "68%", left: "-34%", v: "cool", dir: "fwd", delay: "4.4s", dur: "11.2s", op: 0.85 },
-      { top: "76%", left: "-24%", v: "warm", dir: "rev", delay: "5.0s", dur: "9.8s", op: 0.72 },
-      { top: "84%", left: "-20%", v: "cool", dir: "fwd", delay: "5.6s", dur: "13.2s", op: 0.82 },
+      {
+        top: "8%",
+        left: "-35%",
+        v: "cool",
+        dir: "fwd",
+        delay: "0s",
+        dur: "12s",
+        op: 0.85,
+      },
+      {
+        top: "12%",
+        left: "-28%",
+        v: "warm",
+        dir: "rev",
+        delay: ".4s",
+        dur: "10.5s",
+        op: 0.75,
+      },
+      {
+        top: "20%",
+        left: "-36%",
+        v: "lime",
+        dir: "fwd",
+        delay: "1.0s",
+        dur: "13s",
+        op: 0.8,
+      },
+      {
+        top: "28%",
+        left: "-22%",
+        v: "cool",
+        dir: "rev",
+        delay: "1.6s",
+        dur: "9.5s",
+        op: 0.9,
+      },
+      {
+        top: "36%",
+        left: "-40%",
+        v: "warm",
+        dir: "fwd",
+        delay: "2.1s",
+        dur: "11.5s",
+        op: 0.7,
+      },
+      {
+        top: "44%",
+        left: "-30%",
+        v: "cool",
+        dir: "rev",
+        delay: "2.7s",
+        dur: "12.5s",
+        op: 0.85,
+      },
+      {
+        top: "52%",
+        left: "-26%",
+        v: "warm",
+        dir: "fwd",
+        delay: "3.2s",
+        dur: "10.2s",
+        op: 0.8,
+      },
+      {
+        top: "60%",
+        left: "-18%",
+        v: "lime",
+        dir: "rev",
+        delay: "3.8s",
+        dur: "12.2s",
+        op: 0.75,
+      },
+      {
+        top: "68%",
+        left: "-34%",
+        v: "cool",
+        dir: "fwd",
+        delay: "4.4s",
+        dur: "11.2s",
+        op: 0.85,
+      },
+      {
+        top: "76%",
+        left: "-24%",
+        v: "warm",
+        dir: "rev",
+        delay: "5.0s",
+        dur: "9.8s",
+        op: 0.72,
+      },
+      {
+        top: "84%",
+        left: "-20%",
+        v: "cool",
+        dir: "fwd",
+        delay: "5.6s",
+        dur: "13.2s",
+        op: 0.82,
+      },
     ],
     [],
   );
@@ -607,7 +697,9 @@ export default function HomePage({
       }
 
       setContactStatus("success");
-      setContactMessage("Mensaje enviado correctamente. Te responderemos muy pronto.");
+      setContactMessage(
+        "Mensaje enviado correctamente. Te responderemos muy pronto.",
+      );
       setContactForm({
         fullName: "",
         email: "",
@@ -616,7 +708,9 @@ export default function HomePage({
       });
     } catch (err: any) {
       setContactStatus("error");
-      setContactMessage(err?.message || "No se pudo enviar el mensaje. Intenta de nuevo.");
+      setContactMessage(
+        err?.message || "No se pudo enviar el mensaje. Intenta de nuevo.",
+      );
     }
   }
 
@@ -768,7 +862,7 @@ export default function HomePage({
                   className="block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
                 >
                   <Card className="overflow-hidden">
-                    <div className="relative h-[112px] w-full">
+                    <div className="relative h-[136px] w-full">
                       <Image
                         src={item.img}
                         alt={item.title}
@@ -789,13 +883,14 @@ export default function HomePage({
                         {item.title}
                       </h3>
 
-                      <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-                        {getCardExcerpt(item)}
-                      </p>
 
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                        {item.authorName ? <span>Por {item.authorName}</span> : null}
-                        {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+                        {item.authorName ? (
+                          <span>Por {item.authorName}</span>
+                        ) : null}
+                        {item.authorName && item.when ? (
+                          <span className="text-gray-600">•</span>
+                        ) : null}
                         {item.when ? <span>{item.when}</span> : null}
                       </div>
                     </CardContent>
@@ -820,7 +915,9 @@ export default function HomePage({
       <section className="py-12 sm:py-16">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
           <div className="mb-8 text-center">
-            <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Comunidad</h2>
+            <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+              Comunidad
+            </h2>
             <div className="mx-auto mt-2 h-1 w-20 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
           </div>
 
@@ -834,7 +931,7 @@ export default function HomePage({
                     className="block h-[230px] w-[238px] min-w-[238px] shrink-0 snap-start md:h-[320px] md:w-[380px] md:min-w-[380px]"
                   >
                     <Card className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
-                      <div className="relative h-[96px] w-full md:h-[138px]">
+                      <div className="relative h-[118px] w-full md:h-[168px]">
                         <Image
                           src={item.img}
                           alt={item.title}
@@ -856,18 +953,24 @@ export default function HomePage({
                           {item.title}
                         </h3>
 
-                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300 md:text-sm">
-                          {getCardExcerpt(item)}
-                        </p>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400 md:text-xs">
-                          {item.authorName ? <span>Por {item.authorName}</span> : null}
-                          {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+                          {item.authorName ? (
+                            <span>Por {item.authorName}</span>
+                          ) : null}
+                          {item.authorName && item.when ? (
+                            <span className="text-gray-600">•</span>
+                          ) : null}
                           {item.when ? <span>{item.when}</span> : null}
                         </div>
 
                         <div className="mt-auto hidden pt-4 md:block">
-                          <span className={getButtonClasses("pink", "px-4 py-2 text-xs")}>
+                          <span
+                            className={getButtonClasses(
+                              "pink",
+                              "px-4 py-2 text-xs",
+                            )}
+                          >
                             Leer más
                           </span>
                         </div>
@@ -878,11 +981,16 @@ export default function HomePage({
               </div>
             </div>
           ) : (
-            renderEmptySectionNotice("Próximas publicaciones", "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt.")
+            renderEmptySectionNotice(
+              "Próximas publicaciones",
+              "Muy pronto aparecerán aquí historias, eventos, meets y contenido de la comunidad MotorWelt.",
+            )
           )}
 
           <div className="mt-8 text-center">
-            <LinkButton href="/comunidad" variant="pink">Entrar a Comunidad</LinkButton>
+            <LinkButton href="/comunidad" variant="pink">
+              Entrar a Comunidad
+            </LinkButton>
           </div>
         </div>
       </section>
@@ -917,16 +1025,22 @@ export default function HomePage({
                   href={item.href}
                   className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-4 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.05]"
                 >
-                  <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-80`} />
+                  <div
+                    className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-80`}
+                  />
                   <div className="relative z-10">
                     <div className="mb-4 flex items-center justify-between">
-                      <span className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`} />
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`}
+                      />
                       <span className="text-[10px] uppercase tracking-[0.22em] text-gray-500 transition group-hover:text-gray-300">
                         Go
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      {item.title}
+                    </h3>
                     <p className="mt-2 text-sm leading-relaxed text-gray-300">
                       {item.subtitle}
                     </p>
@@ -943,16 +1057,22 @@ export default function HomePage({
                     href={item.href}
                     className="group relative min-w-[220px] max-w-[220px] snap-start overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-4"
                   >
-                    <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-80`} />
+                    <div
+                      className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${item.accent} opacity-80`}
+                    />
                     <div className="relative z-10">
                       <div className="mb-4 flex items-center justify-between">
-                        <span className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`} />
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${item.accentDot}`}
+                        />
                         <span className="text-[10px] uppercase tracking-[0.22em] text-gray-500">
                           Go
                         </span>
                       </div>
 
-                      <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                      <h3 className="text-lg font-semibold text-white">
+                        {item.title}
+                      </h3>
                       <p className="mt-2 text-sm leading-relaxed text-gray-300">
                         {item.subtitle}
                       </p>
@@ -977,8 +1097,11 @@ export default function HomePage({
 
   function renderStackedFeatureCard(item: HomeNewsItem, priority = false) {
     return (
-      <Card key={item.id} className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]">
-        <div className="relative h-44 w-full">
+      <Card
+        key={item.id}
+        className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,255,255,.06)]"
+      >
+        <div className="relative h-52 w-full">
           <Image
             src={item.img}
             alt={item.title}
@@ -994,18 +1117,179 @@ export default function HomePage({
             <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
             {item.sectionLabel} · {item.typeLabel}
           </div>
-          <h3 className="mt-1 text-lg font-semibold text-white">{item.title}</h3>
-          <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-gray-300">
-            {getCardExcerpt(item)}
-          </p>
+          <h3 className="mt-1 text-lg font-semibold text-white">
+            {item.title}
+          </h3>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
             {item.authorName ? <span>Por {item.authorName}</span> : null}
-            {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
             {item.when ? <span>{item.when}</span> : null}
           </div>
           <div className="mt-auto pt-4">{renderReadMoreButton(item.href)}</div>
         </CardContent>
       </Card>
+    );
+  }
+
+  function renderTuningCompactCard(
+    item: HomeNewsItem,
+    priority = false,
+    variant: "feature" | "side" = "feature",
+  ) {
+    const imageHeight = variant === "side" ? "h-[138px]" : "h-[152px]";
+    const imageSizes =
+      variant === "side"
+        ? "(max-width: 1024px) 100vw, 18vw"
+        : "(max-width: 1024px) 100vw, 38vw";
+
+    return (
+      <Card
+        key={item.id}
+        className="overflow-hidden hover:shadow-[0_0_22px_rgba(255,122,26,.12)]"
+      >
+        <div className={`relative ${imageHeight} w-full`}>
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes={imageSizes}
+            style={{ objectFit: "cover" }}
+            priority={priority}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        </div>
+
+        <CardContent className="p-3.5">
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel} · {item.typeLabel}
+          </div>
+
+          <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-white">
+            {item.title}
+          </h3>
+
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
+
+          <div className="mt-auto pt-3">
+            {renderReadMoreButton(item.href, "px-3.5 py-1.5 text-xs")}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
+  function renderAutosMotosDesktopSection(
+    title: string,
+    items: HomeNewsItem[],
+    ctaHref: string,
+    ctaLabel: string,
+  ) {
+    if (!items || items.length === 0) return null;
+
+    const leftItems = items.slice(0, 4);
+    const rightItems = items.slice(4, 9);
+
+    return (
+      <section className="hidden py-12 sm:py-16 md:block">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
+          <div className="mb-8">
+            <h2 className="font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+              {title}
+            </h2>
+            <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A] sm:w-28" />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.08fr_1.12fr]">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {leftItems.map((item, index) => (
+                <Card
+                  key={item.id}
+                  className="overflow-hidden hover:shadow-[0_0_26px_rgba(12,224,178,.16)]"
+                >
+                  <div className="relative h-[138px] w-full">
+                    <Image
+                      src={item.img}
+                      alt={item.title}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 42vw"
+                      style={{ objectFit: "cover" }}
+                      priority={index === 0}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-transparent" />
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400 sm:text-[11px]">
+                      <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                      {item.sectionLabel} · {item.typeLabel}
+                    </div>
+                    <h3 className="line-clamp-3 text-base font-semibold leading-tight text-white">
+                      {item.title}
+                    </h3>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                      {item.authorName ? <span>Por {item.authorName}</span> : null}
+                      {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+                      {item.when ? <span>{item.when}</span> : null}
+                    </div>
+                    <div className="mt-auto pt-4">
+                      {renderReadMoreButton(item.href, "px-4 py-2 text-xs")}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <aside className="lg:sticky lg:top-24">
+              <div className="rounded-2xl border border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
+                <div className="border-b border-white/[0.08] p-4">
+                  <h4 className="font-semibold text-white">Más para leer</h4>
+                </div>
+                <ul className="max-h-[520px] divide-y divide-white/[0.08] overflow-y-auto no-scrollbar">
+                  {rightItems.map((item) => (
+                    <li key={item.id} className="p-4 transition hover:bg-white/5">
+                      <Link href={item.href} className="flex gap-3">
+                        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/[0.08]">
+                          <Image
+                            src={item.img}
+                            alt={item.title}
+                            fill
+                            sizes="140px"
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">
+                            {item.title}
+                          </p>
+                          <span className="mt-1 block text-xs text-gray-400">
+                            {item.sectionLabel}{item.when ? ` • ${item.when}` : ""}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </aside>
+          </div>
+
+          <div className="mt-8 text-center">
+            <LinkButton href={ctaHref} variant="cyan">
+              {ctaLabel}
+            </LinkButton>
+          </div>
+        </div>
+      </section>
     );
   }
 
@@ -1061,11 +1345,19 @@ export default function HomePage({
             <div
               key={i}
               className="streak-wrap"
-              style={{ top: s.top as any, left: s.left as any, height: s.h ?? undefined }}
+              style={{
+                top: s.top as any,
+                left: s.left as any,
+                height: s.h ?? undefined,
+              }}
             >
               <div
                 className={`streak streak-${s.v} ${s.dir === "rev" ? "dir-rev" : "dir-fwd"}`}
-                style={{ opacity: s.op as any, animationDelay: s.delay as any, animationDuration: s.dur as any }}
+                style={{
+                  opacity: s.op as any,
+                  animationDelay: s.delay as any,
+                  animationDuration: s.dur as any,
+                }}
               />
             </div>
           ))}
@@ -1075,7 +1367,9 @@ export default function HomePage({
           <div className="fixed bottom-4 left-4 z-[80] hidden rounded-2xl border border-white/[0.08] bg-black/80 px-4 py-3 text-xs text-white backdrop-blur md:block">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-[#0CE0B2]" />
-              <span>{spectatorMode ? "Vista espectador" : "Modo edición home"}</span>
+              <span>
+                {spectatorMode ? "Vista espectador" : "Modo edición home"}
+              </span>
               {savingHome && <span className="text-[#0CE0B2]">Guardando…</span>}
             </div>
             {homeError && <div className="mt-1 text-red-300">{homeError}</div>}
@@ -1092,7 +1386,11 @@ export default function HomePage({
         <header className="fixed left-0 top-0 z-50 w-full border-b border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
           <div className="mx-auto grid h-16 w-full max-w-[1440px] grid-cols-[auto_1fr_auto] items-center px-4 sm:px-6 lg:h-[72px] xl:px-10 2xl:max-w-[1560px]">
             <div className="flex items-center">
-              <Link href="/" className="inline-flex items-center gap-2" aria-label="Ir al inicio MotorWelt">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2"
+                aria-label="Ir al inicio MotorWelt"
+              >
                 <Image
                   src="/brand/motorwelt-logo.png"
                   alt="MotorWelt logo"
@@ -1106,12 +1404,42 @@ export default function HomePage({
 
             <div className="hidden items-center justify-center md:flex">
               <nav className="flex items-center gap-6 text-sm font-medium xl:gap-8 xl:text-[15px]">
-                <Link href="/tuning" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">Tuning</Link>
-                <Link href="/noticias/autos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">Autos</Link>
-                <Link href="/noticias/motos" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">Motos</Link>
-                <Link href="/deportes" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">Deportes</Link>
-                <Link href="/lifestyle" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">Lifestyle</Link>
-                <Link href="/comunidad" className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white">Comunidad</Link>
+                <Link
+                  href="/tuning"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Tuning
+                </Link>
+                <Link
+                  href="/noticias/autos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Autos
+                </Link>
+                <Link
+                  href="/noticias/motos"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Motos
+                </Link>
+                <Link
+                  href="/deportes"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Deportes
+                </Link>
+                <Link
+                  href="/lifestyle"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Lifestyle
+                </Link>
+                <Link
+                  href="/comunidad"
+                  className="inline-flex h-10 items-center leading-none text-gray-200 hover:text-white"
+                >
+                  Comunidad
+                </Link>
               </nav>
             </div>
 
@@ -1128,8 +1456,19 @@ export default function HomePage({
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-menu"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M4 6h16M4 12h16M4 18h16"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               </button>
             </div>
@@ -1138,24 +1477,88 @@ export default function HomePage({
 
         {mobileOpen && (
           <div className="fixed inset-0 z-[60] md:hidden">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} aria-hidden />
-            <aside id="mobile-menu" className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/10 bg-mw-surface/95 shadow-2xl backdrop-blur-xl">
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setMobileOpen(false)}
+              aria-hidden
+            />
+            <aside
+              id="mobile-menu"
+              className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] overflow-y-auto border-l border-white/10 bg-mw-surface/95 shadow-2xl backdrop-blur-xl"
+            >
               <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-4">
-                <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={140} height={32} className="h-8 w-auto" />
-                <button onClick={() => setMobileOpen(false)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5" aria-label="Cerrar menú">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <Image
+                  src="/brand/motorwelt-logo.png"
+                  alt="MotorWelt logo"
+                  width={140}
+                  height={32}
+                  className="h-8 w-auto"
+                />
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/5"
+                  aria-label="Cerrar menú"
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M6 6l12 12M18 6l-12 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </button>
               </div>
 
               <nav className="px-4 py-3">
-                <Link href="/tuning" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Tuning</Link>
-                <Link href="/noticias/autos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Autos</Link>
-                <Link href="/noticias/motos" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Motos</Link>
-                <Link href="/deportes" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Deportes</Link>
-                <Link href="/lifestyle" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Lifestyle</Link>
-                <Link href="/comunidad" className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5" onClick={() => setMobileOpen(false)}>Comunidad</Link>
+                <Link
+                  href="/tuning"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Tuning
+                </Link>
+                <Link
+                  href="/noticias/autos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Autos
+                </Link>
+                <Link
+                  href="/noticias/motos"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Motos
+                </Link>
+                <Link
+                  href="/deportes"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Deportes
+                </Link>
+                <Link
+                  href="/lifestyle"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Lifestyle
+                </Link>
+                <Link
+                  href="/comunidad"
+                  className="block w-full rounded-xl px-3 py-3 text-base text-gray-100 hover:bg-white/5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Comunidad
+                </Link>
               </nav>
             </aside>
           </div>
@@ -1163,22 +1566,53 @@ export default function HomePage({
 
         {contactOpen && (
           <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
-            <button type="button" className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setContactOpen(false)} aria-label="Cerrar contacto" />
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setContactOpen(false)}
+              aria-label="Cerrar contacto"
+            />
             <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-[28px] border border-white/[0.08] bg-[#041210]/95 shadow-[0_24px_120px_rgba(0,0,0,.55)]">
               <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4 sm:px-6">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">MotorWelt</p>
-                  <h3 className="mt-1 text-2xl font-semibold text-white">Contacto</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-300">Déjanos tus datos y el asunto. El mensaje llegará directo a contacto@motorwelt.mx.</p>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-[#0CE0B2]">
+                    MotorWelt
+                  </p>
+                  <h3 className="mt-1 text-2xl font-semibold text-white">
+                    Contacto
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                    Déjanos tus datos y el asunto. El mensaje llegará directo a
+                    contacto@motorwelt.mx.
+                  </p>
                 </div>
-                <button type="button" onClick={() => setContactOpen(false)} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/5 text-white hover:bg-white/[0.08]" aria-label="Cerrar contacto">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <button
+                  type="button"
+                  onClick={() => setContactOpen(false)}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/5 text-white hover:bg-white/[0.08]"
+                  aria-label="Cerrar contacto"
+                >
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M6 6l12 12M18 6l-12 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </button>
               </div>
 
-              <form onSubmit={handleContactSubmit} className="space-y-4 p-5 sm:p-6">
+              <form
+                onSubmit={handleContactSubmit}
+                className="space-y-4 p-5 sm:p-6"
+              >
                 <input
                   name="fullName"
                   required
@@ -1187,7 +1621,10 @@ export default function HomePage({
                   onChange={(e) => {
                     setContactStatus("idle");
                     setContactMessage("");
-                    setContactForm((prev) => ({ ...prev, fullName: e.target.value }));
+                    setContactForm((prev) => ({
+                      ...prev,
+                      fullName: e.target.value,
+                    }));
                   }}
                   className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
                 />
@@ -1200,7 +1637,10 @@ export default function HomePage({
                   onChange={(e) => {
                     setContactStatus("idle");
                     setContactMessage("");
-                    setContactForm((prev) => ({ ...prev, email: e.target.value }));
+                    setContactForm((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }));
                   }}
                   className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
                 />
@@ -1213,7 +1653,10 @@ export default function HomePage({
                   onChange={(e) => {
                     setContactStatus("idle");
                     setContactMessage("");
-                    setContactForm((prev) => ({ ...prev, phone: e.target.value }));
+                    setContactForm((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }));
                   }}
                   className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
                 />
@@ -1225,7 +1668,10 @@ export default function HomePage({
                   onChange={(e) => {
                     setContactStatus("idle");
                     setContactMessage("");
-                    setContactForm((prev) => ({ ...prev, subject: e.target.value }));
+                    setContactForm((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }));
                   }}
                   className="w-full rounded-2xl border border-white/[0.08] bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-[#0CE0B2]/50"
                 />
@@ -1258,10 +1704,15 @@ export default function HomePage({
           <section className="relative isolate overflow-hidden">
             <div className="relative flex min-h-[76svh] flex-col justify-end overflow-hidden sm:min-h-[82svh] lg:min-h-[90vh]">
               <img
-                src={homeSettings?.heroImageUrl || DEFAULT_HOME_SETTINGS.heroImageUrl}
+                src={
+                  homeSettings?.heroImageUrl ||
+                  DEFAULT_HOME_SETTINGS.heroImageUrl
+                }
                 alt="Hero MotorWelt"
                 className="absolute inset-0 h-full w-full object-cover"
-                style={{ filter: "brightness(.34) saturate(1.12) contrast(1.06)" }}
+                style={{
+                  filter: "brightness(.34) saturate(1.12) contrast(1.06)",
+                }}
               />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(12,224,178,.14),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(255,122,26,.16),transparent_30%),linear-gradient(180deg,rgba(0,0,0,.22)_0%,rgba(0,0,0,.38)_24%,rgba(0,0,0,.64)_58%,rgba(2,10,10,.9)_100%)]" />
               <div className="absolute inset-y-0 left-0 hidden w-[62%] bg-gradient-to-r from-black/78 via-black/46 to-transparent lg:block" />
@@ -1269,7 +1720,11 @@ export default function HomePage({
 
               {editControlsVisible && (
                 <div className="absolute right-4 top-20 z-20 hidden flex-wrap gap-2 md:flex">
-                  <button type="button" onClick={() => heroInputRef.current?.click()} className="rounded-full border border-white/[0.08] bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90">
+                  <button
+                    type="button"
+                    onClick={() => heroInputRef.current?.click()}
+                    className="rounded-full border border-white/[0.08] bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur hover:bg-black/90"
+                  >
                     Cambiar portada
                   </button>
                 </div>
@@ -1286,16 +1741,17 @@ export default function HomePage({
                     </div>
 
                     <h1 className="mx-auto mt-10 max-w-[980px] font-display text-[2.75rem] font-black leading-[0.82] tracking-[-0.05em] text-white sm:text-[4rem] md:text-[4.85rem] lg:text-[5.45rem] xl:text-[5.85rem]">
-  <span className="glow-cool block text-[1.3em] tracking-[0.1em]">
-    MotorWelt
-  </span>
-  <span className="mt-5 block text-[0.30em] font-semibold uppercase tracking-[0.42em] text-white/75">
-    Built for enthusiasts
-  </span>
-</h1>
+                      <span className="glow-cool block text-[1.3em] tracking-[0.1em]">
+                        MotorWelt
+                      </span>
+                      <span className="mt-5 block text-[0.30em] font-semibold uppercase tracking-[0.42em] text-white/75">
+                        Built for enthusiasts
+                      </span>
+                    </h1>
 
                     <p className="mx-auto mt-10 max-w-[760px] text-base leading-relaxed text-gray-200 sm:text-lg md:text-[1.08rem]">
-                      Autos, motos, tuning, motorsport y lifestyle en un solo lugar.
+                      Autos, motos, tuning, motorsport y lifestyle en un solo
+                      lugar.
                     </p>
                   </div>
                 </div>
@@ -1311,97 +1767,88 @@ export default function HomePage({
             </div>
           </section>
 
-          {tuningDesktopItems.length > 0 && renderMobileCardsRail("Tuning", "bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]", tuningDesktopItems, "/tuning", "Ver más Tuning", "pink")}
+          {tuningDesktopItems.length > 0 &&
+            renderMobileCardsRail(
+              "Tuning",
+              "bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]",
+              tuningDesktopItems,
+              "/tuning",
+              "Ver más Tuning",
+              "pink",
+            )}
 
           {tuningDesktopItems.length > 0 && (
             <section className="hidden py-10 sm:py-12 md:block">
               <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
                 <div className="mb-8">
-                  <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Tuning</h2>
+                  <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+                    Tuning
+                  </h2>
                   <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] via-[#E2A24C] to-[#0CE0B2]" />
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="grid gap-6">{tuningDesktopColumns.left.map((item, index) => renderStackedFeatureCard(item, index === 0))}</div>
-                  <div className="grid gap-6">{tuningDesktopColumns.right.map((item) => renderStackedFeatureCard(item))}</div>
+                <div className="grid items-start gap-4 lg:grid-cols-[0.86fr_1.14fr]">
+                  <div className="grid gap-4">
+                    {tuningDesktopColumns.left.map((item, index) =>
+                      renderTuningCompactCard(item, index === 0, "feature"),
+                    )}
+                  </div>
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {tuningDesktopColumns.right.map((item) =>
+                      renderTuningCompactCard(item, false, "side"),
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-8 text-center">
-                  <LinkButton href="/tuning" variant="pink">Ver más Tuning</LinkButton>
+                  <LinkButton href="/tuning" variant="pink">
+                    Ver más Tuning
+                  </LinkButton>
                 </div>
               </div>
             </section>
           )}
 
-          {mixedItems.length > 0 && renderMobileCardsRail("Autos & Motos", "bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A]", mixedItems, "/noticias/autos", "Ver más de Autos", "cyan")}
+          {autosDesktopItems.length > 0 &&
+            renderMobileCardsRail(
+              "Autos",
+              "bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A]",
+              autosDesktopItems,
+              "/noticias/autos",
+              "Ver más de Autos",
+              "cyan",
+            )}
 
-          {heroMixed && (
-            <section className="hidden py-12 sm:py-16 md:block">
-              <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
-                <div className="mb-8">
-                  <h2 className="font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Autos & Motos</h2>
-                  <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A] sm:w-28" />
-                </div>
+          {renderAutosMotosDesktopSection(
+            "Autos",
+            autosDesktopItems,
+            "/noticias/autos",
+            "Ver más de Autos",
+          )}
 
-                <div className="grid gap-6 lg:grid-cols-[1.28fr_1fr]">
-                  <Card className="overflow-hidden hover:shadow-[0_0_26px_rgba(12,224,178,.2)]">
-                    <div className="relative h-[210px] w-full sm:h-[260px] md:h-[305px]">
-                      <Image src={heroMixed.img} alt={heroMixed.title} fill sizes="(max-width: 1024px) 100vw, 52vw" style={{ objectFit: "cover" }} priority />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-transparent" />
-                    </div>
-                    <CardContent className="p-5 sm:p-6">
-                      <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400 sm:text-xs">
-                        <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-                        {heroMixed.sectionLabel} · {heroMixed.typeLabel}
-                      </div>
-                      <h3 className="text-xl font-semibold text-white sm:text-2xl">{heroMixed.title}</h3>
-                      <p className="mt-3 text-sm leading-relaxed text-gray-300 sm:text-base">{getCardExcerpt(heroMixed)}</p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                        {heroMixed.authorName ? <span>Por {heroMixed.authorName}</span> : null}
-                        {heroMixed.authorName && heroMixed.when ? <span className="text-gray-600">•</span> : null}
-                        {heroMixed.when ? <span>{heroMixed.when}</span> : null}
-                      </div>
-                      <div className="mt-auto pt-4">{renderReadMoreButton(heroMixed.href)}</div>
-                    </CardContent>
-                  </Card>
+          {motosDesktopItems.length > 0 &&
+            renderMobileCardsRail(
+              "Motos",
+              "bg-gradient-to-r from-[#43A1AD] via-[#E2A24C] to-[#FF7A1A]",
+              motosDesktopItems,
+              "/noticias/motos",
+              "Ver más de Motos",
+              "cyan",
+            )}
 
-                  <aside className="lg:sticky lg:top-24">
-                    <div className="rounded-2xl border border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
-                      <div className="border-b border-white/[0.08] p-4">
-                        <h4 className="font-semibold text-white">Más para leer</h4>
-                      </div>
-                      <ul className="divide-y divide-white/[0.08]">
-                        {sidebarMixed.map((item) => (
-                          <li key={item.id} className="p-4 transition hover:bg-white/5">
-                            <Link href={item.href} className="flex gap-3">
-                              <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-white/[0.08]">
-                                <Image src={item.img} alt={item.title} fill sizes="100px" style={{ objectFit: "cover" }} />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="truncate text-sm text-white">{item.title}</p>
-                                <span className="mt-1 block text-xs text-gray-400">{item.sectionLabel}{item.when ? ` • ${item.when}` : ""}</span>
-                              </div>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </aside>
-                </div>
-
-                <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
-                  <LinkButton href="/noticias/autos" variant="cyan">Ver más de Autos</LinkButton>
-                  <span className="hidden text-gray-500 sm:inline">/</span>
-                  <LinkButton href="/noticias/motos" variant="cyan">Ver más de Motos</LinkButton>
-                </div>
-              </div>
-            </section>
+          {renderAutosMotosDesktopSection(
+            "Motos",
+            motosDesktopItems,
+            "/noticias/motos",
+            "Ver más de Motos",
           )}
 
           <section className="py-10 sm:py-12 md:hidden">
             <div className="mx-auto w-full max-w-[1440px] px-4 xl:px-10 2xl:max-w-[1560px]">
               <div className="mb-8">
-                <h2 className="font-display text-2xl font-bold tracking-wide text-white">Deportes</h2>
+                <h2 className="font-display text-2xl font-bold tracking-wide text-white">
+                  Deportes
+                </h2>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
               </div>
 
@@ -1409,10 +1856,20 @@ export default function HomePage({
                 <div className="flex snap-x snap-mandatory gap-4">
                   {safeSports.length > 0 ? (
                     safeSports.map((item) => (
-                      <Link key={item.id} href={item.href} className="block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start">
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        className="block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+                      >
                         <Card className="overflow-hidden">
-                          <div className="relative h-[112px] w-full">
-                            <Image src={item.img} alt={item.title} fill sizes="290px" style={{ objectFit: "cover" }} />
+                          <div className="relative h-[136px] w-full">
+                            <Image
+                              src={item.img}
+                              alt={item.title}
+                              fill
+                              sizes="290px"
+                              style={{ objectFit: "cover" }}
+                            />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                           </div>
                           <CardContent className="p-4">
@@ -1420,11 +1877,16 @@ export default function HomePage({
                               <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
                               {item.sectionLabel} · {item.typeLabel}
                             </div>
-                            <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white">{item.title}</h3>
-                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">{item.excerpt}</p>
+                            <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white">
+                              {item.title}
+                            </h3>
                             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                              {item.authorName ? <span>Por {item.authorName}</span> : null}
-                              {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+                              {item.authorName ? (
+                                <span>Por {item.authorName}</span>
+                              ) : null}
+                              {item.authorName && item.when ? (
+                                <span className="text-gray-600">•</span>
+                              ) : null}
                               {item.when ? <span>{item.when}</span> : null}
                             </div>
                           </CardContent>
@@ -1433,14 +1895,17 @@ export default function HomePage({
                     ))
                   ) : (
                     <div className="w-full rounded-2xl border border-dashed border-white/10 bg-mw-surface/35 p-6 text-center text-sm text-gray-300">
-                      Todavía no hay notas publicadas en Deportes, pero esta sección ya está lista para arrancar.
+                      Todavía no hay notas publicadas en Deportes, pero esta
+                      sección ya está lista para arrancar.
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="mt-6 text-center">
-                <LinkButton href="/deportes" variant="cyan">Ver todo Deportes</LinkButton>
+                <LinkButton href="/deportes" variant="cyan">
+                  Ver todo Deportes
+                </LinkButton>
               </div>
             </div>
           </section>
@@ -1448,55 +1913,93 @@ export default function HomePage({
           <section className="hidden py-10 sm:py-12 md:block">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <div className="mb-8">
-                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Deportes</h2>
+                <h2 className="glow-warm font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+                  Deportes
+                </h2>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#FF7A1A] to-[#0CE0B2]" />
               </div>
 
               {safeSports.length > 0 ? (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                   {safeSports.map((item) => (
-                    <Card key={item.id} className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,122,26,.16)]">
-                      <div className="relative h-44 w-full">
-                        <Image src={item.img} alt={item.title} fill sizes="(max-width: 1024px) 100vw, 33vw" style={{ objectFit: "cover" }} />
+                    <Card
+                      key={item.id}
+                      className="overflow-hidden hover:shadow-[0_0_24px_rgba(255,122,26,.16)]"
+                    >
+                      <div className="relative h-[170px] w-full">
+                        <Image
+                          src={item.img}
+                          alt={item.title}
+                          fill
+                          sizes="(max-width: 1024px) 100vw, 33vw"
+                          style={{ objectFit: "cover" }}
+                        />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                       </div>
-                      <CardContent className="p-5">
-                        <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+                      <CardContent className="p-4">
+                        <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
                           <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
                           {item.sectionLabel} · {item.typeLabel}
                         </div>
-                        <h3 className="mt-1 text-lg font-semibold text-white">{item.title}</h3>
-                        <p className="mt-2 line-clamp-3 text-sm text-gray-300">{item.excerpt}</p>
+                        <h3 className="mt-1 text-base font-semibold leading-tight text-white">
+                          {item.title}
+                        </h3>
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-                          {item.authorName ? <span>Por {item.authorName}</span> : null}
-                          {item.authorName && item.when ? <span className="text-gray-600">•</span> : null}
+                          {item.authorName ? (
+                            <span>Por {item.authorName}</span>
+                          ) : null}
+                          {item.authorName && item.when ? (
+                            <span className="text-gray-600">•</span>
+                          ) : null}
                           {item.when ? <span>{item.when}</span> : null}
                         </div>
-                        <div className="mt-auto pt-4">{renderReadMoreButton(item.href)}</div>
+                        <div className="mt-auto pt-3">
+                          {renderReadMoreButton(
+                            item.href,
+                            "px-3.5 py-1.5 text-xs",
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
               ) : (
-                renderEmptySectionNotice("Deportes listo para arrancar", "Todavía no hay notas publicadas en Deportes, pero la sección ya está preparada para recibir coberturas, motorsport y adrenalina en cuanto empieces a publicar.")
+                renderEmptySectionNotice(
+                  "Deportes listo para arrancar",
+                  "Todavía no hay notas publicadas en Deportes, pero la sección ya está preparada para recibir coberturas, motorsport y adrenalina en cuanto empieces a publicar.",
+                )
               )}
 
               <div className="mt-8 text-center">
-                <LinkButton href="/deportes" variant="cyan">Ver todo Deportes</LinkButton>
+                <LinkButton href="/deportes" variant="cyan">
+                  Ver todo Deportes
+                </LinkButton>
               </div>
             </div>
           </section>
 
           {lifestyleDesktopItems.length > 0 ? (
-            renderMobileCardsRail("Lifestyle", "bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]", lifestyleDesktopItems, "/lifestyle", "Ver más Lifestyle", "cyan")
+            renderMobileCardsRail(
+              "Lifestyle",
+              "bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]",
+              lifestyleDesktopItems,
+              "/lifestyle",
+              "Ver más Lifestyle",
+              "cyan",
+            )
           ) : (
             <section className="py-10 sm:py-12 md:hidden">
               <div className="mx-auto w-full max-w-[1440px] px-4 xl:px-10 2xl:max-w-[1560px]">
                 <div className="mb-8">
-                  <h2 className="font-display text-2xl font-bold tracking-wide text-white">Lifestyle</h2>
+                  <h2 className="font-display text-2xl font-bold tracking-wide text-white">
+                    Lifestyle
+                  </h2>
                   <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
                 </div>
-                {renderEmptySectionNotice("Lifestyle en preparación", "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días.")}
+                {renderEmptySectionNotice(
+                  "Lifestyle en preparación",
+                  "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días.",
+                )}
               </div>
             </section>
           )}
@@ -1504,21 +2007,36 @@ export default function HomePage({
           <section className="hidden py-10 sm:py-12 md:block">
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <div className="mb-8">
-                <h2 className="glow-cool font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">Lifestyle</h2>
+                <h2 className="glow-cool font-display text-2xl font-bold tracking-wide text-white sm:text-3xl">
+                  Lifestyle
+                </h2>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] to-[#E2A24C]" />
               </div>
 
               {lifestyleDesktopItems.length > 0 ? (
-                <div className="grid items-start gap-6 md:grid-cols-[0.85fr_1fr]">
-                  <div className="grid content-start gap-6">{lifestyleDesktopColumns.left.map((item, index) => renderStackedFeatureCard(item, index === 0))}</div>
-                  <div className="grid content-start gap-6">{lifestyleDesktopColumns.right.map((item) => renderStackedFeatureCard(item))}</div>
+                <div className="grid items-start gap-4 lg:grid-cols-[0.86fr_1.14fr]">
+                  <div className="grid gap-4">
+                    {lifestyleDesktopColumns.left.map((item, index) =>
+                      renderTuningCompactCard(item, index === 0, "feature"),
+                    )}
+                  </div>
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {lifestyleDesktopColumns.right.map((item) =>
+                      renderTuningCompactCard(item, false, "side"),
+                    )}
+                  </div>
                 </div>
               ) : (
-                renderEmptySectionNotice("Lifestyle en preparación", "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días.")
+                renderEmptySectionNotice(
+                  "Lifestyle en preparación",
+                  "Todavía no hay notas publicadas en Lifestyle, pero la sección ya está lista para recibir historias de diseño, estilo y cultura visual en los próximos días.",
+                )
               )}
 
               <div className="mt-8 text-center">
-                <LinkButton href="/lifestyle" variant="cyan">Ver más Lifestyle</LinkButton>
+                <LinkButton href="/lifestyle" variant="cyan">
+                  Ver más Lifestyle
+                </LinkButton>
               </div>
             </div>
           </section>
@@ -1535,12 +2053,18 @@ export default function HomePage({
             <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-10 2xl:max-w-[1560px]">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex w-full items-center justify-between">
-                  <h3 className="font-semibold text-white/90">Partners & Patrocinios</h3>
+                  <h3 className="font-semibold text-white/90">
+                    Partners & Patrocinios
+                  </h3>
                   <div className="mx-4 h-px flex-1 bg-white/[0.08]" />
                 </div>
 
                 {editControlsVisible && (
-                  <button type="button" onClick={() => partnerInputRef.current?.click()} className="ml-4 hidden whitespace-nowrap rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90 md:inline-flex">
+                  <button
+                    type="button"
+                    onClick={() => partnerInputRef.current?.click()}
+                    className="ml-4 hidden whitespace-nowrap rounded-full border border-white/15 bg-black/70 px-3 py-1 text-[10px] font-semibold text-white backdrop-blur hover:bg-black/90 md:inline-flex"
+                  >
                     Agregar partner
                   </button>
                 )}
@@ -1549,21 +2073,53 @@ export default function HomePage({
               <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
                 {homeSettings.partnerLogos.length > 0
                   ? homeSettings.partnerLogos.map((partner) => (
-                      <div key={partner.id} className="relative flex h-20 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-mw-surface/60 text-xs text-gray-400">
+                      <div
+                        key={partner.id}
+                        className="relative flex h-20 items-center justify-center overflow-hidden rounded-xl border border-white/[0.08] bg-mw-surface/60 text-xs text-gray-400"
+                      >
                         {partner.href ? (
-                          <a href={partner.href} target="_blank" rel="noreferrer" className="flex h-full w-full items-center justify-center bg-black/20 p-2">
-                            {partner.logoUrl ? <img src={partner.logoUrl} alt={partner.name} className="h-full w-full object-contain object-center" /> : <span className="px-3">{partner.name}</span>}
+                          <a
+                            href={partner.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex h-full w-full items-center justify-center bg-black/20 p-2"
+                          >
+                            {partner.logoUrl ? (
+                              <img
+                                src={partner.logoUrl}
+                                alt={partner.name}
+                                className="h-full w-full object-contain object-center"
+                              />
+                            ) : (
+                              <span className="px-3">{partner.name}</span>
+                            )}
                           </a>
                         ) : partner.logoUrl ? (
-                          <img src={partner.logoUrl} alt={partner.name} className="h-full w-full bg-black/20 object-contain object-center p-2" />
+                          <img
+                            src={partner.logoUrl}
+                            alt={partner.name}
+                            className="h-full w-full bg-black/20 object-contain object-center p-2"
+                          />
                         ) : (
                           <span className="px-3">{partner.name}</span>
                         )}
 
                         {editControlsVisible && (
                           <div className="absolute right-1 top-1 z-10 hidden gap-1 md:flex">
-                            <button type="button" onClick={() => editPartnerLink(partner.id)} className="rounded-full border border-white/[0.08] bg-black/70 px-2 py-1 text-[9px] font-semibold text-white">Link</button>
-                            <button type="button" onClick={() => removePartner(partner.id)} className="rounded-full border border-white/[0.08] bg-black/70 px-2 py-1 text-[9px] font-semibold text-red-200">X</button>
+                            <button
+                              type="button"
+                              onClick={() => editPartnerLink(partner.id)}
+                              className="rounded-full border border-white/[0.08] bg-black/70 px-2 py-1 text-[9px] font-semibold text-white"
+                            >
+                              Link
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removePartner(partner.id)}
+                              className="rounded-full border border-white/[0.08] bg-black/70 px-2 py-1 text-[9px] font-semibold text-red-200"
+                            >
+                              X
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1574,35 +2130,97 @@ export default function HomePage({
           </section>
         </main>
 
-        <footer aria-hidden={mobileOpen || contactOpen} className="relative z-10 mt-12 border-t border-white/[0.08] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md">
+        <footer
+          aria-hidden={mobileOpen || contactOpen}
+          className="relative z-10 mt-12 border-t border-white/[0.08] bg-mw-surface/70 py-10 text-gray-300 backdrop-blur-md"
+        >
           <div className="mx-auto grid w-full max-w-[1440px] gap-8 px-4 sm:px-6 md:grid-cols-3 lg:px-8 2xl:max-w-[1560px]">
             <div>
-              <Image src="/brand/motorwelt-logo.png" alt="MotorWelt logo" width={160} height={36} className="logo-glow h-9 w-auto" />
-              <p className="mt-2 text-sm">Cultura automotriz, motociclismo, tuning y comunidad con enfoque visual, editorial y aspiracional.</p>
+              <Image
+                src="/brand/motorwelt-logo.png"
+                alt="MotorWelt logo"
+                width={160}
+                height={36}
+                className="logo-glow h-9 w-auto"
+              />
+              <p className="mt-2 text-sm">
+                Cultura automotriz, motociclismo, tuning y comunidad con enfoque
+                visual, editorial y aspiracional.
+              </p>
             </div>
 
             <div>
               <h4 className="text-lg font-semibold text-white">Links</h4>
               <ul className="mt-2 space-y-2 text-sm">
-                <li><Link href="/perfil" className="hover:text-white">Acerca de</Link></li>
-                <li><button type="button" onClick={() => setContactOpen(true)} className="hover:text-white">Contacto</button></li>
-                <li><Link href="/terminos" className="hover:text-white">Términos y condiciones</Link></li>
-                <li><Link href="/privacidad" className="hover:text-white">Política de privacidad</Link></li>
+                <li>
+                  <Link href="/perfil" className="hover:text-white">
+                    Acerca de
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(true)}
+                    className="hover:text-white"
+                  >
+                    Contacto
+                  </button>
+                </li>
+                <li>
+                  <Link href="/terminos" className="hover:text-white">
+                    Términos y condiciones
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacidad" className="hover:text-white">
+                    Política de privacidad
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div>
               <h4 className="text-lg font-semibold text-white">Socials</h4>
               <div className="mt-2 flex gap-4">
-                <a href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">IG</a>
-                <a href="https://www.facebook.com/share/18JRxV8AAu/" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">FB</a>
-                <a href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">TikTok</a>
-                <a href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo" target="_blank" rel="noreferrer" className="text-[#43A1AD] hover:text-white">YouTube</a>
+                <a
+                  href="https://www.instagram.com/motorwelt_?igsh=Nmc4bGRmdmJsenBm"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  IG
+                </a>
+                <a
+                  href="https://www.facebook.com/share/18JRxV8AAu/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  FB
+                </a>
+                <a
+                  href="https://www.tiktok.com/@itsgabicho?_r=1&_t=ZS-95i81zqyEei"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  TikTok
+                </a>
+                <a
+                  href="https://youtube.com/@motorweltmx?si=mNFID1x-2Z81Q4yo"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#43A1AD] hover:text-white"
+                >
+                  YouTube
+                </a>
               </div>
             </div>
           </div>
 
-          <p className="mt-6 px-4 text-center text-xs text-gray-500">© {year} MotorWelt. Todos los derechos reservados.</p>
+          <p className="mt-6 px-4 text-center text-xs text-gray-500">
+            © {year} MotorWelt. Todos los derechos reservados.
+          </p>
         </footer>
       </div>
 
@@ -1650,42 +2268,86 @@ export default function HomePage({
           filter: blur(0.5px);
         }
         @keyframes slide-fwd {
-          0% { transform: translateX(-30%); opacity: 0; }
-          10% { opacity: 0.9; }
-          100% { transform: translateX(130%); opacity: 0; }
+          0% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
         }
         @keyframes slide-rev {
-          0% { transform: translateX(130%); opacity: 0; }
-          10% { opacity: 0.9; }
-          100% { transform: translateX(-30%); opacity: 0; }
+          0% {
+            transform: translateX(130%);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateX(-30%);
+            opacity: 0;
+          }
         }
-        .streak.dir-fwd { animation: slide-fwd 11s linear infinite; }
-        .streak.dir-rev { animation: slide-rev 11s linear infinite; }
+        .streak.dir-fwd {
+          animation: slide-fwd 11s linear infinite;
+        }
+        .streak.dir-rev {
+          animation: slide-rev 11s linear infinite;
+        }
         .streak-cool {
-          background: linear-gradient(90deg, transparent, rgba(12, 224, 178, 0.95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(12, 224, 178, 0.95),
+            transparent
+          );
         }
         .streak-warm {
-          background: linear-gradient(90deg, transparent, rgba(255, 122, 26, 0.95), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 122, 26, 0.95),
+            transparent
+          );
         }
         .streak-lime {
-          background: linear-gradient(90deg, transparent, rgba(163, 255, 18, 0.9), transparent);
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(163, 255, 18, 0.9),
+            transparent
+          );
         }
-        .glow-warm { text-shadow: 0 0 14px rgba(255, 122, 26, 0.25); }
+        .glow-warm {
+          text-shadow: 0 0 14px rgba(255, 122, 26, 0.25);
+        }
         .glow-cool {
           text-shadow:
             0 0 12px rgba(12, 224, 178, 0.28),
             0 0 26px rgba(12, 224, 178, 0.22),
             0 0 50px rgba(12, 224, 178, 0.14);
         }
-        .logo-glow { filter: drop-shadow(0 0 18px rgba(12, 224, 178, 0.12)); }
+        .logo-glow {
+          filter: drop-shadow(0 0 18px rgba(12, 224, 178, 0.12));
+        }
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
 
         @media (prefers-reduced-motion: reduce) {
-          .streak { animation: none !important; opacity: 0.35; }
+          .streak {
+            animation: none !important;
+            opacity: 0.35;
+          }
         }
 
         @supports (content-visibility: auto) {
@@ -1702,35 +2364,48 @@ export default function HomePage({
 export async function getServerSideProps(_ctx: { locale?: string }) {
   const { sanityReadClient } = await import("../lib/sanityClient");
 
-  const mixedQuery = `
+  const autosQuery = `
     *[
       _type in ["article", "post"] &&
       defined(slug.current) &&
       coalesce(status, "publicado") == "publicado" &&
       (
         section == "noticias_autos" ||
-        section == "noticias_motos" ||
         lower(category) == "autos" ||
-        lower(category) == "motos" ||
-        "autos" in categories[] ||
-        "motos" in categories[]
+        "autos" in categories[]
       )
     ]
-    | order(coalesce(publishedAt, _createdAt) desc)[0...8]{
+    | order(coalesce(publishedAt, _createdAt) desc)[0...9]{
       "id": _id,
       "title": coalesce(title, ""),
       "excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
       "contentType": coalesce(contentType, "noticia"),
-      "section": coalesce(
-        section,
-        select(
-          lower(category) == "autos" => "noticias_autos",
-          lower(category) == "motos" => "noticias_motos",
-          "autos" in categories[] => "noticias_autos",
-          "motos" in categories[] => "noticias_motos",
-          ""
-        )
-      ),
+      "section": "noticias_autos",
+      "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
+      "slug": slug.current,
+      "publishedAt": publishedAt,
+      "_createdAt": _createdAt,
+      "authorName": coalesce(authorName, author->name, "")
+    }
+  `;
+
+  const motosQuery = `
+    *[
+      _type in ["article", "post"] &&
+      defined(slug.current) &&
+      coalesce(status, "publicado") == "publicado" &&
+      (
+        section == "noticias_motos" ||
+        lower(category) == "motos" ||
+        "motos" in categories[]
+      )
+    ]
+    | order(coalesce(publishedAt, _createdAt) desc)[0...9]{
+      "id": _id,
+      "title": coalesce(title, ""),
+      "excerpt": coalesce(subtitle, excerpt, seoDescription, ""),
+      "contentType": coalesce(contentType, "noticia"),
+      "section": "noticias_motos",
       "img": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "slug": slug.current,
       "publishedAt": publishedAt,
@@ -1858,15 +2533,23 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     }
   `;
 
-  const [mixedRaw, sportsRaw, lifestyleRaw, tuningRaw, communityRaw, homeSettingsRaw] =
-    await Promise.all([
-      sanityReadClient.fetch(mixedQuery),
-      sanityReadClient.fetch(sportsQuery),
-      sanityReadClient.fetch(lifestyleQuery),
-      sanityReadClient.fetch(tuningQuery),
-      sanityReadClient.fetch(communityQuery),
-      sanityReadClient.fetch(homeSettingsQuery),
-    ]);
+  const [
+    autosRaw,
+    motosRaw,
+    sportsRaw,
+    lifestyleRaw,
+    tuningRaw,
+    communityRaw,
+    homeSettingsRaw,
+  ] = await Promise.all([
+    sanityReadClient.fetch(autosQuery),
+    sanityReadClient.fetch(motosQuery),
+    sanityReadClient.fetch(sportsQuery),
+    sanityReadClient.fetch(lifestyleQuery),
+    sanityReadClient.fetch(tuningQuery),
+    sanityReadClient.fetch(communityQuery),
+    sanityReadClient.fetch(homeSettingsQuery),
+  ]);
 
   const formatWhen = (iso?: string | null) => {
     if (!iso) return "";
@@ -1879,28 +2562,29 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     }).format(d);
   };
 
-  const routeForSection = (section: string) => {
-    if (section === "noticias_motos") return "motos";
-    return "autos";
-  };
+  const autosItems: HomeNewsItem[] = (autosRaw ?? []).map((it: any) => ({
+    id: String(it?.id || ""),
+    title: String(it?.title || ""),
+    excerpt: String(it?.excerpt || ""),
+    img: String(it?.img || "/images/noticia-1.jpg"),
+    href: `/noticias/autos/${String(it?.slug || "")}`,
+    sectionLabel: "Autos",
+    typeLabel: String(it?.contentType || "noticia"),
+    when: formatWhen(it?.publishedAt || it?._createdAt),
+    authorName: String(it?.authorName || "MotorWelt"),
+  }));
 
-  const featuredMixed: HomeNewsItem[] = (mixedRaw ?? []).map((it: any) => {
-    const section = String(it?.section || "");
-    const slug = String(it?.slug || "");
-    const route = routeForSection(section);
-
-    return {
-      id: String(it?.id || ""),
-      title: String(it?.title || ""),
-      excerpt: String(it?.excerpt || ""),
-      img: String(it?.img || "/images/noticia-1.jpg"),
-      href: `/noticias/${route}/${slug}`,
-      sectionLabel: sectionLabel(section),
-      typeLabel: String(it?.contentType || "noticia"),
-      when: formatWhen(it?.publishedAt || it?._createdAt),
-      authorName: String(it?.authorName || "MotorWelt"),
-    };
-  });
+  const motosItems: HomeNewsItem[] = (motosRaw ?? []).map((it: any) => ({
+    id: String(it?.id || ""),
+    title: String(it?.title || ""),
+    excerpt: String(it?.excerpt || ""),
+    img: String(it?.img || "/images/noticia-1.jpg"),
+    href: `/noticias/motos/${String(it?.slug || "")}`,
+    sectionLabel: "Motos",
+    typeLabel: String(it?.contentType || "noticia"),
+    when: formatWhen(it?.publishedAt || it?._createdAt),
+    authorName: String(it?.authorName || "MotorWelt"),
+  }));
 
   const sportsItems: HomeNewsItem[] = (sportsRaw ?? []).map((it: any) => ({
     id: String(it?.id || ""),
@@ -1914,17 +2598,19 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     authorName: String(it?.authorName || "MotorWelt"),
   }));
 
-  const lifestyleItems: HomeNewsItem[] = (lifestyleRaw ?? []).map((it: any) => ({
-    id: String(it?.id || ""),
-    title: String(it?.title || ""),
-    excerpt: String(it?.excerpt || ""),
-    img: String(it?.img || "/images/noticia-3.jpg"),
-    href: detailHref("lifestyle", it?.slug),
-    sectionLabel: "Lifestyle",
-    typeLabel: "noticia",
-    when: formatWhen(it?.publishedAt || it?._createdAt),
-    authorName: String(it?.authorName || "MotorWelt"),
-  }));
+  const lifestyleItems: HomeNewsItem[] = (lifestyleRaw ?? []).map(
+    (it: any) => ({
+      id: String(it?.id || ""),
+      title: String(it?.title || ""),
+      excerpt: String(it?.excerpt || ""),
+      img: String(it?.img || "/images/noticia-3.jpg"),
+      href: detailHref("lifestyle", it?.slug),
+      sectionLabel: "Lifestyle",
+      typeLabel: "noticia",
+      when: formatWhen(it?.publishedAt || it?._createdAt),
+      authorName: String(it?.authorName || "MotorWelt"),
+    }),
+  );
 
   const tuningItems: HomeNewsItem[] = (tuningRaw ?? []).map((it: any) => ({
     id: String(it?.id || ""),
@@ -1938,37 +2624,51 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
     authorName: String(it?.authorName || "MotorWelt"),
   }));
 
-  const communityItems: HomeNewsItem[] = (communityRaw ?? []).map((it: any) => ({
-    id: String(it?.id || ""),
-    title: String(it?.title || ""),
-    excerpt: String(it?.excerpt || ""),
-    img: String(it?.img || "/images/noticia-1.jpg"),
-    href: detailHref("comunidad", it?.slug),
-    sectionLabel: "Comunidad",
-    typeLabel: "noticia",
-    when: formatWhen(it?.publishedAt || it?._createdAt),
-    authorName: String(it?.authorName || "MotorWelt"),
-  }));
+  const communityItems: HomeNewsItem[] = (communityRaw ?? []).map(
+    (it: any) => ({
+      id: String(it?.id || ""),
+      title: String(it?.title || ""),
+      excerpt: String(it?.excerpt || ""),
+      img: String(it?.img || "/images/noticia-1.jpg"),
+      href: detailHref("comunidad", it?.slug),
+      sectionLabel: "Comunidad",
+      typeLabel: "noticia",
+      when: formatWhen(it?.publishedAt || it?._createdAt),
+      authorName: String(it?.authorName || "MotorWelt"),
+    }),
+  );
 
   const initialHomeSettings: HomeSettings = {
-    heroImageUrl: String(homeSettingsRaw?.heroImageUrl || "").trim() || DEFAULT_HOME_SETTINGS.heroImageUrl,
+    heroImageUrl:
+      String(homeSettingsRaw?.heroImageUrl || "").trim() ||
+      DEFAULT_HOME_SETTINGS.heroImageUrl,
     ads: {
       leaderboard: {
         enabled: Boolean(homeSettingsRaw?.ads?.leaderboard?.enabled ?? true),
-        label: String(homeSettingsRaw?.ads?.leaderboard?.label || "").trim() || DEFAULT_HOME_SETTINGS.ads.leaderboard.label,
-        imageUrl: String(homeSettingsRaw?.ads?.leaderboard?.imageUrl || "").trim(),
+        label:
+          String(homeSettingsRaw?.ads?.leaderboard?.label || "").trim() ||
+          DEFAULT_HOME_SETTINGS.ads.leaderboard.label,
+        imageUrl: String(
+          homeSettingsRaw?.ads?.leaderboard?.imageUrl || "",
+        ).trim(),
         href: String(homeSettingsRaw?.ads?.leaderboard?.href || "").trim(),
       },
       mpu: {
         enabled: Boolean(homeSettingsRaw?.ads?.mpu?.enabled ?? true),
-        label: String(homeSettingsRaw?.ads?.mpu?.label || "").trim() || DEFAULT_HOME_SETTINGS.ads.mpu.label,
+        label:
+          String(homeSettingsRaw?.ads?.mpu?.label || "").trim() ||
+          DEFAULT_HOME_SETTINGS.ads.mpu.label,
         imageUrl: String(homeSettingsRaw?.ads?.mpu?.imageUrl || "").trim(),
         href: String(homeSettingsRaw?.ads?.mpu?.href || "").trim(),
       },
       billboard: {
         enabled: Boolean(homeSettingsRaw?.ads?.billboard?.enabled ?? true),
-        label: String(homeSettingsRaw?.ads?.billboard?.label || "").trim() || DEFAULT_HOME_SETTINGS.ads.billboard.label,
-        imageUrl: String(homeSettingsRaw?.ads?.billboard?.imageUrl || "").trim(),
+        label:
+          String(homeSettingsRaw?.ads?.billboard?.label || "").trim() ||
+          DEFAULT_HOME_SETTINGS.ads.billboard.label,
+        imageUrl: String(
+          homeSettingsRaw?.ads?.billboard?.imageUrl || "",
+        ).trim(),
         href: String(homeSettingsRaw?.ads?.billboard?.href || "").trim(),
       },
     },
@@ -1985,7 +2685,8 @@ export async function getServerSideProps(_ctx: { locale?: string }) {
   return {
     props: {
       year: new Date().getFullYear(),
-      featuredMixed,
+      autosItems,
+      motosItems,
       sportsItems,
       lifestyleItems,
       tuningItems,
