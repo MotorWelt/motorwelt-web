@@ -619,8 +619,8 @@ function CategoryRail({
   subtle: string;
   items: NewsItem[];
 }) {
-  const left = items.slice(0, 2);
-  const right = items.slice(2, 6);
+  const leftItems = items.slice(0, 4);
+  const rightItems = items.slice(4, 9);
 
   return (
     <section className="py-10 sm:py-12">
@@ -630,29 +630,102 @@ function CategoryRail({
         <>
           <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar md:hidden">
             <div className="flex snap-x snap-mandatory gap-4">
-              {items.slice(0, 6).map((item) => (
+              {items.slice(0, 9).map((item) => (
                 <NewsCard key={item.id} item={item} compact mobileSize />
               ))}
             </div>
           </div>
 
-          <div className="hidden md:grid md:grid-cols-[1.05fr_.95fr] gap-6 items-start">
-            <div className="grid gap-6">
-              {left.map((item) => (
-                <NewsCard key={item.id} item={item} imageHeight="h-56" />
+          <div className="hidden gap-6 md:grid lg:grid-cols-[1.08fr_1.12fr]">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {leftItems.map((item, index) => (
+                <Link
+                  key={item.id}
+                  href={item.slug}
+                  className="block h-full w-full"
+                >
+                  <article className="flex h-full flex-col overflow-hidden rounded-[24px] border border-white/[0.06] bg-mw-surface/72 backdrop-blur-md transition will-change-transform hover:-translate-y-[2px] hover:border-white/12 hover:shadow-[0_0_26px_rgba(12,224,178,.16)]">
+                    <div className="relative h-[138px] w-full">
+                      <Image
+                        src={item.img}
+                        alt={item.title}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 42vw"
+                        style={{ objectFit: "cover" }}
+                        priority={index === 0}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/12 to-transparent" />
+                    </div>
+
+                    <div className="flex flex-1 flex-col p-4">
+                      <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400 sm:text-[11px]">
+                        <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+                        {item.autoSectionLabel || item.tag}
+                      </div>
+
+                      <h3 className="line-clamp-3 text-base font-semibold leading-tight text-white">
+                        {item.title}
+                      </h3>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                        {item.authorName ? (
+                          <span>Por {item.authorName}</span>
+                        ) : null}
+                        {item.authorName && item.when ? (
+                          <span className="text-gray-600">•</span>
+                        ) : null}
+                        {item.when ? <span>{item.when}</span> : null}
+                      </div>
+
+                      <div className="mt-auto hidden pt-4 md:block">
+                        <span className="inline-flex items-center justify-center rounded-xl border border-white/10 px-4 py-2 text-xs font-semibold leading-none text-white shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] transition hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)]">
+                          Leer más
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                </Link>
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-5">
-              {right.map((item) => (
-                <NewsCard
-                  key={item.id}
-                  item={item}
-                  imageHeight="h-40"
-                  compact
-                />
-              ))}
-            </div>
+            <aside className="lg:sticky lg:top-24">
+              <div className="rounded-2xl border border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
+                <div className="border-b border-white/[0.08] p-4">
+                  <h4 className="font-semibold text-white">Más para leer</h4>
+                </div>
+
+                <ul className="max-h-[520px] divide-y divide-white/[0.08] overflow-y-auto no-scrollbar">
+                  {rightItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className="p-4 transition hover:bg-white/5"
+                    >
+                      <Link href={item.slug} className="flex gap-3">
+                        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg border border-white/[0.08]">
+                          <Image
+                            src={item.img}
+                            alt={item.title}
+                            fill
+                            sizes="140px"
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-semibold leading-tight text-white">
+                            {item.title}
+                          </p>
+                          <span className="mt-1 block text-xs text-gray-400">
+                            {item.autoSectionLabel || item.tag}
+                            {item.when ? ` • ${item.when}` : ""}
+                          </span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </aside>
           </div>
         </>
       ) : (
@@ -674,74 +747,67 @@ function NewsCard({
   imageHeight = "h-48",
   compact = false,
   mobileSize = false,
+  priority = false,
 }: {
   item: NewsItem;
   imageHeight?: string;
   compact?: boolean;
   mobileSize?: boolean;
+  priority?: boolean;
 }) {
   return (
     <Link
       href={item.slug}
       className={
         mobileSize
-          ? "block h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start"
+          ? "block h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
           : "block h-full w-full"
       }
     >
       <article className="flex h-full flex-col overflow-hidden rounded-[24px] border border-white/[0.06] bg-mw-surface/72 backdrop-blur-md transition will-change-transform hover:-translate-y-[2px] hover:border-white/12 hover:shadow-[0_0_24px_rgba(255,255,255,.045)]">
         <div
           className={`relative w-full ${
-            mobileSize ? "h-[112px]" : imageHeight
+            mobileSize ? "h-[130px]" : imageHeight
           }`}
         >
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes={mobileSize ? "290px" : "(max-width: 1280px) 50vw, 33vw"}
+            sizes={mobileSize ? "262px" : "(max-width: 1280px) 50vw, 33vw"}
             style={{ objectFit: "cover" }}
+            priority={priority}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/66 via-black/14 to-transparent" />
-          <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/90 backdrop-blur">
-            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-            {item.autoSectionLabel || item.tag}
-          </span>
         </div>
 
         <div
           className={
             mobileSize
               ? "flex min-h-0 flex-1 flex-col p-4"
-              : `${compact ? "p-4" : "p-5"} flex flex-1 flex-col`
+              : `${compact ? "p-3.5" : "p-3.5"} flex flex-1 flex-col`
           }
         >
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.autoSectionLabel || item.tag}
+          </div>
+
           <h3
             className={
               mobileSize
-                ? "line-clamp-2 text-[1rem] font-semibold leading-tight text-white"
-                : `mt-1 text-white font-semibold leading-tight ${
-                    compact ? "text-base" : "text-lg"
-                  }`
+                ? "line-clamp-2 text-base font-semibold leading-tight text-white"
+                : "line-clamp-2 text-[15px] font-semibold leading-tight text-white"
             }
           >
             {item.title}
           </h3>
-          <p
-            className={
-              mobileSize
-                ? "mt-2 line-clamp-2 text-[12px] leading-relaxed text-gray-300"
-                : "mt-2 line-clamp-2 text-sm leading-relaxed text-gray-300"
-            }
-          >
-            {item.excerpt}
-          </p>
 
           <div
             className={
               mobileSize
-                ? "mt-auto flex flex-wrap items-center gap-1.5 pt-2 text-[10.5px] leading-tight text-gray-400"
-                : "mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-400"
+                ? "mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400"
+                : "mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400"
             }
           >
             {item.authorName ? <span>Por {item.authorName}</span> : null}
@@ -753,10 +819,10 @@ function NewsCard({
 
           <div
             className={
-              mobileSize ? "hidden" : "mt-auto hidden pb-3 pt-4 md:block"
+              mobileSize ? "hidden" : "mt-auto hidden pb-3 pt-3 md:block"
             }
           >
-            <span className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 px-4 py-0 text-sm font-semibold leading-none text-white shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] transition hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)]">
+            <span className="inline-flex items-center justify-center rounded-xl border border-white/10 px-3.5 py-1.5 text-xs font-semibold leading-none text-white shadow-[0_0_18px_rgba(255,122,26,.32),inset_0_0_0_1px_rgba(255,122,26,.12)] transition hover:bg-white/5 hover:shadow-[0_0_26px_rgba(255,122,26,.55),inset_0_0_0_1px_rgba(255,122,26,.18)]">
               Leer más
             </span>
           </div>
@@ -790,9 +856,6 @@ function LatestArticleCard({ item }: { item: LatestArticleData }) {
           <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
             {item.title}
           </h3>
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-            {item.excerpt}
-          </p>
         </div>
       </Link>
     </article>

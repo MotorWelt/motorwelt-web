@@ -954,41 +954,38 @@ function EmptySectionNotice({
 
 function LatestArticleCard({ item }: { item: LatestArticleData }) {
   return (
-    <Card className="h-full overflow-hidden hover:shadow-[0_0_22px_rgba(255,122,26,.12)]">
-      <Link href={item.href} className="block">
-        <div className="relative h-[130px] w-full md:h-[138px]">
+    <Link
+      href={item.href}
+      className="block h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
+    >
+      <Card className="h-full overflow-hidden hover:shadow-[0_0_22px_rgba(255,122,26,.12)]">
+        <div className="relative h-[130px] w-full">
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes="(max-width: 768px) 262px, 280px"
+            sizes="262px"
             style={{ objectFit: "cover" }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
         </div>
-      </Link>
 
-      <CardContent className="p-4 md:p-3.5">
-        <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400 md:text-[10px]">
-          <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
-          {item.sectionLabel} · Noticia
-        </div>
+        <CardContent className="p-4">
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel}
+          </div>
 
-        <Link href={item.href} className="block">
-          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white md:text-[15px]">
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white">
             {item.title}
           </h3>
-        </Link>
 
-        <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
-          {item.when ? <span>{item.when}</span> : null}
-        </div>
-
-        <div className="mt-auto hidden pt-3 md:block">
-          {renderReadMoreButton(item.href, "px-3.5 py-1.5 text-xs")}
-        </div>
-      </CardContent>
-    </Card>
+          <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -3223,12 +3220,7 @@ export default function TuningPage({
                 <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
                   <div className="flex snap-x snap-mandatory gap-4">
                     {latestItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="h-[253px] w-[262px] min-w-[262px] snap-start md:h-[300px] md:w-[280px] md:min-w-[280px]"
-                      >
-                        <LatestArticleCard item={item} />
-                      </div>
+                      <LatestArticleCard key={item.id} item={item} />
                     ))}
                   </div>
                 </div>
