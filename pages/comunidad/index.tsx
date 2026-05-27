@@ -2652,7 +2652,7 @@ export default function ComunidadPage({
                       MotorWelt Comunidad
                     </div>
 
-                    <h1 className="mt-5 font-display text-[3.1rem] font-black leading-[0.9] tracking-[-0.05em] text-white sm:text-[4.2rem] md:text-[4.8rem] lg:text-[5.4rem]">
+                    <h1 className="mt-5 font-display text-[3.1rem] font-black leading-[0.9] tracking-[-0.05em] text-white glow-cool sm:text-[4.2rem] md:text-[4.8rem] lg:text-[5.4rem]">
                       Comunidad & Eventos
                     </h1>
 
@@ -3172,7 +3172,10 @@ export default function ComunidadPage({
           );
         }
         .glow-cool {
-          text-shadow: 0 0 14px rgba(12, 224, 178, 0.28);
+          text-shadow:
+            0 0 12px rgba(12, 224, 178, 0.28),
+            0 0 26px rgba(12, 224, 178, 0.22),
+            0 0 50px rgba(12, 224, 178, 0.14);
         }
         .glow-warm {
           text-shadow: 0 0 14px rgba(255, 122, 26, 0.22);
