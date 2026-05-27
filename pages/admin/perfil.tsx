@@ -818,64 +818,6 @@ export default function AdminPerfil({
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1.5fr]">
             <section className="space-y-6">
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">Notas publicadas</h2>
-                    <p className="text-sm text-gray-300">Últimas cinco notas publicadas desde Sanity.</p>
-                  </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <select
-                      value={authorFilter}
-                      onChange={(e) => setAuthorFilter(e.target.value)}
-                      className="rounded-2xl border border-white/15 bg-black/60 px-3 py-2 text-xs font-semibold text-gray-200 outline-none focus:ring-2 focus:ring-[#0CE0B2]/30"
-                    >
-                      <option value="todos">Todos los autores</option>
-                      {authorOptions.map((author) => (
-                        <option key={author} value={author}>
-                          {author}
-                        </option>
-                      ))}
-                    </select>
-                    <LinkButton href="/admin/contenido" variant="cyan" className="text-xs">
-                      Abrir editor avanzado
-                    </LinkButton>
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {publishedNotes.slice(0, 5).map((note) => (
-                    <article key={note.id} className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div className="min-w-0">
-                          <p className="text-base font-semibold leading-snug text-white">{note.title}</p>
-                          <p className="mt-1 text-xs text-gray-400">
-                            {note.sectionLabel} · Publicada: {note.publishedAt}
-                          </p>
-                          <p className="mt-1 text-[11px] text-gray-500">
-                            Autor: <span className="text-gray-300">{note.authorName}</span> · Actualizada: {note.updatedAt}
-                          </p>
-                        </div>
-                        <span className="inline-flex w-fit rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-                          Publicada
-                        </span>
-                      </div>
-                      <div className="mt-4 flex justify-end">
-                        <LinkButton href={note.href} target="_blank" rel="noreferrer" variant="ghost" className="px-4 py-2 text-xs">
-                          Leer / editar
-                        </LinkButton>
-                      </div>
-                    </article>
-                  ))}
-
-                  {publishedNotes.length === 0 ? (
-                    <div className="rounded-2xl border border-white/10 bg-black/35 px-4 py-5 text-sm text-gray-300">
-                      No hay notas publicadas para este filtro.
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-semibold text-white">Membresías — ingresos</h2>
