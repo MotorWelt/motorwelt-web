@@ -182,7 +182,7 @@ const SiteHeader: React.FC<{
               <Link href="/tuning" className={navLinkClass}>
                 Tuning
               </Link>
-              <Link href="/noticias/motos" className={navLinkClass}>
+              <Link href="/noticias/autos" className={navLinkClass}>
                 Autos
               </Link>
               <Link href="/noticias/motos" className={navLinkClass}>
@@ -284,7 +284,7 @@ const SiteHeader: React.FC<{
                 Tuning
               </Link>
               <Link
-                href="/noticias/motos"
+                href="/noticias/autos"
                 className={mobileLinkClass}
                 onClick={() => setMobileOpen(false)}
               >
