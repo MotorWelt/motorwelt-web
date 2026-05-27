@@ -2657,7 +2657,7 @@ export default function ComunidadPage({
                     </h1>
 
                     <p className="mt-5 max-w-3xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                      Eventos, rutas, meets y cultura automotriz curada desde la visión editorial de MotorWelt.
+                      Meets, trackdays y experiencias que conectan a la comunidad automotriz.
                     </p>
                   </div>
                 </div>
@@ -2757,7 +2757,7 @@ export default function ComunidadPage({
           <CuratedCommunityRail
             title="Nacionales"
             eyebrow="Curaduría México"
-            subtle="Eventos, rutas y clubes dentro de México seleccionados por presencia visual y comunidad."
+            subtle="Eventos y comunidades que mantienen viva la cultura automotriz en México."
             items={nationalItems}
             emptyText="Próximamente aparecerán aquí eventos nacionales curados por MotorWelt."
             glow="cool"
@@ -2766,7 +2766,7 @@ export default function ComunidadPage({
           <CuratedCommunityRail
             title="Internacionales"
             eyebrow="Global watchlist"
-            subtle="Eventos y referencias fuera de México que elevan la conversación: cultura, diseño, performance y comunidad global."
+            subtle="Lo más relevante de la cultura automotriz internacional, dentro y fuera de la pista."
             items={internationalItems}
             emptyText="Próximamente aparecerán aquí referencias internacionales seleccionadas por MotorWelt."
             glow="warm"
@@ -2784,7 +2784,7 @@ export default function ComunidadPage({
           <CuratedCommunityRail
             title="Trackdays"
             eyebrow="Performance calendar"
-            subtle="Días de pista, experiencias de manejo y eventos donde la velocidad también necesita contexto."
+            subtle="Velocidad, técnica y experiencias de manejo dentro del universo MotorWelt."
             items={trackdayItems}
             emptyText="Próximamente habrá trackdays curados dentro de MotorWelt Comunidad."
             glow="warm"
@@ -2811,7 +2811,7 @@ export default function ComunidadPage({
           <CuratedCommunityRail
             title="Underground"
             eyebrow="Street selected"
-            subtle="La parte más cruda y visual de la cultura automotriz: stance, drift, crews y escenas locales, siempre curadas."
+            subtle="El lado más callejero, visual y radical de MotorWelt."
             items={undergroundItems}
             emptyText="Próximamente habrá contenido underground seleccionado por MotorWelt."
             glow="cool"
@@ -2936,37 +2936,37 @@ export default function ComunidadPage({
                 <div className="flex items-start gap-5 pr-12">
                   <ExploreCard
                     title="Tuning"
-                    subtitle="Builds, mods, aero, stance y cultura visual."
+                    subtitle="El lado más visual, radical y obsesivo de la cultura automotriz"
                     href="/tuning"
                     image={sectionHeroImages.tuning}
                   />
                   <ExploreCard
                     title="Autos"
-                    subtitle="Nuevos lanzamientos, pruebas y contexto editorial."
+                    subtitle="Diseño, ingeniería y cultura automotriz"
                     href="/noticias/autos"
                     image={sectionHeroImages.autos}
                   />
                   <ExploreCard
                     title="Motos"
-                    subtitle="Pruebas, rutas y piezas con ADN de dos ruedas."
+                    subtitle="Pruebas, rutas y cultura sobre dos ruedas"
                     href="/noticias/motos"
                     image={sectionHeroImages.motos}
                   />
                   <ExploreCard
                     title="Deportes"
-                    subtitle="Competencia, paddock y piezas con peso visual real."
+                    subtitle="Competencia, contexto y cultura del deporte motor"
                     href="/deportes"
                     image={sectionHeroImages.deportes}
                   />
                   <ExploreCard
                     title="Lifestyle"
-                    subtitle="La capa aspiracional y estética del universo MotorWelt."
+                    subtitle="Moda, relojería y cultura fuera del volante"
                     href="/lifestyle"
                     image={sectionHeroImages.lifestyle}
                   />
                   <ExploreCard
                     title="Comunidad"
-                    subtitle="Eventos, meets, rutas y cultura desde la calle."
+                    subtitle="Eventos, meets y la gente detrás del mundo motor"
                     href="/comunidad"
                     image={sectionHeroImages.comunidad}
                   />

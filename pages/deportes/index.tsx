@@ -1949,31 +1949,31 @@ export default function DeportesPage({
                 <div className="flex items-start gap-5 pr-12">
                   <ExploreCard
                     title="Tuning"
-                    subtitle="Builds, mods, aero, stance y cultura visual."
+                    subtitle="El lado más visual, radical y obsesivo de la cultura automotriz"
                     href="/tuning"
                     image={safeSectionHeroImages.tuning}
                   />
                   <ExploreCard
                     title="Autos"
-                    subtitle="Nuevos lanzamientos, pruebas y contexto editorial."
+                    subtitle="Diseño, ingeniería y cultura automotriz"
                     href="/noticias/autos"
                     image={safeSectionHeroImages.autos}
                   />
                   <ExploreCard
                     title="Motos"
-                    subtitle="Pruebas, rutas y piezas con ADN de dos ruedas."
+                    subtitle="Pruebas, rutas y cultura sobre dos ruedas"
                     href="/noticias/motos"
                     image={safeSectionHeroImages.motos}
                   />
                   <ExploreCard
                     title="Lifestyle"
-                    subtitle="La capa aspiracional y estética del universo MotorWelt."
+                    subtitle="Moda, relojería y cultura fuera del volante"
                     href="/lifestyle"
                     image={safeSectionHeroImages.lifestyle}
                   />
                   <ExploreCard
                     title="Comunidad"
-                    subtitle="Eventos, meets, rutas y cultura desde la calle."
+                    subtitle="Eventos, meets y la gente detrás del mundo motor"
                     href="/comunidad"
                     image={safeSectionHeroImages.comunidad}
                   />
