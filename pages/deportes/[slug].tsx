@@ -1785,37 +1785,37 @@ export default function DeportesDetailPage({
                   <div className="flex snap-x snap-mandatory items-start gap-4 md:gap-5 md:pr-12">
                     <ExploreCard
                       title="Tuning"
-                      subtitle="Builds, mods, aero, stance y cultura visual."
+                      subtitle="El lado más visual, radical y obsesivo de la cultura automotriz"
                       href="/tuning"
                       image={sectionHeroImages.tuning}
                     />
                     <ExploreCard
                       title="Autos"
-                      subtitle="Nuevos lanzamientos, pruebas y contexto editorial."
+                      subtitle="Diseño, ingeniería y cultura automotriz"
                       href="/noticias/autos"
                       image={sectionHeroImages.autos}
                     />
                     <ExploreCard
                       title="Motos"
-                      subtitle="Pruebas, rutas y piezas con ADN de dos ruedas."
+                      subtitle="Pruebas, rutas y cultura sobre dos ruedas"
                       href="/noticias/motos"
                       image={sectionHeroImages.motos}
                     />
                     <ExploreCard
                       title="Deportes"
-                      subtitle="Competencia, paddock y piezas con peso visual real."
+                      subtitle="Competencia, contexto y cultura del deporte motor"
                       href="/deportes"
                       image={sectionHeroImages.deportes}
                     />
                     <ExploreCard
                       title="Lifestyle"
-                      subtitle="La capa aspiracional y estética del universo MotorWelt."
+                      subtitle="Moda, relojería y cultura fuera del volante"
                       href="/lifestyle"
                       image={sectionHeroImages.lifestyle}
                     />
                     <ExploreCard
                       title="Comunidad"
-                      subtitle="Eventos, meets, rutas y cultura desde la calle."
+                      subtitle="Eventos, meets y la gente detrás del mundo motor"
                       href="/comunidad"
                       image={sectionHeroImages.comunidad}
                     />
