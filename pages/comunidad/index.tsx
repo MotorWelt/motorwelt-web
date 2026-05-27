@@ -612,13 +612,13 @@ function CommunityCard({
     >
       <Link href={item.href} className="group flex h-full flex-col">
         <div
-          className={`relative overflow-hidden ${mobileSize ? "h-[118px]" : "h-52"}`}
+          className={`relative overflow-hidden ${mobileSize ? "h-[130px] md:h-[112px]" : "h-52"}`}
         >
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes={mobileSize ? "290px" : "(max-width: 1024px) 50vw, 33vw"}
+            sizes={mobileSize ? "(max-width: 768px) 262px, 288px" : "(max-width: 1024px) 50vw, 33vw"}
             style={{ objectFit: "cover" }}
             className="transition duration-700 group-hover:scale-[1.06]"
           />
@@ -630,7 +630,7 @@ function CommunityCard({
 
         <div
           className={
-            mobileSize ? "flex flex-1 flex-col p-4" : "flex flex-1 flex-col p-5"
+            mobileSize ? "flex flex-1 flex-col p-4 md:p-3.5" : "flex flex-1 flex-col p-5"
           }
         >
           <div
@@ -655,7 +655,7 @@ function CommunityCard({
           <h4
             className={
               mobileSize
-                ? "mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]"
+                ? "mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2] md:text-[15px]"
                 : "mt-2 line-clamp-2 text-xl font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]"
             }
           >
@@ -664,18 +664,18 @@ function CommunityCard({
           <p
             className={
               mobileSize
-                ? "mt-2 line-clamp-2 text-[12px] leading-relaxed text-gray-300"
+                ? "hidden md:mt-1 md:line-clamp-1 md:block md:text-[11px] md:leading-tight md:text-gray-300"
                 : "mt-3 line-clamp-3 text-sm leading-relaxed text-gray-300"
             }
           >
             {item.excerpt}
           </p>
 
-          <div className={mobileSize ? "mt-auto pt-3" : "mt-auto pt-5"}>
+          <div className={mobileSize ? "mt-auto pt-2" : "mt-auto pt-5"}>
             <span
               className={
                 mobileSize
-                  ? "inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/85 transition group-hover:border-[#0CE0B2]/35 group-hover:text-[#0CE0B2]"
+                  ? "inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/85 transition group-hover:border-[#0CE0B2]/35 group-hover:text-[#0CE0B2]"
                   : "inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/85 transition group-hover:border-[#0CE0B2]/35 group-hover:text-[#0CE0B2]"
               }
             >
@@ -717,11 +717,15 @@ function CuratedCommunityRail({
 
         {items.length > 0 ? (
           <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
-            <div className="flex snap-x snap-mandatory gap-4 md:gap-5">
+            <div
+              className={`grid auto-cols-max grid-flow-col gap-4 md:gap-5 ${
+                items.length > 1 ? "grid-rows-2" : "grid-rows-1"
+              }`}
+            >
               {items.map((item) => (
                 <div
                   key={`${title}-${item.id}`}
-                  className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start md:h-[350px] md:w-[360px] md:min-w-[360px]"
+                  className="h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start md:h-[280px] md:w-[288px] md:min-w-[288px]"
                 >
                   <CommunityCard item={item} mobileSize />
                 </div>
@@ -752,12 +756,12 @@ function GalleryTile({
   return (
     <article className="group relative h-full overflow-hidden rounded-[28px] border border-white/[0.08] bg-mw-surface/80 transition hover:-translate-y-[4px] hover:border-white/14 hover:shadow-[0_0_34px_rgba(255,122,26,.13)]">
       <button type="button" onClick={onOpen} className="block h-full w-full text-left">
-        <div className="relative h-[132px] w-full overflow-hidden md:h-[190px]">
+        <div className="relative h-[130px] w-full overflow-hidden md:h-[112px]">
           <Image
             src={gallery.coverImageUrl || gallery.galleryUrls?.[0] || "/images/comunidad.jpg"}
             alt={gallery.title}
             fill
-            sizes="(max-width: 768px) 290px, 360px"
+            sizes="(max-width: 768px) 262px, 288px"
             style={{ objectFit: "cover" }}
             className="transition duration-700 group-hover:scale-[1.06]"
           />
@@ -768,22 +772,22 @@ function GalleryTile({
           </span>
         </div>
 
-        <div className="flex flex-1 flex-col p-4 md:p-5">
+        <div className="flex flex-1 flex-col p-4 md:p-3.5">
           {gallery.when ? (
             <p className="text-[10px] uppercase tracking-[0.18em] text-[#FF7A1A]">
               {gallery.when}
             </p>
           ) : null}
-          <h4 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#FF7A1A] md:text-xl">
+          <h4 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#FF7A1A] md:text-[15px]">
             {gallery.title}
           </h4>
           {gallery.subtitle ? (
-            <p className="mt-2 line-clamp-2 text-[12px] leading-relaxed text-gray-300 md:text-sm">
+            <p className="hidden md:mt-1 md:line-clamp-1 md:block md:text-[11px] md:leading-tight md:text-gray-300">
               {gallery.subtitle}
             </p>
           ) : null}
-          <div className="mt-auto pt-4">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/85 transition group-hover:border-[#FF7A1A]/35 group-hover:text-[#FF7A1A] md:px-4 md:text-xs">
+          <div className="mt-auto pt-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/85 transition group-hover:border-[#FF7A1A]/35 group-hover:text-[#FF7A1A]">
               Ver galería
               <span aria-hidden>→</span>
             </span>
@@ -2826,11 +2830,15 @@ export default function ComunidadPage({
 
               {galleryItems.length > 0 ? (
                 <div className="-mx-4 overflow-x-auto px-4 pb-3 no-scrollbar sm:-mx-6 sm:px-6 xl:-mx-10 xl:px-10">
-                  <div className="flex snap-x snap-mandatory gap-4 md:gap-5">
+                  <div
+                    className={`grid auto-cols-max grid-flow-col gap-4 md:gap-5 ${
+                      galleryItems.length > 1 ? "grid-rows-2" : "grid-rows-1"
+                    }`}
+                  >
                     {galleryItems.map((gallery) => (
                       <div
                         key={`galeria-${gallery.id}`}
-                        className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start md:h-[350px] md:w-[360px] md:min-w-[360px]"
+                        className="h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start md:h-[280px] md:w-[288px] md:min-w-[288px]"
                       >
                         <GalleryTile
                           gallery={gallery}

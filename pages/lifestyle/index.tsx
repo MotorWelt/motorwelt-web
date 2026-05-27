@@ -1548,7 +1548,7 @@ export default function LifestylePage({
               <SectionHeader
                 eyebrow="Todo Lifestyle"
                 title="Moda, Relojería, Fuera del volante y Cine automovilístico"
-                description="Una curaduría pensada para hablar de estilo, objetos y cultura sin perder el hilo del mundo motor."
+                description="El universo MotorWelt fuera de la pista."
                 accent="lime"
               />
 
