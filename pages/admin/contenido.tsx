@@ -2663,8 +2663,8 @@ const AdminContentEditorPage: React.FC = () => {
                 </div>
               </section>
 
-              <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
+              <aside className="space-y-6 lg:self-start">
+                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4 lg:min-h-[720px]">
                   <h2 className="text-lg font-semibold text-white">Medios</h2>
 
                   <div className="space-y-3">
