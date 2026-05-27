@@ -2537,6 +2537,130 @@ const AdminContentEditorPage: React.FC = () => {
                     para que en el futuro podamos parsear esto a bloques.
                   </p>
                 </div>
+                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold text-white">SEO</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-[11px] px-3 py-1.5"
+                        onClick={handleAiSeoOptimize}
+                        disabled={aiLoading === "seo"}
+                      >
+                        {aiLoading === "seo"
+                          ? "Analizando SEO…"
+                          : "Optimizar con IA"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="seo-title"
+                        className="text-xs text-gray-300"
+                      >
+                        Título SEO (opcional)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          id="seo-title"
+                          value={seoTitle}
+                          onChange={(e) => setSeoTitle(e.target.value)}
+                          placeholder="Si lo dejas vacío, usaremos el título principal."
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-[11px] px-3 py-1.5 shrink-0"
+                          onClick={handleAiSuggestSeoTitleOnly}
+                          disabled={aiLoading === "title"}
+                        >
+                          {aiLoading === "title" ? "IA…" : "Sugerir"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="seo-description"
+                        className="text-xs text-gray-300"
+                      >
+                        Meta descripción
+                      </label>
+                      <div className="flex gap-2">
+                        <textarea
+                          id="seo-description"
+                          value={seoDescription}
+                          onChange={(e) => setSeoDescription(e.target.value)}
+                          placeholder="Descripción corta (140–160 caracteres) para buscadores y redes."
+                          rows={3}
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-[11px] px-3 py-1.5 h-fit shrink-0"
+                          onClick={handleAiSuggestSeoMetaOnly}
+                          disabled={aiLoading === "meta"}
+                        >
+                          {aiLoading === "meta" ? "IA…" : "Sugerir"}
+                        </Button>
+                      </div>
+                      <p className="mt-1 text-[10px] text-gray-500">
+                        Tip: incluye palabras clave (marca, modelo, evento) pero
+                        sin sonar forzado.
+                      </p>
+                    </div>
+                  </div>
+
+                  {aiSeoInsights && (
+                    <div className="mt-4 rounded-2xl border border-white/15 bg-black/40 p-3 text-[11px] text-gray-200 space-y-2">
+                      <p className="font-semibold text-white text-xs">
+                        Insights SEO (IA)
+                      </p>
+                      {aiSeoInsights.primaryKeyword && (
+                        <p>
+                          <span className="text-gray-400">
+                            Palabra clave principal:{" "}
+                          </span>
+                          <span className="font-semibold text-[#0CE0B2]">
+                            {aiSeoInsights.primaryKeyword}
+                          </span>
+                        </p>
+                      )}
+                      {aiSeoInsights.secondaryKeywords &&
+                        aiSeoInsights.secondaryKeywords.length > 0 && (
+                          <p>
+                            <span className="text-gray-400">Secundarias: </span>
+                            {aiSeoInsights.secondaryKeywords.join(", ")}
+                          </p>
+                        )}
+                      {typeof aiSeoInsights.score === "number" && (
+                        <p>
+                          <span className="text-gray-400">
+                            Puntuación general:{" "}
+                          </span>
+                          <span className="font-semibold">
+                            {aiSeoInsights.score}/100
+                          </span>
+                        </p>
+                      )}
+                      {aiSeoInsights.suggestions &&
+                        aiSeoInsights.suggestions.length > 0 && (
+                          <ul className="list-disc pl-4 space-y-1 mt-1">
+                            {aiSeoInsights.suggestions.map((s, i) => (
+                              <li key={i} className="text-gray-300">
+                                {s}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                    </div>
+                  )}
+                </div>
               </section>
 
               <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
@@ -2783,134 +2907,6 @@ const AdminContentEditorPage: React.FC = () => {
               </aside>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <section className="space-y-6">
-                <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-white">SEO</h2>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-[11px] px-3 py-1.5"
-                        onClick={handleAiSeoOptimize}
-                        disabled={aiLoading === "seo"}
-                      >
-                        {aiLoading === "seo"
-                          ? "Analizando SEO…"
-                          : "Optimizar con IA"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="seo-title"
-                        className="text-xs text-gray-300"
-                      >
-                        Título SEO (opcional)
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          id="seo-title"
-                          value={seoTitle}
-                          onChange={(e) => setSeoTitle(e.target.value)}
-                          placeholder="Si lo dejas vacío, usaremos el título principal."
-                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="text-[11px] px-3 py-1.5 shrink-0"
-                          onClick={handleAiSuggestSeoTitleOnly}
-                          disabled={aiLoading === "title"}
-                        >
-                          {aiLoading === "title" ? "IA…" : "Sugerir"}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="seo-description"
-                        className="text-xs text-gray-300"
-                      >
-                        Meta descripción
-                      </label>
-                      <div className="flex gap-2">
-                        <textarea
-                          id="seo-description"
-                          value={seoDescription}
-                          onChange={(e) => setSeoDescription(e.target.value)}
-                          placeholder="Descripción corta (140–160 caracteres) para buscadores y redes."
-                          rows={3}
-                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="text-[11px] px-3 py-1.5 h-fit shrink-0"
-                          onClick={handleAiSuggestSeoMetaOnly}
-                          disabled={aiLoading === "meta"}
-                        >
-                          {aiLoading === "meta" ? "IA…" : "Sugerir"}
-                        </Button>
-                      </div>
-                      <p className="mt-1 text-[10px] text-gray-500">
-                        Tip: incluye palabras clave (marca, modelo, evento) pero
-                        sin sonar forzado.
-                      </p>
-                    </div>
-                  </div>
-
-                  {aiSeoInsights && (
-                    <div className="mt-4 rounded-2xl border border-white/15 bg-black/40 p-3 text-[11px] text-gray-200 space-y-2">
-                      <p className="font-semibold text-white text-xs">
-                        Insights SEO (IA)
-                      </p>
-                      {aiSeoInsights.primaryKeyword && (
-                        <p>
-                          <span className="text-gray-400">
-                            Palabra clave principal:{" "}
-                          </span>
-                          <span className="font-semibold text-[#0CE0B2]">
-                            {aiSeoInsights.primaryKeyword}
-                          </span>
-                        </p>
-                      )}
-                      {aiSeoInsights.secondaryKeywords &&
-                        aiSeoInsights.secondaryKeywords.length > 0 && (
-                          <p>
-                            <span className="text-gray-400">Secundarias: </span>
-                            {aiSeoInsights.secondaryKeywords.join(", ")}
-                          </p>
-                        )}
-                      {typeof aiSeoInsights.score === "number" && (
-                        <p>
-                          <span className="text-gray-400">
-                            Puntuación general:{" "}
-                          </span>
-                          <span className="font-semibold">
-                            {aiSeoInsights.score}/100
-                          </span>
-                        </p>
-                      )}
-                      {aiSeoInsights.suggestions &&
-                        aiSeoInsights.suggestions.length > 0 && (
-                          <ul className="list-disc pl-4 space-y-1 mt-1">
-                            {aiSeoInsights.suggestions.map((s, i) => (
-                              <li key={i} className="text-gray-300">
-                                {s}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                    </div>
-                  )}
-                </div>
-              </section>
-
               <section className="space-y-6">
                 <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
                   <div className="flex flex-col gap-3">
@@ -3155,7 +3151,6 @@ const AdminContentEditorPage: React.FC = () => {
                   )}
                 </div>
               </section>
-            </div>
 
             <section className="space-y-6">
               <div className="rounded-3xl border border-white/10 bg-black/30 p-5 md:p-6 space-y-4">
