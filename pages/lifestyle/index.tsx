@@ -449,49 +449,85 @@ const SectionHeader: React.FC<{
   );
 };
 
-function ArticleCard({
-  item,
-  compact = false,
-}: {
-  item: ArticleCardData;
-  compact?: boolean;
-}) {
+function ArticleCard({ item }: { item: ArticleCardData }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[24px] border border-white/[0.06] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
+    <article className="h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-mw-surface/72 backdrop-blur-md transition hover:border-white/12">
       <Link href={item.href} className="flex h-full flex-col">
-        <div
-          className={`relative w-full ${
-            compact ? "h-[112px] sm:h-48" : "h-64"
-          } overflow-hidden`}
-        >
+        <div className="relative h-[130px] w-full">
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes={
-              compact
-                ? "(max-width: 1024px) 290px, 320px"
-                : "(max-width: 1024px) 100vw, 33vw"
-            }
+            sizes="262px"
             style={{ objectFit: "cover" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white backdrop-blur">
-            <span className="h-2 w-2 rounded-full bg-[#FF7A1A]" />
-            {item.category}
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         </div>
 
-        <div className="flex flex-1 flex-col p-4 sm:p-5">
-          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#FFB36B] sm:text-xl">
+        <div className="flex flex-1 flex-col p-4">
+          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.category} · noticia
+          </div>
+
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white">
             {item.title}
           </h3>
-          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-300 sm:line-clamp-3">
-            {item.excerpt}
-          </p>
 
-          <div className="mt-auto flex flex-wrap items-center gap-2 pt-3 text-xs text-gray-400">
+          <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
+            {item.authorName ? <span>Por {item.authorName}</span> : null}
+            {item.authorName && item.when ? (
+              <span className="text-gray-600">•</span>
+            ) : null}
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
+        </div>
+      </Link>
+    </article>
+  );
+}
+
+function LifestyleTuningCompactCard({
+  item,
+  priority = false,
+  variant = "feature",
+}: {
+  item: ArticleCardData;
+  priority?: boolean;
+  variant?: "feature" | "side";
+}) {
+  const imageHeight = variant === "side" ? "h-[138px]" : "h-[152px]";
+  const imageSizes =
+    variant === "side"
+      ? "(max-width: 1024px) 100vw, 18vw"
+      : "(max-width: 1024px) 100vw, 38vw";
+
+  return (
+    <article className="h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-mw-surface/72 backdrop-blur-md transition hover:border-white/12 hover:shadow-[0_0_22px_rgba(255,122,26,.12)]">
+      <Link href={item.href} className="flex h-full flex-col">
+        <div className={`relative ${imageHeight} w-full`}>
+          <Image
+            src={item.img}
+            alt={item.title}
+            fill
+            sizes={imageSizes}
+            style={{ objectFit: "cover" }}
+            priority={priority}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        </div>
+
+        <div className="flex flex-1 flex-col p-3.5">
+          <div className="mb-2 inline-flex items-center gap-2 text-[10px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.category} · noticia
+          </div>
+
+          <h3 className="line-clamp-2 text-[15px] font-semibold leading-tight text-white">
+            {item.title}
+          </h3>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
             {item.authorName ? <span>Por {item.authorName}</span> : null}
             {item.authorName && item.when ? (
               <span className="text-gray-600">•</span>
@@ -499,13 +535,8 @@ function ArticleCard({
             {item.when ? <span>{item.when}</span> : null}
           </div>
 
-          <div className="hidden pt-4 md:block">
-            <span
-              className={getButtonClasses(
-                "pink",
-                "h-10 rounded-xl px-4 py-0 text-sm leading-none",
-              )}
-            >
+          <div className="mt-auto pt-3">
+            <span className={getButtonClasses("pink", "px-3.5 py-1.5 text-xs")}>
               Leer más
             </span>
           </div>
@@ -517,72 +548,35 @@ function ArticleCard({
 
 function LatestArticleCard({ item }: { item: LatestArticleData }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[22px] border border-white/[0.08] bg-mw-surface/80 backdrop-blur-md transition hover:border-white/12">
+    <article className="h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-mw-surface/72 backdrop-blur-md transition hover:border-white/12">
       <Link href={item.href} className="flex h-full flex-col">
-        <div className="relative h-36 w-full overflow-hidden">
+        <div className="relative h-[130px] w-full">
           <Image
             src={item.img}
             alt={item.title}
             fill
-            sizes="(max-width: 1024px) 78vw, 280px"
+            sizes="262px"
             style={{ objectFit: "cover" }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/18 to-transparent" />
-
-          <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-black/35 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white backdrop-blur">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#0CE0B2]" />
-            {item.sectionLabel}
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         </div>
 
         <div className="flex flex-1 flex-col p-4">
-          <div className="text-[11px] text-gray-400">{item.when}</div>
-          <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-tight text-white transition group-hover:text-[#0CE0B2]">
+          <div className="mb-2 inline-flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-400">
+            <span className="h-2 w-2 rounded-full bg-[#0CE0B2]" />
+            {item.sectionLabel} · noticia
+          </div>
+
+          <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white">
             {item.title}
           </h3>
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-300">
-            {item.excerpt}
-          </p>
+
+          <div className="mt-3 flex items-center gap-2 whitespace-nowrap text-[11px] text-gray-400">
+            {item.when ? <span>{item.when}</span> : null}
+          </div>
         </div>
       </Link>
     </article>
-  );
-}
-
-function CompactSideItem({ item }: { item: ArticleCardData }) {
-  return (
-    <Link
-      href={item.href}
-      className="group grid grid-cols-[112px_1fr] gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 transition hover:border-white/12 hover:bg-white/[0.055]"
-    >
-      <div className="relative h-24 overflow-hidden rounded-xl">
-        <Image
-          src={item.img}
-          alt={item.title}
-          fill
-          sizes="140px"
-          style={{ objectFit: "cover" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-[#FFB36B]">
-          {item.category}
-        </p>
-        <h4 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-white transition group-hover:text-[#FFB36B]">
-          {item.title}
-        </h4>
-        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-gray-400">
-          {item.excerpt}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
-          {item.authorName ? <span>Por {item.authorName}</span> : null}
-          {item.authorName && item.when ? <span>•</span> : null}
-          {item.when ? <span>{item.when}</span> : null}
-        </div>
-      </div>
-    </Link>
   );
 }
 
@@ -609,87 +603,31 @@ function LifestyleCategoryLayout({
 }) {
   if (!items.length) return <EmptyCategoryCard title={category} />;
 
-  if (category === "Fuera del volante") {
-    return (
-      <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:-mx-6 sm:px-6">
-        <div className="flex snap-x snap-mandatory gap-4">
-          {items.slice(0, 8).map((item) => (
-            <div
-              key={item.id}
-              className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
-            >
-              <ArticleCard item={item} compact />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (category === "Relojería") {
-    const mainItem = items[0];
-    const sideItems = items.slice(1, 7);
-
-    return (
-      <>
-        <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,.72fr)]">
-          <ArticleCard item={mainItem} />
-
-          <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/[0.08] bg-mw-surface/45 p-3 no-scrollbar">
-            <div className="space-y-3">
-              {sideItems.length > 0 ? (
-                sideItems.map((item) => (
-                  <CompactSideItem key={item.id} item={item} />
-                ))
-              ) : (
-                <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-gray-400">
-                  Por ahora solo hay una nota en esta categoría.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="-mx-4 overflow-x-auto px-4 pb-2 no-scrollbar lg:hidden">
-          <div className="flex snap-x snap-mandatory gap-4">
-            {items.slice(0, 8).map((item) => (
-              <div
-                key={item.id}
-                className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
-              >
-                <ArticleCard item={item} compact />
-              </div>
-            ))}
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  const mainItems = items.slice(0, 2);
-  const sideItems = items.slice(2, 8);
+  const leftItems = items.slice(0, 2);
+  const rightItems = items.slice(2, 5);
 
   return (
     <>
-      <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,.78fr)]">
-        <div className="grid gap-6 md:grid-cols-2">
-          {mainItems.map((item) => (
-            <ArticleCard key={item.id} item={item} compact />
+      <div className="hidden grid items-start gap-4 lg:grid lg:grid-cols-[0.86fr_1.14fr]">
+        <div className="grid gap-4">
+          {leftItems.map((item, index) => (
+            <LifestyleTuningCompactCard
+              key={item.id}
+              item={item}
+              priority={index === 0}
+              variant="feature"
+            />
           ))}
         </div>
 
-        <div className="max-h-[560px] overflow-y-auto rounded-[24px] border border-white/[0.08] bg-mw-surface/45 p-3 no-scrollbar">
-          <div className="space-y-3">
-            {sideItems.length > 0 ? (
-              sideItems.map((item) => (
-                <CompactSideItem key={item.id} item={item} />
-              ))
-            ) : (
-              <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-white/[0.08] p-6 text-center text-sm text-gray-400">
-                Por ahora solo hay pocas notas en esta categoría.
-              </div>
-            )}
-          </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          {rightItems.map((item) => (
+            <LifestyleTuningCompactCard
+              key={item.id}
+              item={item}
+              variant="side"
+            />
+          ))}
         </div>
       </div>
 
@@ -698,9 +636,9 @@ function LifestyleCategoryLayout({
           {items.slice(0, 8).map((item) => (
             <div
               key={item.id}
-              className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-auto sm:w-[340px] sm:min-w-[340px]"
+              className="h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
             >
-              <ArticleCard item={item} compact />
+              <ArticleCard item={item} />
             </div>
           ))}
         </div>
@@ -1684,7 +1622,7 @@ export default function LifestylePage({
                     {latestItems.map((item) => (
                       <div
                         key={item.id}
-                        className="h-[270px] w-[290px] min-w-[290px] shrink-0 snap-start sm:h-[285px] sm:w-[300px] sm:min-w-[300px] lg:h-[285px] lg:w-[280px] lg:min-w-[280px]"
+                        className="h-[253px] w-[262px] min-w-[262px] shrink-0 snap-start"
                       >
                         <LatestArticleCard item={item} />
                       </div>
