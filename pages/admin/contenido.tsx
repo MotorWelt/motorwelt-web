@@ -897,6 +897,39 @@ const AdminContentEditorPage: React.FC = () => {
     insertAtCursor(`${prefix}${hashes} `);
   };
 
+  const applyInlineFormat = (
+    beforeMark: string,
+    afterMark: string,
+    placeholder = "texto",
+  ) => {
+    const el = bodyRef.current;
+    const currentBody = bodyValueRef.current;
+
+    if (!el) {
+      insertAtCursor(`${beforeMark}${placeholder}${afterMark}`);
+      return;
+    }
+
+    const start = el.selectionStart ?? currentBody.length;
+    const end = el.selectionEnd ?? currentBody.length;
+    const selected = currentBody.slice(start, end) || placeholder;
+
+    const before = currentBody.slice(0, start);
+    const after = currentBody.slice(end);
+    const next = `${before}${beforeMark}${selected}${afterMark}${after}`;
+
+    setBody(next);
+
+    requestAnimationFrame(() => {
+      try {
+        el.focus();
+        const selectionStart = start + beforeMark.length;
+        const selectionEnd = selectionStart + selected.length;
+        el.setSelectionRange(selectionStart, selectionEnd);
+      } catch {}
+    });
+  };
+
   const insertMarkdownImages = (urls: string[]) => {
     if (!urls || urls.length === 0) return;
     const prefix = ensureLineBreakBefore();
@@ -2464,6 +2497,36 @@ const AdminContentEditorPage: React.FC = () => {
                       title="Insertar H5"
                     >
                       H5
+                    </Button>
+
+                    <span className="mx-1 h-5 w-px bg-white/10" />
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5"
+                      onClick={() => applyInlineFormat("**", "**")}
+                      title="Aplicar negritas al texto seleccionado"
+                    >
+                      B
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5 italic"
+                      onClick={() => applyInlineFormat("*", "*")}
+                      title="Aplicar cursiva al texto seleccionado"
+                    >
+                      I
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-[11px] px-3 py-1.5 underline"
+                      onClick={() => applyInlineFormat("<u>", "</u>")}
+                      title="Aplicar subrayado al texto seleccionado"
+                    >
+                      U
                     </Button>
 
                     <span className="mx-1 h-5 w-px bg-white/10" />
