@@ -2058,6 +2058,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
     return new Intl.DateTimeFormat("es-MX", {
+      timeZone: "America/Mexico_City",
       year: "numeric",
       month: "short",
       day: "2-digit",
