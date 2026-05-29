@@ -417,6 +417,55 @@ function parseBody(body: string): BodyBlock[] {
   return blocks;
 }
 
+
+function renderInlineText(text: string) {
+  const parts: React.ReactNode[] = [];
+  const pattern =
+    /(\*\*(.+?)\*\*|__(.+?)__|\*(.+?)\*|_(.+?)_|<u>(.+?)<\/u>|<ins>(.+?)<\/ins>)/gi;
+
+  let lastIndex = 0;
+
+  text.replace(
+    pattern,
+    (match, _full, bold, underline, italicA, italicB, underlineTag, insTag, offset) => {
+      if (offset > lastIndex) {
+        parts.push(text.slice(lastIndex, offset));
+      }
+
+      const key = `${offset}-${match}`;
+
+      if (bold) {
+        parts.push(
+          <strong key={key} className="font-semibold text-white">
+            {bold}
+          </strong>,
+        );
+      } else if (underline || underlineTag || insTag) {
+        parts.push(
+          <u key={key} className="underline underline-offset-4">
+            {underline || underlineTag || insTag}
+          </u>,
+        );
+      } else if (italicA || italicB) {
+        parts.push(
+          <em key={key} className="italic">
+            {italicA || italicB}
+          </em>,
+        );
+      }
+
+      lastIndex = offset + match.length;
+      return match;
+    },
+  );
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
 function InlineEmbed({ url, title }: { url: string; title?: string }) {
   const embedUrl = getEmbedUrl(url);
   const platform = detectPlatform(url);
@@ -1591,7 +1640,7 @@ export default function NewsDetailPage({
                                 key={index}
                                 className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </p>
                             );
                           }
@@ -1602,7 +1651,7 @@ export default function NewsDetailPage({
                                 key={index}
                                 className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h2>
                             );
                           }
@@ -1613,7 +1662,7 @@ export default function NewsDetailPage({
                                 key={index}
                                 className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h3>
                             );
                           }
@@ -1624,7 +1673,7 @@ export default function NewsDetailPage({
                                 key={index}
                                 className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h4>
                             );
                           }
@@ -1635,7 +1684,7 @@ export default function NewsDetailPage({
                                 key={index}
                                 className={`mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] ${theme.accentClass}`}
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h5>
                             );
                           }
@@ -1646,7 +1695,7 @@ export default function NewsDetailPage({
                                 key={index}
                                 className="my-8 rounded-[24px] border border-white/[0.06] bg-white/5 px-5 py-4 text-lg italic leading-8 text-white"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </blockquote>
                             );
                           }

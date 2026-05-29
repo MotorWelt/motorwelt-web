@@ -410,6 +410,55 @@ function parseBody(body: string): BodyBlock[] {
   return blocks;
 }
 
+function renderFormattedText(text: string): React.ReactNode {
+  if (!text) return null;
+
+  const pattern =
+    /(<strong>(.*?)<\/strong>|<b>(.*?)<\/b>|\*\*(.*?)\*\*|<em>(.*?)<\/em>|<i>(.*?)<\/i>|\*(.*?)\*|<u>(.*?)<\/u>|\+\+(.*?)\+\+)/gi;
+
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+
+    const boldText = match[2] ?? match[3] ?? match[4];
+    const italicText = match[5] ?? match[6] ?? match[7];
+    const underlineText = match[8] ?? match[9];
+
+    if (boldText !== undefined) {
+      nodes.push(
+        <strong key={`strong-${match.index}`} className="font-bold text-white">
+          {renderFormattedText(boldText)}
+        </strong>,
+      );
+    } else if (italicText !== undefined) {
+      nodes.push(
+        <em key={`em-${match.index}`} className="italic">
+          {renderFormattedText(italicText)}
+        </em>,
+      );
+    } else if (underlineText !== undefined) {
+      nodes.push(
+        <u key={`u-${match.index}`} className="underline underline-offset-4">
+          {renderFormattedText(underlineText)}
+        </u>,
+      );
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
+}
+
 function InlineEmbed({ url, title }: { url: string; title?: string }) {
   const embedUrl = getEmbedUrl(url);
   const platform = detectPlatform(url);
@@ -1484,7 +1533,7 @@ export default function TuningDetailPage({
                                 key={index}
                                 className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]"
                               >
-                                {block.text}
+                                {renderFormattedText(block.text)}
                               </p>
                             );
                           }
@@ -1495,7 +1544,7 @@ export default function TuningDetailPage({
                                 key={index}
                                 className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
                               >
-                                {block.text}
+                                {renderFormattedText(block.text)}
                               </h2>
                             );
                           }
@@ -1506,7 +1555,7 @@ export default function TuningDetailPage({
                                 key={index}
                                 className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl"
                               >
-                                {block.text}
+                                {renderFormattedText(block.text)}
                               </h3>
                             );
                           }
@@ -1517,7 +1566,7 @@ export default function TuningDetailPage({
                                 key={index}
                                 className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl"
                               >
-                                {block.text}
+                                {renderFormattedText(block.text)}
                               </h4>
                             );
                           }
@@ -1528,7 +1577,7 @@ export default function TuningDetailPage({
                                 key={index}
                                 className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]"
                               >
-                                {block.text}
+                                {renderFormattedText(block.text)}
                               </h5>
                             );
                           }
@@ -1539,7 +1588,7 @@ export default function TuningDetailPage({
                                 key={index}
                                 className="my-8 rounded-[24px] border border-white/[0.06] bg-white/5 px-5 py-4 text-lg italic leading-8 text-white"
                               >
-                                {block.text}
+                                {renderFormattedText(block.text)}
                               </blockquote>
                             );
                           }

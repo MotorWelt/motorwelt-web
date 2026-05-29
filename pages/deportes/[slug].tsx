@@ -450,6 +450,57 @@ function parseBody(body: string): BodyBlock[] {
   return blocks;
 }
 
+
+function renderInlineText(text: string) {
+  const parts: React.ReactNode[] = [];
+  const pattern = /(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const value = match[0];
+    const content = value
+      .replace(/^\*\*/, "")
+      .replace(/\*\*$/, "")
+      .replace(/^__/, "")
+      .replace(/__$/, "")
+      .replace(/^\*/, "")
+      .replace(/\*$/, "");
+
+    if (value.startsWith("**") && value.endsWith("**")) {
+      parts.push(
+        <strong key={`${match.index}-strong`} className="font-semibold text-white">
+          {content}
+        </strong>,
+      );
+    } else if (value.startsWith("__") && value.endsWith("__")) {
+      parts.push(
+        <span key={`${match.index}-underline`} className="underline underline-offset-4">
+          {content}
+        </span>,
+      );
+    } else if (value.startsWith("*") && value.endsWith("*")) {
+      parts.push(
+        <em key={`${match.index}-em`} className="italic">
+          {content}
+        </em>,
+      );
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
 function InlineEmbed({ url, title }: { url: string; title?: string }) {
   const embedUrl = getEmbedUrl(url);
   const platform = detectPlatform(url);
@@ -1495,7 +1546,7 @@ export default function DeportesDetailPage({
                                 key={index}
                                 className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </p>
                             );
                           }
@@ -1506,7 +1557,7 @@ export default function DeportesDetailPage({
                                 key={index}
                                 className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h2>
                             );
                           }
@@ -1517,7 +1568,7 @@ export default function DeportesDetailPage({
                                 key={index}
                                 className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h3>
                             );
                           }
@@ -1528,7 +1579,7 @@ export default function DeportesDetailPage({
                                 key={index}
                                 className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h4>
                             );
                           }
@@ -1539,7 +1590,7 @@ export default function DeportesDetailPage({
                                 key={index}
                                 className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </h5>
                             );
                           }
@@ -1550,7 +1601,7 @@ export default function DeportesDetailPage({
                                 key={index}
                                 className="my-8 rounded-[24px] border border-white/[0.06] bg-white/5 px-5 py-4 text-lg italic leading-8 text-white"
                               >
-                                {block.text}
+                                {renderInlineText(block.text)}
                               </blockquote>
                             );
                           }

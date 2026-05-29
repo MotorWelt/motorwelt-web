@@ -422,6 +422,39 @@ function parseBody(body: string): BodyBlock[] {
   return blocks;
 }
 
+
+function formatInlineText(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={index} className="font-semibold text-white">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+
+    if (part.startsWith("__") && part.endsWith("__")) {
+      return (
+        <span key={index} className="underline underline-offset-4">
+          {part.slice(2, -2)}
+        </span>
+      );
+    }
+
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return (
+        <em key={index} className="italic">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+
+    return part;
+  });
+}
+
 function InlineEmbed({ url, title }: { url: string; title?: string }) {
   const embedUrl = getEmbedUrl(url);
   const platform = detectPlatform(url);
@@ -1480,7 +1513,7 @@ export default function ComunidadDetailPage({
                                 key={index}
                                 className="mb-5 text-base leading-8 text-gray-200 sm:text-[1.05rem] xl:text-[1.1rem]"
                               >
-                                {block.text}
+                                {formatInlineText(block.text)}
                               </p>
                             );
                           }
@@ -1491,7 +1524,7 @@ export default function ComunidadDetailPage({
                                 key={index}
                                 className="mb-4 mt-10 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl"
                               >
-                                {block.text}
+                                {formatInlineText(block.text)}
                               </h2>
                             );
                           }
@@ -1502,7 +1535,7 @@ export default function ComunidadDetailPage({
                                 key={index}
                                 className="mb-3 mt-8 text-2xl font-semibold text-white sm:text-3xl"
                               >
-                                {block.text}
+                                {formatInlineText(block.text)}
                               </h3>
                             );
                           }
@@ -1513,7 +1546,7 @@ export default function ComunidadDetailPage({
                                 key={index}
                                 className="mb-3 mt-7 text-xl font-semibold text-white sm:text-2xl"
                               >
-                                {block.text}
+                                {formatInlineText(block.text)}
                               </h4>
                             );
                           }
@@ -1524,7 +1557,7 @@ export default function ComunidadDetailPage({
                                 key={index}
                                 className="mb-2 mt-6 text-lg font-semibold uppercase tracking-[0.16em] text-[#0CE0B2]"
                               >
-                                {block.text}
+                                {formatInlineText(block.text)}
                               </h5>
                             );
                           }
@@ -1535,7 +1568,7 @@ export default function ComunidadDetailPage({
                                 key={index}
                                 className="my-8 rounded-[24px] border border-white/[0.06] bg-white/5 px-5 py-4 text-lg italic leading-8 text-white"
                               >
-                                {block.text}
+                                {formatInlineText(block.text)}
                               </blockquote>
                             );
                           }
