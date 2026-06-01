@@ -1206,7 +1206,7 @@ export default function HomePage({
             <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-[#0CE0B2] via-[#E2A24C] to-[#FF7A1A] sm:w-28" />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.08fr_1.12fr]">
+          <div className="grid items-stretch gap-6 lg:grid-cols-[1.08fr_1.12fr]">
             <div className="grid gap-4 sm:grid-cols-2">
               {leftItems.map((item, index) => (
                 <Card
@@ -1249,12 +1249,12 @@ export default function HomePage({
               ))}
             </div>
 
-            <aside className="lg:sticky lg:top-24">
-              <div className="rounded-2xl border border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
-                <div className="border-b border-white/[0.08] p-4">
+            <aside className="flex h-full flex-col lg:sticky lg:top-24">
+              <div className="flex h-full flex-col rounded-2xl border border-white/[0.08] bg-mw-surface/70 backdrop-blur-md">
+                <div className="shrink-0 border-b border-white/[0.08] p-4">
                   <h4 className="font-semibold text-white">Más para leer</h4>
                 </div>
-                <ul className="max-h-[520px] divide-y divide-white/[0.08] overflow-y-auto no-scrollbar">
+                <ul className="flex-1 divide-y divide-white/[0.08] overflow-y-auto no-scrollbar">
                   {rightItems.map((item) => (
                     <li
                       key={item.id}
