@@ -2851,8 +2851,30 @@ const AdminContentEditorPage: React.FC = () => {
                         onChange={(e) => setGallery(e.target.value)}
                         placeholder={`/images/noticia-1.jpg\n/images/noticia-2.jpg\nhttps://cdn.motorwelt.com/fotos/xyz.jpg`}
                         rows={4}
-                        className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        className="hidden"
                       />
+
+                      {normalizeGalleryUrls(gallery).length > 0 ? (
+                        <div className="grid grid-cols-4 gap-2 rounded-2xl border border-white/20 bg-black/40 p-2">
+                          {normalizeGalleryUrls(gallery).map((url, index) => (
+                            <div
+                              key={`${url}-${index}`}
+                              className="overflow-hidden rounded-xl border border-white/10 bg-black/50"
+                              title={url}
+                            >
+                              <img
+                                src={url}
+                                alt={`Galería ${index + 1}`}
+                                className="h-20 w-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border border-white/20 bg-black/40 px-3 py-4 text-[11px] text-gray-500">
+                          Todavía no hay imágenes en la galería.
+                        </div>
+                      )}
 
                       {galleryUploadError && (
                         <p className="text-[11px] text-red-300">
