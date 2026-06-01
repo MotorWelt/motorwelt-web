@@ -91,6 +91,7 @@ type TuningItem = {
   category: string;
   subcategory: string;
   noteSection: string;
+  tuningSection: string;
   categories: string[];
   tags: string[];
 };
@@ -520,12 +521,40 @@ function getTuningMetaBlob(item: TuningItem) {
     item.category,
     item.subcategory,
     item.noteSection,
+    item.tuningSection,
     item.typeLabel,
     ...(item.categories || []),
     ...(item.tags || []),
   ]
     .map((value) => normalizeText(value))
     .join(" ");
+}
+
+function getTuningSectionValue(item: TuningItem) {
+  const values = [
+    item.subcategory,
+    item.noteSection,
+    item.tuningSection,
+    item.category,
+    ...(item.categories || []),
+  ].map(normalizeText);
+
+  if (values.includes("tuning_noticias") || values.includes("noticias")) {
+    return "noticias";
+  }
+
+  if (values.includes("tuning_stance") || values.includes("stance")) {
+    return "stance";
+  }
+
+  if (
+    values.includes("tuning_performance") ||
+    values.includes("performance")
+  ) {
+    return "performance";
+  }
+
+  return "";
 }
 
 function hasAnyMetaKeyword(item: TuningItem, keywords: string[]) {
@@ -1390,7 +1419,13 @@ export default function TuningPage({
     [tuningSettings.videoEntries],
   );
 
-  const mainTuningItems = useMemo(() => tuningItems.slice(0, 5), [tuningItems]);
+  const mainTuningItems = useMemo(
+    () =>
+      tuningItems
+        .filter((item) => getTuningSectionValue(item) === "noticias")
+        .slice(0, 5),
+    [tuningItems],
+  );
 
   const tuningDesktopColumns = useMemo(
     () => splitFiveItemLayout(mainTuningItems),
@@ -1398,36 +1433,19 @@ export default function TuningPage({
   );
 
 
-  const exteriorTuningItems = useMemo(() => {
-    const keywords = [
-      "aero",
-      "stance",
-      "exterior",
-      "bodykit",
-      "body kit",
-      "widebody",
-      "fitment",
-    ];
+  const exteriorTuningItems = useMemo(
+    () =>
+      tuningItems.filter((item) => getTuningSectionValue(item) === "stance"),
+    [tuningItems],
+  );
 
-    return tuningItems.filter((item) => hasAnyMetaKeyword(item, keywords));
-  }, [tuningItems]);
-
-  const performanceTuningItems = useMemo(() => {
-    const keywords = [
-      "performance",
-      "performance lab",
-      "motor",
-      "engine",
-      "turbo",
-      "suspensión",
-      "suspension",
-      "frenos",
-      "brakes",
-      "potencia",
-    ];
-
-    return tuningItems.filter((item) => hasAnyMetaKeyword(item, keywords));
-  }, [tuningItems]);
+  const performanceTuningItems = useMemo(
+    () =>
+      tuningItems.filter(
+        (item) => getTuningSectionValue(item) === "performance",
+      ),
+    [tuningItems],
+  );
 
   const activePhotoGalleryUrls = useMemo(() => {
     if (!activeMedia || activeMedia.kind !== "photo") return [];
@@ -3560,6 +3578,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
       "category": coalesce(category, ""),
       "subcategory": coalesce(subcategory, ""),
       "noteSection": coalesce(noteSection, seccionNota, sectionNote, ""),
+      "tuningSection": coalesce(tuningSection, ""),
       "categories": coalesce(categories, []),
       "tags": coalesce(tags, [])
     }
@@ -3674,6 +3693,7 @@ export async function getServerSideProps({ locale }: { locale: string }) {
     category: String(it?.category || ""),
     subcategory: String(it?.subcategory || ""),
     noteSection: String(it?.noteSection || ""),
+    tuningSection: String(it?.tuningSection || ""),
     categories: Array.isArray(it?.categories)
       ? it.categories.filter(Boolean).map((value: unknown) => String(value))
       : [],

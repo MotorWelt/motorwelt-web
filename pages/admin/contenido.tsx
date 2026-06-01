@@ -116,11 +116,8 @@ type NoteSubcategory =
   | "comunidad_rutas"
   | "comunidad_garage"
   | "tuning_noticias"
-  | "tuning_builds"
-  | "tuning_mods"
   | "tuning_stance"
-  | "tuning_performance"
-  | "tuning_cultura";
+  | "tuning_performance";
 
 type SubcategoryOption = {
   value: NoteSubcategory;
@@ -265,7 +262,11 @@ const SECTION_NOTE_SUBCATEGORIES: Record<SectionSlug, SubcategoryOption[]> = {
       helper: "Coberturas visuales y galerías de comunidad.",
     },
   ],
-  tuning: [{ value: "tuning_noticias", label: "Noticias" }],
+  tuning: [
+    { value: "tuning_noticias", label: "Noticias" },
+    { value: "tuning_stance", label: "Aero & Stance" },
+    { value: "tuning_performance", label: "Performance Lab" },
+  ],
 };
 
 const LEGACY_SUBCATEGORY_LABELS: Record<string, string> = {
@@ -289,11 +290,8 @@ const LEGACY_SUBCATEGORY_LABELS: Record<string, string> = {
   comunidad_underground: "Underground",
   comunidad_galerias: "Galerías / Highlights",
   comunidad_garage: "Garage / Proyectos",
-  tuning_builds: "Builds",
-  tuning_mods: "Mods",
-  tuning_stance: "Stance",
-  tuning_performance: "Performance",
-  tuning_cultura: "Cultura tuning",
+  tuning_stance: "Aero & Stance",
+  tuning_performance: "Performance Lab",
 };
 
 function getDefaultSubcategoryForSection(
@@ -370,6 +368,8 @@ function getCommunityAdminFilterValue(subcategory?: NoteSubcategory) {
 
 function getTuningAdminFilterValue(subcategory?: NoteSubcategory) {
   if (subcategory === "tuning_noticias") return "noticias";
+  if (subcategory === "tuning_stance") return "stance";
+  if (subcategory === "tuning_performance") return "performance";
   return "";
 }
 
