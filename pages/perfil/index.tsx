@@ -923,8 +923,6 @@ export default function PerfilPage({
                   </Button>
 
                   <p className="text-xs leading-relaxed text-gray-400">
-                    Sin pagos por ahora. Las membresías y planes se integrarán
-                    más adelante.
                   </p>
                 </div>
 
