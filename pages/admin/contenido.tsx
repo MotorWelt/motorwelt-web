@@ -674,6 +674,8 @@ type ContentDocPayload = {
   eventDate?: string | null;
   eventTime?: string;
   eventDateTime?: string | null;
+  eventEndDate?: string | null;
+  eventEndDateTime?: string | null;
   eventLocationName?: string;
   eventLocationUrl?: string;
   eventLocation?: {
@@ -746,6 +748,7 @@ const AdminContentEditorPage: React.FC = () => {
 
   // Campos especiales para Comunidad / Eventos
   const [eventDateInput, setEventDateInput] = useState("");
+  const [eventEndDateInput, setEventEndDateInput] = useState("");
   const [eventTimeInput, setEventTimeInput] = useState("");
   const [eventLocationName, setEventLocationName] = useState("");
   const [eventLocationUrl, setEventLocationUrl] = useState("");
@@ -1123,6 +1126,7 @@ const AdminContentEditorPage: React.FC = () => {
     setStatus("borrador");
     setPublishedAtInput("");
     setEventDateInput("");
+    setEventEndDateInput("");
     setEventTimeInput("");
     setEventLocationName("");
     setEventLocationUrl("");
@@ -1228,10 +1232,22 @@ const AdminContentEditorPage: React.FC = () => {
       setSubcategory(nextSubcategory);
       setContentType((doc.contentType as ContentType) || "noticia");
       setStatus((doc.status as ContentStatus) || "borrador");
-      setPublishedAtInput(isoToDatetimeLocal(doc.publishedAt || ""));
 
-      const loadedEventIso = doc.eventDateTime || doc.eventDate || null;
+      const rawPublishedAt = doc.publishedAt || "";
+      const storedEventIso = doc.eventDateTime || doc.eventDate || null;
+      const loadedEventIso =
+        storedEventIso || (nextSection === "comunidad" ? rawPublishedAt : null);
+      const publishedAtLooksLikeEventDate =
+        nextSection === "comunidad" &&
+        Boolean(rawPublishedAt) &&
+        (!storedEventIso || rawPublishedAt === storedEventIso);
+      setPublishedAtInput(
+        publishedAtLooksLikeEventDate ? "" : isoToDatetimeLocal(rawPublishedAt),
+      );
+
+      const loadedEventEndIso = doc.eventEndDateTime || doc.eventEndDate || null;
       setEventDateInput(isoToDateInput(loadedEventIso));
+      setEventEndDateInput(isoToDateInput(loadedEventEndIso));
       setEventTimeInput(doc.eventTime || isoToTimeInput(loadedEventIso));
       setEventLocationName(
         doc.eventLocationName ||
@@ -1452,12 +1468,15 @@ const AdminContentEditorPage: React.FC = () => {
         eventDateInput,
         eventTimeInput,
       );
+      const eventEndDateTimeIso = buildEventDateTimeIso(
+        eventEndDateInput,
+        eventTimeInput,
+      );
       const cleanEventLocationName = eventLocationName.trim();
       const cleanEventLocationUrl = normalizeAdminUrl(eventLocationUrl);
       const effectivePublishedAt =
-        section === "comunidad" && eventDateTimeIso
-          ? eventDateTimeIso
-          : datetimeLocalToIso(publishedAtInput);
+        datetimeLocalToIso(publishedAtInput) ||
+        (status === "publicado" ? new Date().toISOString() : undefined);
 
       const payload = {
         id: docId || undefined,
@@ -1520,6 +1539,8 @@ const AdminContentEditorPage: React.FC = () => {
         eventDate: section === "comunidad" ? eventDateTimeIso || undefined : undefined,
         eventTime: section === "comunidad" ? eventTimeInput || undefined : undefined,
         eventDateTime: section === "comunidad" ? eventDateTimeIso || undefined : undefined,
+        eventEndDate: section === "comunidad" ? eventEndDateTimeIso || undefined : undefined,
+        eventEndDateTime: section === "comunidad" ? eventEndDateTimeIso || undefined : undefined,
         eventLocationName:
           section === "comunidad" ? cleanEventLocationName || undefined : undefined,
         eventLocationUrl:
@@ -2365,6 +2386,25 @@ const AdminContentEditorPage: React.FC = () => {
                           onChange={(e) => setEventDateInput(e.target.value)}
                           className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
                         />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label
+                          htmlFor="event-end-date"
+                          className="text-xs text-gray-300"
+                        >
+                          Fecha final del evento
+                        </label>
+                        <input
+                          id="event-end-date"
+                          type="date"
+                          value={eventEndDateInput}
+                          onChange={(e) => setEventEndDateInput(e.target.value)}
+                          className="w-full rounded-2xl border border-white/20 bg-black/40 px-3 py-2.5 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0CE0B2]/40"
+                        />
+                        <p className="mt-1 text-[10px] text-gray-500">
+                          Úsala solo si el evento dura varios días.
+                        </p>
                       </div>
 
                       <div className="space-y-1">

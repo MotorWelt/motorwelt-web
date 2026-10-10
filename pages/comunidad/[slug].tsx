@@ -77,6 +77,7 @@ type ComunidadArticle = {
   useVideoAsHero: boolean;
   eventDay: string;
   eventDate: string | null;
+  eventEndDate: string | null;
   eventTime: string;
   eventLocation: string;
   eventLocationUrl: string;
@@ -245,6 +246,61 @@ function formatWeekday(iso?: string | null) {
   } catch {
     return "";
   }
+}
+
+function formatEventDateRange(startIso?: string | null, endIso?: string | null) {
+  if (!startIso) return "";
+
+  const start = new Date(startIso);
+  const end = endIso ? new Date(endIso) : null;
+
+  if (Number.isNaN(start.getTime())) return formatDate(startIso);
+
+  if (!end || Number.isNaN(end.getTime())) {
+    return `${formatWeekday(startIso)} · ${formatDate(startIso)}`;
+  }
+
+  const sameDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  if (sameDay) {
+    return `${formatWeekday(startIso)} · ${formatDate(startIso)}`;
+  }
+
+  const startDay = new Intl.DateTimeFormat("es-MX", {
+    day: "2-digit",
+  }).format(start);
+  const endDay = new Intl.DateTimeFormat("es-MX", {
+    day: "2-digit",
+  }).format(end);
+  const endMonth = new Intl.DateTimeFormat("es-MX", {
+    month: "short",
+  }).format(end);
+  const endYear = new Intl.DateTimeFormat("es-MX", {
+    year: "numeric",
+  }).format(end);
+
+  const sameMonth =
+    start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
+
+  if (sameMonth) {
+    return `${formatWeekday(startIso)} a ${formatWeekday(endIso)} · ${startDay}–${endDay} ${endMonth} ${endYear}`;
+  }
+
+  const startMonth = new Intl.DateTimeFormat("es-MX", {
+    month: "short",
+  }).format(start);
+  const startYear = new Intl.DateTimeFormat("es-MX", {
+    year: "numeric",
+  }).format(start);
+
+  if (start.getFullYear() === end.getFullYear()) {
+    return `${formatWeekday(startIso)} a ${formatWeekday(endIso)} · ${startDay} ${startMonth}–${endDay} ${endMonth} ${endYear}`;
+  }
+
+  return `${formatWeekday(startIso)} a ${formatWeekday(endIso)} · ${startDay} ${startMonth} ${startYear}–${endDay} ${endMonth} ${endYear}`;
 }
 
 function formatEventTime(value?: string | null) {
@@ -1690,7 +1746,7 @@ export default function ComunidadDetailPage({
                         </p>
                         <p className="mt-1 text-white">
                           {article.eventDate
-                            ? `${article.eventDay || formatWeekday(article.eventDate)} · ${formatDate(article.eventDate)}`
+                            ? formatEventDateRange(article.eventDate, article.eventEndDate)
                             : "Por confirmar"}
                         </p>
                       </div>
@@ -2104,14 +2160,19 @@ export const getServerSideProps: GetServerSideProps = async ({
       "seoTitle": coalesce(seoTitle, title, ""),
       "seoDescription": coalesce(seoDescription, excerpt, subtitle, ""),
       "updatedAt": updatedAt,
-      "publishedAt": coalesce(publishedAt, _createdAt),
+      "publishedAt": select(
+        defined(publishedAt) && publishedAt == coalesce(eventDateTime, eventDate, fecha, startDate) => _createdAt,
+        defined(publishedAt) => publishedAt,
+        _createdAt
+      ),
       "mainImageUrl": coalesce(mainImageUrl, coverImage.asset->url, ""),
       "galleryUrls": coalesce(galleryUrls, []),
       "videoUrl": coalesce(videoUrl, ""),
       "reelUrl": coalesce(reelUrl, ""),
       "useVideoAsHero": coalesce(useVideoAsHero, false),
       "eventDay": coalesce(eventDay, dia, ""),
-      "eventDate": coalesce(eventDateTime, eventDate, fecha, startDate, publishedAt, _createdAt),
+      "eventDate": coalesce(eventDateTime, eventDate, fecha, startDate),
+      "eventEndDate": coalesce(eventEndDateTime, eventEndDate, endDateTime, endDate, fechaFin, fechaFinal),
       "eventTime": coalesce(eventTime, horario, time, ""),
       "eventLocation": coalesce(eventLocationName, eventLocation.name, eventLocation.label, locationName, location.name, location.label, placeName, place, ubicacion, venue, ""),
       "eventLocationUrl": coalesce(eventLocationUrl, eventLocation.url, eventLocation.href, locationUrl, location.url, location.href, googleMapsUrl, googleMapsLink, mapsUrl, eventMapsUrl, eventMapUrl, placeUrl, "")
