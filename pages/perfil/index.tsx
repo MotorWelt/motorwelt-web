@@ -728,7 +728,7 @@ export default function PerfilPage({
                 </h1>
 
                 <p className="mt-5 max-w-4xl text-base leading-relaxed text-gray-200 sm:text-lg md:text-xl xl:text-[1.35rem]">
-                  Regístrate para recibir novedades editoriales, futuras
+                  Regístrate para recibir novedades, futuras
                   experiencias, contenido especial y avisos de comunidad.
                 </p>
               </div>
@@ -771,8 +771,6 @@ export default function PerfilPage({
                 </h2>
                 <p className="mt-3 text-sm leading-relaxed text-gray-300">
                   Déjanos tus datos y selecciona los temas que más te interesan.
-                  Tu registro se guardará en Sanity para integrarlo después con
-                  newsletter, CRM o membresías.
                 </p>
 
                 <div className="mt-7 grid gap-5 sm:grid-cols-2">
